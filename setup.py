@@ -11,10 +11,10 @@ setup(
     packages = ['keepaAPI'],
 
     # Version
-    version='0.10.0',
+    version='0.10.2',
 
     description='Interfaces with keepa.com',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
 
     # Author details
     author='Alex Kaszynski',
