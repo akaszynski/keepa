@@ -5,8 +5,8 @@ Python module to interface to <https://keepa.com/> to query for Amazon product i
 ## Requirements
 
 Module is compatible with Python 2 and 3.  keepaAPI requires:
-    numpy
-    requests
++ numpy
++ requests
 
 Product history can be plotted from the raw data when matplotlib is installed.
 
