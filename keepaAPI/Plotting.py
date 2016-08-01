@@ -59,6 +59,7 @@ def PlotProduct(product, keys=[], rng=None):
         
         elif 'SalesRank' in key and not 'time' in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
+#            x = ConvertToDateTime(x)
             y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
             ReplaceInvalid(y)
             salesax.step(x, y, where='pre')
@@ -66,6 +67,7 @@ def PlotProduct(product, keys=[], rng=None):
         
         elif 'Offers' in key and not 'time' in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
+#            x = ConvertToDateTime(x)
             y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
             ReplaceInvalid(y)
             offerax.step(x, y, where='pre')
@@ -73,6 +75,7 @@ def PlotProduct(product, keys=[], rng=None):
             
         elif not 'time' in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
+#            x = ConvertToDateTime(x)
             y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
             ReplaceInvalid(y)
             priceax.step(x, y, where='pre')
@@ -103,3 +106,6 @@ def ReplaceInvalid(arr):
     if mask.any():
         arr[mask] = np.nan
     
+#def ConvertToDateTime(npdatetime):
+#    """ Converts a numpy datetime array to a datetime array """
+#    return np.asarray(newpricetime.tolist())

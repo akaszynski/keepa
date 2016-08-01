@@ -18,12 +18,14 @@ import threading
 
 # Other libraries
 import requests
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
 import numpy as np
 
 # This module
 from keepaAPI import keepaTime
+
+# Disable logging in requests module
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 # Request limit
 reqlim = 100
@@ -36,12 +38,6 @@ scodes = {'400': 'REQUEST_REJECTED',
 
 dcodes = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES', 'IN', 'MX']
 
-
-# Keepa ordinal time
-# keepaStartMinute began on "2011-01-01 00:00:00"
-#keepa_st_ordinal = np.datetime64('2011-01-01').reshape((-1, 1))
-
-    
 
 def ThreadRequest(asins, settings, products, sema, err):
     """
@@ -314,48 +310,6 @@ def ParseCSV(csv):
                 product_data[key] = np.array(csv[ind][1::2], np.float)/100.0
             else:
                 product_data[key] = np.asarray(csv[ind][1::2])
-
-    
-#    # Amazon New Price
-#    if csv[0]:
-#        product_data['AmazonPrice_time'] = KeepaMinutesToTime(csv[0][::2])
-#        product_data['AmazonPrice'] = np.array(csv[0][1::2], np.float)/100.0
-#
-#    # Marketplace New
-#    if csv[1]:
-#        product_data['MarketplaceNew_time'] = KeepaMinutesToTime(csv[1][::2])
-#        product_data['MarketplaceNew'] = np.array(csv[1][1::2], np.float)/100.0
-#    
-#    # Marketplace Used
-#    if csv[2]:
-#        product_data['MarketplaceUsed_time'] = KeepaMinutesToTime(csv[2][::2])
-#        product_data['MarketplaceUsed'] = np.array(csv[2][1::2], np.float)/100.0
-#    
-#    # Sales Rank
-#    if csv[3]:
-#        product_data['SalesRank_time'] = KeepaMinutesToTime(csv[3][::2])
-#        product_data['SalesRank'] = np.asarray(csv[3][1::2])
-#    
-#    # Listing Price
-#    if csv[4]:
-#        product_data['ListingPrice_time'] = KeepaMinutesToTime(csv[4][::2])
-#        product_data['ListingPrice'] = np.array(csv[4][1::2], np.float)/100.0
-#    
-#    # Collectable Price
-#    if csv[5]:
-#        product_data['CollectablePrice_time'] = KeepaMinutesToTime(csv[5][::2])
-#        product_data['CollectablePrice'] = np.array(csv[5][1::2], np.float)/100.0
-#        
-#    
-#    # New offers
-#    if csv[11]:
-#        product_data['NewOffers_time'] = KeepaMinutesToTime(csv[11][::2])
-#        product_data['NewOffers'] = np.asarray(csv[11][1::2])
-#    
-#    # Used offers
-#    if csv[12]:
-#        product_data['UsedOffers_time'] = KeepaMinutesToTime(csv[12][::2])
-#        product_data['UsedOffers'] = np.asarray(csv[12][1::2])
 
     return product_data
 

@@ -2,6 +2,9 @@
 """
 Setup.py for keepaAPI
 
+Upload to PyPi using
+python setup.py sdist upload -r pypi
+
 """
 from setuptools import setup
 import numpy
@@ -11,7 +14,7 @@ setup(
     packages = ['keepaAPI'],
 
     # Version
-    version='0.10.0',
+    version='0.10.1',
 
     description='Interfaces with keepa.com',
     long_description=open('README.rst').read(),

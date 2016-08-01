@@ -2,7 +2,7 @@
 """
 Module to convert keepa time
 """
-
+import datetime
 import numpy as np
 
 keepa_st_ordinal = np.datetime64('2011-01-01')
@@ -15,4 +15,5 @@ def KeepaMinutesToTime(minutes):
     
     # Convert
     dt = np.array(minutes, dtype='timedelta64[m]')
-    return keepa_st_ordinal + dt
+    dt = dt + keepa_st_ordinal # shift from ordinal
+    return dt.astype(datetime.datetime)
