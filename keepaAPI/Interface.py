@@ -84,8 +84,8 @@ def GetUserStatus(accesskey):
     # Return parsed response if successful
     if status_code == 200:
         response =  r.json()
-        del response['n']
-        del response['tz']
+#        del response['n']
+#        del response['tz']
         return response
 
     elif str(status_code) in scodes:
@@ -230,7 +230,7 @@ def ProductQuery(asins, settings):
                'asin': asinstr}
 
     if settings['offers']:
-        payload['offers'] = 12 # I have no idea why it's 12
+        payload['offers'] = settings['offers']
         
     if settings['update'] != None:
         payload['update'] = int(settings['update'])
@@ -239,6 +239,8 @@ def ProductQuery(asins, settings):
         payload['history'] = 0
    
     r = requests.get('https://api.keepa.com/product/?', params=payload)
+    print r.url
+    print len(r.text)
     status_code = r.status_code
 
     # Return parsed response if successful
