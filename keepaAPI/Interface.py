@@ -249,7 +249,7 @@ def ProductQuery(asins, settings):
         if settings['history']:
             for product in response['products']:
                 if product['csv']: # if data exists
-                    product['data'] = ParseCSV(product['csv'])
+                    product['data'] = ParseCSV(product['csv'], settings['to_datetime'])
                     del product['csv']
             
         return response
@@ -261,7 +261,7 @@ def ProductQuery(asins, settings):
         raise Exception('REQUEST_FAILED')
 
 
-def ParseCSV(csv):
+def ParseCSV(csv, to_datetime):
     """
     
     Parses csv list from keepa into a python dictionary
@@ -302,7 +302,7 @@ def ParseCSV(csv):
             key = index[1]
             
             # Data goes [time0, value0, time1, value1, ...]
-            product_data[key + '_time'] = keepaTime.KeepaMinutesToTime(csv[ind][::2])
+            product_data[key + '_time'] = keepaTime.KeepaMinutesToTime(csv[ind][::2], to_datetime)
 
             # Convert to float price if applicable
             if index[2]:
@@ -372,7 +372,7 @@ class API(object):
 
 
     def ProductQuery(self, asins, domain='US', history=True, offers=False,
-                     update=None, nthreads=4):
+                     update=None, nthreads=4, to_datetime=True):
         """
         Performs a product query of a list, array, or single ASIN.  Returns a
         list of product data with one entry for each product.
@@ -426,7 +426,8 @@ class API(object):
                     'accesskey': self.accesskey,
                     'offers': offers,
                     'update': None,
-                    'history': history}
+                    'history': history,
+                    'to_datetime': to_datetime}
         
         # Report time to completion
         tcomplete = float(nitems - self.user.RemainingTokens())/self.user.status['refillRate'] - (60000 - self.user.status['refillIn'])/60000.0
