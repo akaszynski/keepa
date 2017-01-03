@@ -14,7 +14,7 @@ setup(
     packages = ['keepaAPI'],
 
     # Version
-    version='0.11',
+    version='0.12',
 
     description='Interfaces with keepa.com',
     long_description=open('README.rst').read(),

@@ -24,8 +24,9 @@ import numpy as np
 from keepaAPI import keepaTime
 
 # Disable logging in requests module
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+
 
 # Request limit
 reqlim = 100
@@ -66,7 +67,7 @@ def ThreadRequest(asins, settings, products, sema, err):
 
     # Log
     if not err:
-        logging.info('Completed {:d} ASINs'.format(len(products)))
+        logging.info('Completed {:d} ASIN(s)'.format(len(products)))
     else:
         logging.err('Request failed')
         
@@ -84,8 +85,6 @@ def GetUserStatus(accesskey):
     # Return parsed response if successful
     if status_code == 200:
         response =  r.json()
-#        del response['n']
-#        del response['tz']
         return response
 
     elif str(status_code) in scodes:
@@ -239,8 +238,6 @@ def ProductQuery(asins, settings):
         payload['history'] = 0
    
     r = requests.get('https://api.keepa.com/product/?', params=payload)
-    print r.url
-    print len(r.text)
     status_code = r.status_code
 
     # Return parsed response if successful
@@ -321,7 +318,7 @@ def CheckASINs(asins):
     if isinstance(asins, list) or isinstance(asins, np.ndarray):
         return np.unique(asins)
 
-    elif isinstance(asins, str):
+    elif isinstance(asins, str) or isinstance(asins, unicode):
         if len(asins) != 10:
             return np.array([])
         else:
@@ -413,10 +410,13 @@ class API(object):
         try:
             asins = CheckASINs(asins)
         except:
-            raise Exception('Invalid ASIN input.')
+            raise Exception('Invalid ASIN input')
 
         nitems = len(asins)
-        logging.info('EXECUTING {:d} ITEM PRODUCT QUERY'.format(nitems))
+        if nitems == 1:
+            logging.info('EXECUTING SINGLE PRODUCT QUERY'.format(nitems))
+        else:
+            logging.info('EXECUTING {:d} ITEM PRODUCT QUERY'.format(nitems))
 
         # Update user status and determine if there any tokens available
         self.user.UpdateFromServer()
@@ -431,8 +431,8 @@ class API(object):
         # Report time to completion
         tcomplete = float(nitems - self.user.RemainingTokens())/self.user.status['refillRate'] - (60000 - self.user.status['refillIn'])/60000.0
         if tcomplete < 0.0:
-            tcomplete = 1.0
-        logging.info('Estimated time to complete {:d} queries is {:.2f} minutes'.format(len(asins), tcomplete))
+            tcomplete = 0.5
+        logging.info('Estimated time to complete {:d} querie(s) is {:.2f} minutes'.format(len(asins), tcomplete))
         logging.info('\twith a refill rate of {:d} token(s) per minute'.format(self.user.status['refillRate']))
 
         # initialize product and thread lists
