@@ -109,6 +109,7 @@ installed
 History
 -------
 
+3 January 2016: Fixed unicode error and added timestamps as interger feature
 1 August 2016: Initial commit
 
 Credits
