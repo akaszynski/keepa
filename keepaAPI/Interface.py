@@ -31,9 +31,9 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)
 import sys
 import urllib
 if sys.version_info[0] == 2:
-    quote = urllib.quote
+    quote_plus = urllib.quote
 else:
-    quote = urllib.parse.quote
+    quote_plus = urllib.parse.quote
 
 
 # Request limit
@@ -612,7 +612,10 @@ class API(object):
         r = requests.get('https://api.keepa.com/bestsellers/?', params=payload)
         response =  r.json()
         
-        return response['bestSellersList']['asinList']
+        if 'bestSellersList' in response:
+            return response['bestSellersList']['asinList']
+        else:
+            logging.info('Best sellers search results not yet available')
 
 
     def SearchForCategories(self, searchterm, domain='US'):
@@ -645,8 +648,18 @@ class API(object):
         payload = {'key': self.accesskey,
                    'domain': dcodes.index(domain),
                    'type': 'category',
-                   'term': quote(searchterm)}
+                   'term': searchterm}
 
         r = requests.get('https://api.keepa.com/search/?', params=payload)
-        return r.json()['categories']
+        response = r.json()
+
+        if response['categories'] == {}:
+            logging.info('Categories search results not yet available')
+        else:
+            return response['categories']
+    
+    
+    def GetAvailableTokens(self):
+        """ Returns available tokens """
+        return self.user.RemainingTokens()
         
