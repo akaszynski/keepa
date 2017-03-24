@@ -4,3 +4,4 @@ from keepaAPI import Interface
 from keepaAPI import Plotting
 
 from Interface import *
+from Plotting import *

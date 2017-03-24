@@ -33,8 +33,12 @@ Brief Example
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
     api = keepaAPI.API(accesskey)
 
-    #Single ASIN query
+    # Single ASIN query
     products = api.ProductQuery('059035342X') # returns list of product data
+
+    # Plot result (requires matplotlib)
+    keepaAPI.PlotProduct(products[0])
+
 
 Detailed Example
 ----------------
@@ -103,8 +107,7 @@ The product history can also be plotted from the module if matplotlib is
 installed
 
 .. code:: python
-
-    Plotting.PlotProduct(products[0])
+    keepaAPI.PlotProduct(products[0])
 
 
 Credits
