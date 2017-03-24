@@ -27,6 +27,14 @@ from keepaAPI import keepaTime
 logging.getLogger("requests").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 
+# percent encoding
+import sys
+import urllib
+if sys.version_info[0] == 2:
+    quote = urllib.quote
+else:
+    quote = urllib.parse.quote
+
 
 # Request limit
 reqlim = 100
@@ -37,7 +45,10 @@ scodes = {'400': 'REQUEST_REJECTED',
           '405': 'METHOD_NOT_ALLOWED',
           '429': 'NOT_ENOUGH_TOKEN'}
 
-dcodes = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES', 'IN', 'MX']
+# domain codes
+# Valid values: [ 1: com | 2: co.uk | 3: de | 4: fr | 5: co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx ]
+dcodes = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES', 
+          'IN', 'MX']
 
 
 def ThreadRequest(asins, settings, products, sema, err):
@@ -328,18 +339,59 @@ def CheckASINs(asins):
 # Main API
 #==============================================================================
 class API(object):
-    """ Class to support html interface to keepa server """
+    """
+    Class to support html interface to keepa server.
     
-    def __init__(self, accesskey):
-        """ Initializes API """
+    EXAMPLE
+    import keepaAPI
     
-        # Disable logging (except for warnings) for requests module    
-#        logging.getLogger("requests").setLevel(logging.WARNING)
-
+    # Access key from https://keepa.com/#!api  (this key does not work)
+    mykey = 'e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021'
+    
+    # Create API
+    api = keepaAPI.API(mykey) 
+    
+    # Request data from two ASINs
+    products = api.ProductQuery(['0439064872', '1426208081'])
+    
+    # Print item details
+    print('Item 1')
+    print('\t ASIN: {:s}'.format(products[0]['asin']))
+    print('\t Title: {:s}'.format(products[0]['title']))
+    
+    # Print item price
+    usedprice = products[0]['data']['MarketplaceUsed']
+    usedtimes = products[0]['data']['MarketplaceUsed_time']
+    print('\t Used price: ${:.2f}'.format(usedprice[-1]))
+    print('\t as of: {:s}'.format(str(usedtimes[-1])))
+    
+    """
+    
+    def __init__(self, accesskey, log=True):
+        """ 
+        DESCRITPION
+        
+        Initializes API with access key.  Access key can be obtained by signing
+        up for a reoccuring or one month plan at https://keepa.com/#!api
+        
+        INPUTS
+        accesskey (string)
+            64 character string.  Example string (does not work):
+            e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021
+    
+        logging (bool, default False)
+            Controls if logging requests are printed to screen.  Default True.
+        
+        OUTPUTS
+        None
+        
+        """
+    
         # Create logger
-        logstr = '%(levelname)-7s: %(message)s'
-        logging.basicConfig(format=logstr, level='DEBUG', filename='')
-        logging.info('Connecting to keepa using key {:s}'.format(accesskey))
+        if log:
+            logstr = '%(levelname)-7s: %(message)s'
+            logging.basicConfig(format=logstr, level='DEBUG', filename='')
+            logging.info('Connecting to keepa using key {:s}'.format(accesskey))
 
         # Store access key
         self.accesskey = accesskey
@@ -351,8 +403,14 @@ class API(object):
 
     def WaitForTokens(self, updatetype='server'):
         """
+        DESCRIPTION
         Checks local user status for any remaining tokens and waits if none are
         available
+        
+        INPUTS
+        updatetype (string, default 'server')
+            Updates available tokens based on a client side update or server
+            side update.  Input 'client' for a client side update
         
         """
         
@@ -371,39 +429,50 @@ class API(object):
             self.user.LocalUpdate()
 
 
-    def ProductQuery(self, asins, domain='US', history=True, offers=False,
+    def ProductQuery(self, asins, domain='US', history=True, offers=None,
                      update=None, nthreads=4, to_datetime=True):
         """
+        DESCRIPTION
         Performs a product query of a list, array, or single ASIN.  Returns a
         list of product data with one entry for each product.
         
         INPUTS:
-            asins (required string list np.ndarray)
-                A list, array, or single ASIN.  Each ASIN should be 10
-                characters and match a product on Amazon.  ASINs not matching
-                Amazon product or duplicate ASINs will return no data.
+        asins (string or list or np.ndarray)
+            A list, array, or single ASIN.  Each ASIN should be 10
+            characters and match a product on Amazon.  ASINs not matching
+            Amazon product or duplicate ASINs will return no data.
+        
+        domain (string, default 'US')
+            One of the following Amazon domains:
+            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
             
-            domain: (optional string)
-                One of the following Amazon domains:
-                RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
-                
-            offers (optional bool default False)
-                Adds product offers to product data
+        offers (int, default None)
+            Adds available offers to product data
 
-            update (optional int default None)
-                If data is older than the input interger, keepa will update
-                their database and return live data.  If set to 0 (live data),
-                then request may cost an additional token
+        update (int default None)
+            If data is older than the input interger, keepa will update
+            their database and return live data.  If set to 0 (live data),
+            then request may cost an additional token
 
-            history (optional bool default True)
-                When set to True includes the price, sales, and offer history
-                of a product.  Set to False to reduce request time if data is
-                not required
-                
-            nthreads (optional int default 4)
-                Number of threads to interface to keepa with.  More threads
-                means potentially faster batch response, but more bandwidth.
-                Probably should be kept under 20.
+        history (bool, default True)
+            When set to True includes the price, sales, and offer history
+            of a product.  Set to False to reduce request time if data is
+            not required
+            
+        nthreads (int, default 4)
+            Number of threads to interface to keepa with.  More threads
+            means potentially faster batch response, but more bandwidth.
+            Probably should be kept under 20.
+            
+        to_datetime (bool, default True)
+            Modifies numpy minutes to datetime.datetime values.
+        
+        OUTPUTS
+        products (list)
+            List of products.  Each product within the list is a dictionary.
+            The keys of each item may vary, so see the keys within each product
+            for further details.
+            
         
         """
         # Format asins into numpy array
@@ -433,7 +502,7 @@ class API(object):
         tcomplete = float(nitems - self.user.RemainingTokens())/self.user.status['refillRate'] - (60000 - self.user.status['refillIn'])/60000.0
         if tcomplete < 0.0:
             tcomplete = 0.5
-        logging.info('Estimated time to complete {:d} querie(s) is {:.2f} minutes'.format(len(asins), tcomplete))
+        logging.info('Estimated time to complete {:d} request(s) is {:.2f} minutes'.format(len(asins), tcomplete))
         logging.info('\twith a refill rate of {:d} token(s) per minute'.format(self.user.status['refillRate']))
 
         # initialize product and thread lists
@@ -485,8 +554,99 @@ class API(object):
 
         return products
 
-    
 
+    def BestSellersQuery(self, category, domain='US'):
+        """
+        DESCRIPTION
+        Retrieve an ASIN list of the most popular products based on sales in a 
+        specific category or product group.  See "SearchForCategories" for
+        information on how to get a category.
 
+        Root category lists (e.g. "Home & Kitchen") or product group lists 
+        contain up to 30,000 ASINs.
         
+        Sub-category lists (e.g. "Home Entertainment Furniture") contain up to 
+        3,000 ASINs. As we only have access to the product's primary sales rank
+        and not the ones of all categories it is listed in, the sub-category 
+        lists are created by us based on the product's primary sales rank and 
+        do not reflect the actual ordering on Amazon.
+        
+        Lists are ordered, starting with the best selling product.
+        
+        Lists are updated daily.
+        If a product does not have an accessible sales rank it will not be 
+        included in the lists. This in particular affects many products in the 
+        Clothing and Sports & Outdoors categories.
+        
+        We can not correctly identify the sales rank reference category in all 
+        cases, so some products may be misplaced.
+        
+        
+        INPUTS
+        categoryId (string)
+            The category node id of the category you want to request the best 
+            sellers list for. You can find category node ids via the category 
+            search  "SearchForCategories"
+            
+        domain: (optional string)
+            Amazon locale you want to access. Must be one of the following
+            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
+            
+        OUTPUTS
+        bestSellersList (list)
+            List of best seller ASINs
+            
+        EXAMPLE
+        api.BestSellersQuery
+            
+            
+        """
+        
+        if domain not in dcodes:
+            raise Exception('Invalid domain code')
+        
+        payload = {'key': self.accesskey,
+                   'domain': dcodes.index(domain), 
+                   'category': category}
+        
+        r = requests.get('https://api.keepa.com/bestsellers/?', params=payload)
+        response =  r.json()
+        
+        return response['bestSellersList']['asinList']
+
+
+    def SearchForCategories(self, searchterm, domain='US'):
+        """
+        DESCRIPTION
+        
+        EXAMPLE
+        categories = api.SearchForCategories('science')
+        
+        # Print all categories
+        for catId in categories:
+            print(catId, categories[catId]['name'])
+        
+        
+        INPUT
+        searchterm (string)
+            Input search term.  
+        
+        
+        OUTPUT
+        categories (list)
+            The response contains a categories list with all matching categories.
+
+        """
+        # Check if valid domain
+        if domain not in dcodes:
+            raise Exception('Invalid domain code')
+            
+        
+        payload = {'key': self.accesskey,
+                   'domain': dcodes.index(domain),
+                   'type': 'category',
+                   'term': quote(searchterm)}
+
+        r = requests.get('https://api.keepa.com/search/?', params=payload)
+        return r.json()['categories']
         

@@ -13,8 +13,8 @@ requests
 Product history can be plotted from the raw data when matplotlib is
 installed.
 
-Additionally, interfacing with the keepaAPI requires an accesskey and
-monthly subscription from https://keepa.com/#!api
+Interfacing with the keepaAPI requires an accesskey and a monthly
+subscription from https://keepa.com/#!api
 
 Installation
 ------------
@@ -29,9 +29,9 @@ Brief Example
 
 .. code:: python
 
-    from keepaAPI import Interface
+    import keepaAPI
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = Interface.API(accesskey)
+    api = keepaAPI.API(accesskey)
 
     #Single ASIN query
     products = api.ProductQuery('059035342X') # returns list of product data
@@ -43,9 +43,9 @@ Import interface and establish connection to server
 
 .. code:: python
 
-    from keepaAPI import Interface
+    import keepaAPI
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = Interface.API(accesskey)
+    api = keepaAPI.API(accesskey)
 
 Single ASIN query
 
