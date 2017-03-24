@@ -654,7 +654,8 @@ class API(object):
         response = r.json()
 
         if response['categories'] == {}:
-            logging.info('Categories search results not yet available')
+            logging.info('Categories search results not yet available or no' +\
+                         'search terms found.')
         else:
             return response['categories']
     
