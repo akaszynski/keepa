@@ -186,6 +186,9 @@ def ProductQuery(asins, settings):
             accesskey: (string)
                 keepa access key string
 
+            stats: (int or date format)
+                Set the stats time for get sales rank inside this range
+
             domain: (string)
                 One of the following Amazon domains:
                 RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
@@ -238,6 +241,9 @@ def ProductQuery(asins, settings):
     payload = {'key': settings['accesskey'],
                'domain': dcodes.index(settings['domain']), 
                'asin': asinstr}
+
+    if settings['stats']:
+        payload['stats'] = settings['stats']
 
     if settings['offers']:
         payload['offers'] = settings['offers']
@@ -429,8 +435,8 @@ class API(object):
             self.user.LocalUpdate()
 
 
-    def ProductQuery(self, asins, domain='US', history=True, offers=None,
-                     update=None, nthreads=4, to_datetime=True):
+    def ProductQuery(self, asins, stats=None, domain='US', history=True,
+                     offers=None, update=None, nthreads=4, to_datetime=True):
         """
         DESCRIPTION
         Performs a product query of a list, array, or single ASIN.  Returns a
@@ -442,6 +448,20 @@ class API(object):
             characters and match a product on Amazon.  ASINs not matching
             Amazon product or duplicate ASINs will return no data.
         
+        stats (int or date, defaul None)
+            No extra token cost. If specified the product object will have a 
+            stats field with quick access to current prices, min/max prices 
+            and the weighted mean values. If the offers parameter was used it
+            will also provide stock counts and buy box information.
+            
+            You can provide the stats parameter in two forms:
+                Last x days (positive integer value): calculates the stats of 
+                the last x days, where x is the value of the stats parameter.
+                Interval: You can provide a date range for the stats 
+                calculation. You can specify the range via two timestamps 
+                (unix epoch time milliseconds) or two date strings (ISO8601,
+                with or without time in UTC).        
+
         domain (string, default 'US')
             One of the following Amazon domains:
             RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
@@ -491,7 +511,8 @@ class API(object):
         self.user.UpdateFromServer()
         
         # Assemble settings
-        settings = {'domain': domain,
+        settings = {'stats': stats,
+                    'domain': domain,
                     'accesskey': self.accesskey,
                     'offers': offers,
                     'update': None,

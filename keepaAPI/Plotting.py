@@ -3,29 +3,25 @@
 Plotting module product data returned from keepa interface module
 
 """
+import warnings
 
-# Check if matplotlib is installed
+# Soft import
 try:
-    import matplotlib
+    import matplotlib.pyplot as plt
+    plt_loaded = True
 except:
-    raise Exception('matplotlib module unavailable.\nPlease run install matplotlib to use this plotting feature')
+    plt_loaded = False
+    warnings.warn('keepaAPI plotting unavailable')
 
-# Check python version
-import sys
-if sys.version_info.major == 3:
-    # matplotlib for python3 requires different backend
-    try:
-        matplotlib.use('Qt5Agg')
-    except:
-        raise Exception('Please install "python3-pyqt5" for matplotlib in python3 to work')
-
-import matplotlib.pyplot as plt
 
 import numpy as np
 from keepaAPI import keepaTime
 
 def PlotProduct(product, keys=[], rng=None):
     """ Plots a product using matplotlib """
+    
+    if not plt_loaded:
+        raise Exception('Plotting not available.  Check matplotlib install')
 
     # Use all keys if not specified
     if not keys:
