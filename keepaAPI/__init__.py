@@ -1,7 +1,4 @@
-__version__ = '0.13.1'
-
-#from keepaAPI import Interface
-#from keepaAPI import Plotting
+__version__ = '0.13.2'
 
 from keepaAPI.Interface import *
 from keepaAPI.Plotting import *
