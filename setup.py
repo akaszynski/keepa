@@ -13,7 +13,7 @@ setup(
     packages = ['keepaAPI'],
 
     # Version
-    version='0.13.2',
+    version='0.13.3',
 
     description='Interfaces with keepa.com',
     long_description=open('README.rst').read(),
@@ -36,7 +36,7 @@ setup(
     # Website
     url = 'https://github.com/akaszynski/keepaAPI',
 
-    keywords='keepa',                    
+    keywords='keepa',
 
     # Might work with earlier versions (untested)
     install_requires=['numpy>=1.9.3', 'requests>=2.2']
