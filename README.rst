@@ -1,28 +1,28 @@
 keepaAPI
 ========
 
-Python module to interface to https://keepa.com/ to query for Amazon
-product information and history.
+Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
 
 Requirements
 ------------
 
-Module is compatible with Python 2 and 3. keepaAPI requires: + numpy +
-requests
+Module is compatible with Python 2 and 3. keepaAPI requires:
 
-Product history can be plotted from the raw data when matplotlib is
-installed.
+ - ``numpy``
+ - ``requests``
 
-Interfacing with the keepaAPI requires an accesskey and a monthly
-subscription from https://keepa.com/#!api
+Product history can be plotted from the raw data when ``matplotlib`` is installed.
+
+Interfacing with the ``keepaAPI`` requires an accesskey and a monthly subscription from https://keepa.com/#!api
+
 
 Installation
 ------------
 
 Module can be installed from PyPi using ``pip install keepaAPI``
 
-Source code can also be downloaded from this github repository and
-installed using ``python setup.py install`` or ``pip install .``
+Source code can also be downloaded from `GitHub <https://github.com/akaszynski/keepaAPI>`_ and installed using ``python setup.py install`` or ``pip install .``
+
 
 Brief Example
 -------------
@@ -73,12 +73,9 @@ Multiple ASIN query from numpy array
     asins = np.asarray(['0022841350', '0022841369', '0022841369', '0022841369'])
     products = api.ProductQuery(asins)
 
-Products is a list of product data with one entry per successful result
-from the keepa server. Each entry is a dictionary containing the same
-product data available from http://www.amazon.com.
+Products is a list of product data with one entry per successful result from the Keepa server. Each entry is a dictionary containing the same product data available from `Amazon <http://www.amazon.com>`_.
 
 .. code:: python
-
 
     # Available keys
     print(products[0].keys())
@@ -87,8 +84,7 @@ product data available from http://www.amazon.com.
     print('ASIN is ' + products[0]['asin'])
     print('Title is ' + products[0]['title'])
 
-The raw data is contained within each product result. Raw data is stored
-as a dictonary with each key paired with its associated time history.
+The raw data is contained within each product result. Raw data is stored as a dictonary with each key paired with its associated time history.
 
 .. code:: python
 
@@ -103,8 +99,7 @@ as a dictonary with each key paired with its associated time history.
     # Keys can be listed by
     print(products[0]['data'].keys())
 
-The product history can also be plotted from the module if matplotlib is
-installed
+The product history can also be plotted from the module if ``matplotlib`` is installed
 
 .. code:: python
 
@@ -113,13 +108,10 @@ installed
 
 Credits
 -------
+This Python code, written by Alex Kaszynski, is based on Java code writen by Marius Johann, CEO keepa. Java source is can be found at https://github.com/keepacom/api_backend/
 
-This python code, written by Alex Kaszynski, is based on Java code
-writen by Marius Johann, CEO keepa. Java source is can be found at
-https://github.com/keepacom/api_backend/
 
 License
 -------
-
-See license file. Work is credited to both Alex Kaszynski and Marius
+Apache License, please see license file. Work is credited to both Alex Kaszynski and Marius
 Johann.
