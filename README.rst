@@ -93,8 +93,8 @@ as a dictonary with each key paired with its associated time history.
 .. code:: python
 
     # Access new price history and associated time data
-    newprice = products[0]['data']['MarketplaceNew']
-    newpricetime = products[0]['data']['MarketplaceNew_time']
+    newprice = products[0]['data']['NEW']
+    newpricetime = products[0]['data']['NEW_time']
 
     # Can be plotted with matplotlib using:
     import matplotlib.pyplot as plt
@@ -107,6 +107,7 @@ The product history can also be plotted from the module if matplotlib is
 installed
 
 .. code:: python
+
     keepaAPI.PlotProduct(products[0])
 
 
