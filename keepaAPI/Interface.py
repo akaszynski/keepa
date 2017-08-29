@@ -75,7 +75,7 @@ def ThreadRequest(asins, settings, products, sema, err):
     except:
         # Track error
         err = True
-
+        
     # Log
     if not err:
         logging.info('Completed {:d} ASIN(s)'.format(len(products)))
@@ -270,7 +270,7 @@ def ProductQuery(asins, settings):
             for product in response['products']:
                 if product['csv']: # if data exists
                     product['data'] = ParseCSV(product['csv'], settings['to_datetime'])
-                    del product['csv']
+#                    del product['csv']
 
         return response
 
@@ -283,36 +283,137 @@ def ProductQuery(asins, settings):
 
 def ParseCSV(csv, to_datetime):
     """
-
     Parses csv list from keepa into a python dictionary
 
-    csv is organized as the following
-        index   item
-        0       Amazon Price
-        1       Marketplace New
-        2       Marketplace Used
-        3       Sales Rank
-        4       Listing Price
-        5       Collectable Price
-        11      New Offers
-        12      Used Offers
-        14      Collectable Offers
-        16      Rating
+    
+    Parameters
+    ----------
+    csv : list
+        csv list from keepa
 
+    Returns
+    -------
+    product_data : dict
+        Dictionary containing the following fields with timestamps:
+    
+        AMAZON
+            Amazon price history
+            
+        NEW
+            Marketplace/3rd party New price history - Amazon is considered to be part of the marketplace as well,
+            so if Amazon has the overall lowest new (!) price, the marketplace new price in the corresponding time interval
+            will be identical to the Amazon price (except if there is only one marketplace offer).
+            Shipping and Handling costs not included!
+
+        USED
+            Marketplace/3rd party Used price history
+
+        SALES
+            Sales Rank history. Not every product has a Sales Rank.
+
+        LISTPRICE
+            List Price history
+
+        5 COLLECTIBLE
+            Collectible Price history
+
+        6 REFURBISHED
+            Refurbished Price history
+
+        7 NEW_FBM_SHIPPING
+            3rd party (not including Amazon) New price history including shipping costs, only fulfilled by merchant (FBM).
+
+        8 LIGHTNING_DEAL
+            3rd party (not including Amazon) New price history including shipping costs, only fulfilled by merchant (FBM).
+
+        9 WAREHOUSE
+            Amazon Warehouse Deals price history. Mostly of used condition, rarely new.
+
+        10 NEW_FBA
+             Price history of the lowest 3rd party (not including Amazon/Warehouse) New offer that is fulfilled by Amazon
+        
+        11 COUNT_NEW
+             New offer count history
+        
+        12 COUNT_USED
+            Used offer count history
+        
+        13 COUNT_REFURBISHED
+             Refurbished offer count history
+        
+        14 COUNT_COLLECTIBLE
+             Collectible offer count history
+        
+        16 RATING
+             The product's rating history. A rating is an integer from 0 to 50 (e.g. 45 = 4.5 stars)
+
+        17 COUNT_REVIEWS
+            The product's review count history.
+
+        18 BUY_BOX_SHIPPING(18, true, false, true, true),
+            The price history of the buy box. If no offer qualified for the buy box the price has the value -1. Including shipping costs.
+        
+        19 USED_NEW_SHIPPING(19, true, true, true, true),
+            "Used - Like New" price history including shipping costs.
+        
+        20 USED_VERY_GOOD_SHIPPING(20, true, true, true, true),
+            "Used - Very Good" price history including shipping costs.
+        
+        21 USED_GOOD_SHIPPING(21, true, true, true, true),
+            "Used - Good" price history including shipping costs.
+        
+        22 USED_ACCEPTABLE_SHIPPING(22, true, true, true, true),
+            "Used - Acceptable" price history including shipping costs.
+        
+        23 COLLECTIBLE_NEW_SHIPPING(23, true, true, true, true),
+            "Collectible - Like New" price history including shipping costs.
+        
+        24 COLLECTIBLE_VERY_GOOD_SHIPPING(24, true, true, true, true),
+            "Collectible - Very Good" price history including shipping costs.
+        
+        25 COLLECTIBLE_GOOD_SHIPPING(25, true, true, true, true),
+            "Collectible - Good" price history including shipping costs.
+
+        26 COLLECTIBLE_ACCEPTABLE_SHIPPING(26, true, true, true, true),
+            "Collectible - Acceptable" price history including shipping costs.
+
+        27 REFURBISHED_SHIPPING
+            Refurbished price history including shipping costs.
+        
+        30 TRADE_IN
+            The trade in price history. Amazon trade-in is not available for every locale.
 
     """
 
-    # index in csv, key name, isfloat (is price)
-    indices = [[0, 'AmazonPrice', True],
-               [1, 'MarketplaceNew', True],
-               [2, 'MarketplaceUsed', True],
-               [3, 'SalesRank', False],
-               [4, 'ListingPrice', True],
-               [5, 'CollectablePrice', True],
-               [11, 'NewOffers', False],
-               [12, 'UsedOffers', False],
+    # [index in csv, key name, isfloat (is price)]
+    indices = [[ 0, 'AMAZON', True],
+               [ 1, 'NEW', True],
+               [ 2, 'USED', True],
+               [ 3, 'SALES', False],
+               [ 4, 'LISTPRICE', True],
+               [ 5, 'COLLECTIBLE', True],
+               [ 6, 'REFURBISHED', True],
+               [ 7, 'NEW_FBM_SHIPPING', True],
+               [ 8, 'LIGHTNING_DEAL', True],
+               [ 9, 'WAREHOUSE', True],
+               [10, 'NEW_FBA', True],
+               [11, 'COUNT_NEW', False],
+               [12, 'COUNT_USED', False],
+               [13, 'COUNT_REFURBISHED', False],
                [14, 'CollectableOffers', False],
-               [16, 'Rating', False]]
+               [16, 'RATING', False],
+               [17, 'COUNT_REVIEWS', False],
+               [18, 'BUY_BOX_SHIPPING', True],
+               [19, 'USED_NEW_SHIPPING', True],
+               [20, 'USED_VERY_GOOD_SHIPPING', True],
+               [21, 'USED_GOOD_SHIPPING', True],
+               [22, 'USED_ACCEPTABLE_SHIPPING', True],
+               [23, 'COLLECTIBLE_NEW_SHIPPING', True],
+               [24, 'COLLECTIBLE_VERY_GOOD_SHIPPING', True],
+               [25, 'COLLECTIBLE_GOOD_SHIPPING', True],
+               [26, 'COLLECTIBLE_ACCEPTABLE_SHIPPING', True],
+               [27, 'REFURBISHED_SHIPPING', True],
+               [30, 'TRADE_IN', True]]
 
 
     product_data = {}
@@ -418,14 +519,20 @@ class API(object):
 
     def WaitForTokens(self, updatetype='server'):
         """
-        DESCRIPTION
         Checks local user status for any remaining tokens and waits if none are
         available
 
-        INPUTS
-        updatetype (string, default 'server')
+
+        Parameters
+        ----------
+        updatetype : string, default 'server'
             Updates available tokens based on a client side update or server
             side update.  Input 'client' for a client side update
+
+
+        Returns
+        -------
+        None
 
         """
 
@@ -448,11 +555,12 @@ class API(object):
                      offers=None, update=None, nthreads=4, to_datetime=True,
                      rating=False):
         """
-        DESCRIPTION
         Performs a product query of a list, array, or single ASIN.  Returns a
         list of product data with one entry for each product.
 
-        INPUTS:
+
+        Parameters
+        ----------
         asins (string or list or np.ndarray)
             A list, array, or single ASIN.  Each ASIN should be 10
             characters and match a product on Amazon.  ASINs not matching
@@ -501,12 +609,113 @@ class API(object):
         to_datetime (bool, default True)
             Modifies numpy minutes to datetime.datetime values.
 
-        OUTPUTS
-        products (list)
+
+        Returns
+        -------
+        products : list
             List of products.  Each product within the list is a dictionary.
             The keys of each item may vary, so see the keys within each product
             for further details.
+            
+            Each product should contain at a minimum a "data" key containing
+            a formatted dictonary with the following fields:
+                
+        ############################# data fields #############################
+        AMAZON
+            Amazon price history
+            
+        NEW
+            Marketplace/3rd party New price history - Amazon is considered to 
+            be part of the marketplace as well, so if Amazon has the overall 
+            lowest new (!) price, the marketplace new price in the 
+            corresponding time interval will be identical to the Amazon price 
+            (except if there is only one marketplace offer).  Shipping and 
+            Handling costs not included!
 
+        USED
+            Marketplace/3rd party Used price history
+
+        SALES
+            Sales Rank history. Not every product has a Sales Rank.
+
+        LISTPRICE
+            List Price history
+
+        COLLECTIBLE
+            Collectible Price history
+
+        REFURBISHED
+            Refurbished Price history
+
+        NEW_FBM_SHIPPING
+            3rd party (not including Amazon) New price history including 
+            shipping costs, only fulfilled by merchant (FBM).
+
+        LIGHTNING_DEAL
+            3rd party (not including Amazon) New price history including 
+            shipping costs, only fulfilled by merchant (FBM).
+
+        WAREHOUSE
+            Amazon Warehouse Deals price history. Mostly of used condition, 
+            rarely new.
+
+        NEW_FBA
+             Price history of the lowest 3rd party (not including 
+             Amazon/Warehouse) New offer that is fulfilled by Amazon
+        
+        COUNT_NEW
+             New offer count history
+        
+        COUNT_USED
+            Used offer count history
+        
+        COUNT_REFURBISHED
+             Refurbished offer count history
+        
+        COUNT_COLLECTIBLE
+             Collectible offer count history
+        
+        RATING
+             The product's rating history. A rating is an integer from 0 to 50 
+             (e.g. 45 = 4.5 stars)
+
+        COUNT_REVIEWS
+            The product's review count history.
+
+        BUY_BOX_SHIPPING(18, true, false, true, true),
+            The price history of the buy box. If no offer qualified for the buy
+            box the price has the value -1. Including shipping costs.
+        
+        USED_NEW_SHIPPING(19, true, true, true, true),
+            "Used - Like New" price history including shipping costs.
+        
+        USED_VERY_GOOD_SHIPPING(20, true, true, true, true),
+            "Used - Very Good" price history including shipping costs.
+        
+        USED_GOOD_SHIPPING(21, true, true, true, true),
+            "Used - Good" price history including shipping costs.
+        
+        USED_ACCEPTABLE_SHIPPING(22, true, true, true, true),
+            "Used - Acceptable" price history including shipping costs.
+        
+        COLLECTIBLE_NEW_SHIPPING(23, true, true, true, true),
+            "Collectible - Like New" price history including shipping costs.
+        
+        COLLECTIBLE_VERY_GOOD_SHIPPING(24, true, true, true, true),
+            "Collectible - Very Good" price history including shipping costs.
+        
+        COLLECTIBLE_GOOD_SHIPPING(25, true, true, true, true),
+            "Collectible - Good" price history including shipping costs.
+
+        COLLECTIBLE_ACCEPTABLE_SHIPPING(26, true, true, true, true),
+            "Collectible - Acceptable" price history including shipping costs.
+
+        REFURBISHED_SHIPPING
+            Refurbished price history including shipping costs.
+        
+        TRADE_IN
+            The trade in price history. Amazon trade-in is not available for 
+            every locale.
 
         """
         # Format asins into numpy array

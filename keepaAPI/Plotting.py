@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Plotting module product data returned from keepa interface module
 
@@ -17,8 +16,25 @@ except:
 import numpy as np
 from keepaAPI import keepaTime
 
-def PlotProduct(product, keys=[], rng=None):
-    """ Plots a product using matplotlib """
+def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
+    """
+    Plots a product using matplotlib
+
+    
+    Parameters
+    ----------
+    product : list
+        Single product from keepaAPI.ProductQuery
+        
+    keys : list, optional
+        Keys to plot.  Defaults to ['AMAZON', 'USED', 'COUNT_USED', 'SALES']
+        
+    
+    Returns
+    -------
+    None
+    
+    """
     
     if not plt_loaded:
         raise Exception('Plotting not available.  Check matplotlib install')
@@ -53,17 +69,22 @@ def PlotProduct(product, keys=[], rng=None):
         if key not in product['data'].keys():
             continue
         
-        elif 'SalesRank' in key and not 'time' in key:
+        elif 'SALES' in key and not 'time' in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
-#            x = ConvertToDateTime(x)
             y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
             ReplaceInvalid(y)
             salesax.step(x, y, where='pre')
             saleslegend.append(key)
         
-        elif 'Offers' in key and not 'time' in key:
+        elif 'COUNT_NEW' in key and not 'time' in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
-#            x = ConvertToDateTime(x)
+            y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
+            ReplaceInvalid(y)
+            offerax.step(x, y, where='pre')
+            offerlegend.append(key)
+            
+        elif 'COUNT_USED' in key and not 'time' in key:
+            x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
             ReplaceInvalid(y)
             offerax.step(x, y, where='pre')
@@ -71,7 +92,6 @@ def PlotProduct(product, keys=[], rng=None):
             
         elif not 'time' in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
-#            x = ConvertToDateTime(x)
             y = np.append(product['data'][key], product['data'][key][-1]).astype(np.float)
             ReplaceInvalid(y)
             priceax.step(x, y, where='pre')
