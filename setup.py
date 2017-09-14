@@ -7,13 +7,23 @@ python setup.py sdist upload -r pypi
 
 """
 from setuptools import setup
+import os
+from io import open as io_open
+
+# Get version from tqdm/_version.py
+__version__ = None
+version_file = os.path.join(os.path.dirname(__file__), package_name, '_version.py')
+with io_open(version_file, mode='r') as fd:
+    # execute file from raw string
+    exec(fd.read())
+    
 
 setup(
     name='keepaAPI',
     packages = ['keepaAPI'],
 
     # Version
-    version='0.14.1',
+    version=__version__,
 
     description='Interfaces with keepa.com',
     long_description=open('README.rst').read(),

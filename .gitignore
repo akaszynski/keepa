@@ -17,3 +17,6 @@ keepaAPI.egg-info/
 build/
 dist/
 keepaAPI/__pycache__/
+
+# testing
+Testing/

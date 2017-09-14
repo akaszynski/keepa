@@ -79,8 +79,9 @@ def ThreadRequest(asins, settings, products, sema, err):
     # Log
     if not err:
         logging.info('Completed {:d} ASIN(s)'.format(len(products)))
+
     else:
-        logging.err('Request failed')
+        logging.error('Request failed')
 
     # finally, release thread
     sema.release()
@@ -178,55 +179,54 @@ def ProductQuery(asins, settings):
 
     INPUTS
 
-    Required:
-        asins (np.ndarray)
-            Array of ASINs.  Must be between 1 and 100 ASINs
-        settings (dictonary) containing:
+    Parameters
+    ----------
+    asins (np.ndarray)
+        Array of ASINs.  Must be between 1 and 100 ASINs
+    settings (dictonary) containing:
 
-            accesskey: (string)
-                keepa access key string
+    accesskey: (string)
+        keepa access key string
 
-            stats: (int or date format)
-                Set the stats time for get sales rank inside this range
+    stats: (int or date format)
+        Set the stats time for get sales rank inside this range
 
-            domain: (string)
-                One of the following Amazon domains:
-                RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
+    domain: (string)
+        One of the following Amazon domains:
+        RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
 
-            offers (bool default False)
-                Adds product offers to product data
+    offers (bool default False)
+        Adds product offers to product data
 
-            update (int default None)
-                If data is older than the input interger, keepa will update
-                their database and return live data.  If set to 0 (live data),
-                then request may cost an additional token
+    update (int default None)
+        If data is older than the input interger, keepa will update
+        their database and return live data.  If set to 0 (live data),
+        then request may cost an additional token
 
-            history (bool default True)
-                When set to True includes the price, sales, and offer history
-                of a product.  Set to False to reduce request time if data is
-                not required
+    history (bool default True)
+        When set to True includes the price, sales, and offer history
+        of a product.  Set to False to reduce request time if data is
+        not required
 
-    OUTPUTS
-    Response, if successful, will contain the following fields
-        n
+    Returns
+    -------
+    products
+        Dictionary of product data.  Length equal to number of successful
+        ASINs
 
-        products
-            Dictionary of product data.  Length equal to number of successful
-            ASINs
+    refillIn
+        Time in miliseconds to the next refill of tokens
 
-        refillIn
-            Time in miliseconds to the next refill of tokens
+    refilRate
+        Number of tokens refilled per minute
 
-        refilRate
-            Number of tokens refilled per minute
+    timestamp
 
-        timestamp
+    tokensLeft
+        Remaining tokens
 
-        tokensLeft
-            Remaining tokens
-
-        tz
-            Timezone.  0 is UTC
+    tz
+        Timezone.  0 is UTC
 
     """
 
@@ -245,8 +245,10 @@ def ProductQuery(asins, settings):
     if settings['stats']:
         payload['stats'] = settings['stats']
 
+    # not sure why this can't just be True.  This seems to only work when it's
+    # a large number.
     if settings['offers']:
-        payload['offers'] = settings['offers']
+        payload['offers'] = 1000
 
     if settings['update'] != None:
         payload['update'] = int(settings['update'])
@@ -270,7 +272,6 @@ def ProductQuery(asins, settings):
             for product in response['products']:
                 if product['csv']: # if data exists
                     product['data'] = ParseCSV(product['csv'], settings['to_datetime'])
-#                    del product['csv']
 
         return response
 
@@ -445,7 +446,7 @@ def CheckASINs(asins):
     if isinstance(asins, list) or isinstance(asins, np.ndarray):
         return np.unique(asins)
 
-    elif isinstance(asins, str) or isinstance(asins, unicode):
+    elif isinstance(asins, str):# or isinstance(asins, unicode):
         if len(asins) != 10:
             return np.array([])
         else:
@@ -458,7 +459,21 @@ class API(object):
     """
     Class to support html interface to keepa server.
 
-    EXAMPLE
+    Initializes API with access key.  Access key can be obtained by signing
+    up for a reoccuring or one month plan at https://keepa.com/#!api
+
+    Parameters
+    ----------
+    accesskey : string
+        64 character string.  Example string (does not work):
+        e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021
+
+    logging : bool, optional
+        Controls if logging requests are printed to screen.  Default True.
+
+        
+    Examples
+    --------
     import keepaAPI
 
     # Access key from https://keepa.com/#!api  (this key does not work)
@@ -484,24 +499,7 @@ class API(object):
     """
 
     def __init__(self, accesskey, log=True):
-        """
-        DESCRITPION
-
-        Initializes API with access key.  Access key can be obtained by signing
-        up for a reoccuring or one month plan at https://keepa.com/#!api
-
-        INPUTS
-        accesskey (string)
-            64 character string.  Example string (does not work):
-            e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021
-
-        logging (bool, default False)
-            Controls if logging requests are printed to screen.  Default True.
-
-        OUTPUTS
-        None
-
-        """
+        """ Initializes object """
 
         # Create logger
         if log:
@@ -525,9 +523,10 @@ class API(object):
 
         Parameters
         ----------
-        updatetype : string, default 'server'
+        updatetype : string, optional
             Updates available tokens based on a client side update or server
-            side update.  Input 'client' for a client side update
+            side update.  Input 'client' for a client side update.  Defaults 
+            to 'server'
 
 
         Returns
@@ -552,7 +551,7 @@ class API(object):
 
 
     def ProductQuery(self, asins, stats=None, domain='US', history=True,
-                     offers=None, update=None, nthreads=4, to_datetime=True,
+                     offers=False, update=None, nthreads=4, to_datetime=True,
                      rating=False):
         """
         Performs a product query of a list, array, or single ASIN.  Returns a
@@ -561,58 +560,63 @@ class API(object):
 
         Parameters
         ----------
-        asins (string or list or np.ndarray)
+        asins : string,  list, np.ndarray
             A list, array, or single ASIN.  Each ASIN should be 10
             characters and match a product on Amazon.  ASINs not matching
             Amazon product or duplicate ASINs will return no data.
 
-        stats (int or date, defaul None)
+        stats : int or date, optional
             No extra token cost. If specified the product object will have a
             stats field with quick access to current prices, min/max prices
             and the weighted mean values. If the offers parameter was used it
             will also provide stock counts and buy box information.
 
             You can provide the stats parameter in two forms:
-                Last x days (positive integer value): calculates the stats of
-                the last x days, where x is the value of the stats parameter.
-                Interval: You can provide a date range for the stats
-                calculation. You can specify the range via two timestamps
-                (unix epoch time milliseconds) or two date strings (ISO8601,
-                with or without time in UTC).
+            
+            Last x days (positive integer value): calculates the stats of
+            the last x days, where x is the value of the stats parameter.
+            Interval: You can provide a date range for the stats
+            calculation. You can specify the range via two timestamps
+            (unix epoch time milliseconds) or two date strings (ISO8601,
+            with or without time in UTC).
 
-        domain (string, default 'US')
+        domain : string, optional
             One of the following Amazon domains:
             RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
+            Defaults to US.
 
-        offers (int, default None)
-            Adds available offers to product data
+        offers : bool, optional
+            Adds available offers to product data.  Default False
 
-        update (int default None)
+        update : int, optional
             If data is older than the input interger, keepa will update
             their database and return live data.  If set to 0 (live data),
-            then request may cost an additional token
+            request may cost an additional token.  Default None
 
-        history (bool, default True)
+        history bool, optional
             When set to True includes the price, sales, and offer history
             of a product.  Set to False to reduce request time if data is
-            not required
+            not required.  Default True
 
-        rating (bool, default False)
+        rating bool, optional
             When set to to True, includes the existing RATING and COUNT_REVIEWS
-            history of the csv field.
+            history of the csv field.  Default False
 
-        nthreads (int, default 4)
+        nthreads int, optional
             Number of threads to interface to keepa with.  More threads
             means potentially faster batch response, but more bandwidth.
-            Probably should be kept under 20.
+            Probably should be kept under 20.  Default 4
 
-        to_datetime (bool, default True)
-            Modifies numpy minutes to datetime.datetime values.
+        to_datetime bool, optional
+            Modifies numpy minutes to datetime.datetime values.  Default True.
 
 
         Returns
         -------
         products : list
+            
+            See: https://keepa.com/#!discuss/t/product-object/116
+            
             List of products.  Each product within the list is a dictionary.
             The keys of each item may vary, so see the keys within each product
             for further details.
@@ -620,7 +624,7 @@ class API(object):
             Each product should contain at a minimum a "data" key containing
             a formatted dictonary with the following fields:
                 
-        ############################# data fields #############################
+        ############################# Data fields #############################
         AMAZON
             Amazon price history
             
@@ -726,9 +730,9 @@ class API(object):
 
         nitems = len(asins)
         if nitems == 1:
-            logging.info('EXECUTING SINGLE PRODUCT QUERY'.format(nitems))
+            logging.info('Executing single product query'.format(nitems))
         else:
-            logging.info('EXECUTING {:d} ITEM PRODUCT QUERY'.format(nitems))
+            logging.info('Executing {:d} item product query'.format(nitems))
 
         # Update user status and determine if there any tokens available
         self.user.UpdateFromServer()
@@ -802,7 +806,6 @@ class API(object):
 
     def BestSellersQuery(self, category, domain='US'):
         """
-        DESCRIPTION
         Retrieve an ASIN list of the most popular products based on sales in a
         specific category or product group.  See "SearchForCategories" for
         information on how to get a category.
@@ -827,22 +830,22 @@ class API(object):
         cases, so some products may be misplaced.
 
 
-        INPUTS
-        categoryId (string)
+        Parameters
+        ----------
+        categoryId : string
             The category node id of the category you want to request the best
             sellers list for. You can find category node ids via the category
             search  "SearchForCategories"
 
-        domain: (optional string)
+        domain : string
             Amazon locale you want to access. Must be one of the following
             RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
+            Default US
 
-        OUTPUTS
-        bestSellersList (list)
+        Returns
+        -------
+        bestSellersList : list
             List of best seller ASINs
-
-        EXAMPLE
-        api.BestSellersQuery
 
 
         """
