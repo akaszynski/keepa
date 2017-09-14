@@ -10,6 +10,8 @@ from setuptools import setup
 import os
 from io import open as io_open
 
+package_name = 'keepaAPI'
+
 # Get version from tqdm/_version.py
 __version__ = None
 version_file = os.path.join(os.path.dirname(__file__), package_name, '_version.py')
@@ -19,8 +21,8 @@ with io_open(version_file, mode='r') as fd:
     
 
 setup(
-    name='keepaAPI',
-    packages = ['keepaAPI'],
+    name=package_name,
+    packages = [package_name],
 
     # Version
     version=__version__,
