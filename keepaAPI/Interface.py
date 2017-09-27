@@ -907,6 +907,46 @@ class API(object):
         else:
             return response['categories']
 
+    def CategoryLookup(self, categoryId, domain='US', includeParents=0):
+        """
+        DESCRIPTION
+
+        EXAMPLE
+        # use 0 to return all root categories
+        categories = api.CategoryLookup(0)
+
+        # Print all root categories
+        for catId in categories:
+            print(catId, categories[catId]['name'])
+
+
+        INPUT
+        categoryId (integer)
+            ID for specific category or 0 to return a list of root categories.
+
+
+        OUTPUT
+        categories (list)
+            Output format is the same as SearchForCategories.
+
+        """
+        # Check if valid domain
+        if domain not in dcodes:
+            raise Exception('Invalid domain code')
+
+        payload = {'key': self.accesskey,
+                   'domain': dcodes.index(domain),
+                   'category': categoryId,
+                   'parents': includeParents}
+
+        r = requests.get('https://api.keepa.com/category/?', params=payload)
+        response = r.json()
+
+        if response['categories'] == {}:
+            logging.info('Category lookup results not yet available or no' +\
+                         'match found.')
+        else:
+            return response['categories']
 
     def GetAvailableTokens(self):
         """ Returns available tokens """
