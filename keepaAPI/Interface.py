@@ -505,7 +505,7 @@ class API(object):
         if log:
             logstr = '%(levelname)-7s: %(message)s'
             logging.basicConfig(format=logstr, level='DEBUG', filename='')
-            logging.info('Connecting to keepa using key {:s}'.format(accesskey))
+            logging.info('Connecting to keepa using key ending in {:s}'.format(accesskey[-6:]))
 
         # Store access key
         self.accesskey = accesskey
@@ -811,7 +811,7 @@ class API(object):
         information on how to get a category.
 
         Root category lists (e.g. "Home & Kitchen") or product group lists
-        contain up to 30,000 ASINs.
+        contain up to 100,000 ASINs.
 
         Sub-category lists (e.g. "Home Entertainment Furniture") contain up to
         3,000 ASINs. As we only have access to the product's primary sales rank
