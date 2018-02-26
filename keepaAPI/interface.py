@@ -482,6 +482,7 @@ class API(object):
 
         # Store user's available tokens
         self.user = UserStatus(self.accesskey)
+        log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
         log.info('%d tokens remain' % self.user.RemainingTokens())
 
     def WaitForTokens(self, updatetype='server'):
@@ -779,7 +780,7 @@ class API(object):
         information on how to get a category.
 
         Root category lists (e.g. "Home & Kitchen") or product group lists
-        contain up to 30,000 ASINs.
+        contain up to 100,000 ASINs.
 
         Sub-category lists (e.g. "Home Entertainment Furniture") contain up to
         3,000 ASINs. As we only have access to the product's primary sales rank
@@ -867,6 +868,47 @@ class API(object):
         if response['categories'] == {}:
             log.info('Categories search results not yet available or no ' +
                      'search terms found.')
+        else:
+            return response['categories']
+
+    def CategoryLookup(self, categoryId, domain='US', includeParents=0):
+        """
+        Return root categories given a categoryId.
+
+        Parameters
+        ----------
+        categoryId (integer)
+            ID for specific category or 0 to return a list of root categories.
+
+        Returns
+        -------
+        categories : list
+            Output format is the same as SearchForCategories.
+
+        Examples
+        --------
+        # use 0 to return all root categories
+        categories = api.CategoryLookup(0)
+
+        # Print all root categories
+        for catId in categories:
+            print(catId, categories[catId]['name'])
+        """
+        # Check if valid domain
+        if domain not in dcodes:
+            raise Exception('Invalid domain code')
+
+        payload = {'key': self.accesskey,
+                   'domain': dcodes.index(domain),
+                   'category': categoryId,
+                   'parents': includeParents}
+
+        r = requests.get('https://api.keepa.com/category/?', params=payload)
+        response = r.json()
+
+        if response['categories'] == {}:
+            logging.info('Category lookup results not yet available or no' +
+                         'match found.')
         else:
             return response['categories']
 
