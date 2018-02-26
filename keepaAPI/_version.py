@@ -1,6 +1,6 @@
-# major, minor, patch
-version_info = 0, 14, 2
-
-
-# Nice string for the version
+"""
+Stores version number
+"""
+# major, minor, patch, -extra
+version_info = 0, 15, 0
 __version__ = '.'.join(map(str, version_info))

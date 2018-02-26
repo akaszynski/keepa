@@ -5,6 +5,7 @@
 *.cpp
 *.so
 *.o
+*.cache/
 
 # OS generated files #
 ######################
@@ -20,3 +21,4 @@ keepaAPI/__pycache__/
 
 # testing
 Testing/
+test.sh

@@ -1,5 +1,4 @@
-__version__ = '0.14.1'
-
-from keepaAPI.Interface import *
-from keepaAPI.Plotting import *
+from keepaAPI._version import __version__
+from keepaAPI.interface import *
+from keepaAPI.plotting import *
 from keepaAPI.keepaTime import *

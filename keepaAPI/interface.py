@@ -1,40 +1,26 @@
-# -*- coding: utf-8 -*-
 """
 Interface module to download Amazon product and history data from keepa.com
-
 """
-
-# Standard library
 import logging
-
-# for IPython
-try:
-    reload(logging)
-except:
-    pass
-
 import time
 import threading
+import sys
+import urllib
+import warnings
 
-# Other libraries
 import requests
 import numpy as np
 
-# This module
 from keepaAPI import keepaTime
 
-# Disable logging in requests module
-logging.getLogger("requests").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)
+log = logging.getLogger(__name__)
+log.setLevel('DEBUG')
 
 # percent encoding
-import sys
-import urllib
 if sys.version_info[0] == 2:
     quote_plus = urllib.quote
 else:
     quote_plus = urllib.parse.quote
-
 
 # Request limit
 reqlim = 100
@@ -46,7 +32,8 @@ scodes = {'400': 'REQUEST_REJECTED',
           '429': 'NOT_ENOUGH_TOKEN'}
 
 # domain codes
-# Valid values: [ 1: com | 2: co.uk | 3: de | 4: fr | 5: co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx ]
+# Valid values: [ 1: com | 2: co.uk | 3: de | 4: fr | 5:
+#                 co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx ]
 dcodes = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES',
           'IN', 'MX']
 
@@ -65,23 +52,24 @@ def ThreadRequest(asins, settings, products, sema, err):
             response = ProductQuery(asins, settings)
             products.extend(response['products'])
         except Exception as e:
-            logging.warning('Exception {:s} in thread.  Waiting 60 seconds for retry.'.format(e))
+            log.warning(
+                'Exception %s in thread.  Waiting 60 seconds for retry.' % e)
             time.sleep(60)
 
             # Try again
             response = ProductQuery(asins, settings)
             products.extend(response['products'])
 
-    except:
+    except BaseException:
         # Track error
         err = True
-        
+
     # Log
     if not err:
-        logging.info('Completed {:d} ASIN(s)'.format(len(products)))
+        log.info('Completed {:d} ASIN(s)'.format(len(products)))
 
     else:
-        logging.error('Request failed')
+        log.error('Request failed')
 
     # finally, release thread
     sema.release()
@@ -96,7 +84,7 @@ def GetUserStatus(accesskey):
 
     # Return parsed response if successful
     if status_code == 200:
-        response =  r.json()
+        response = r.json()
         return response
 
     elif str(status_code) in scodes:
@@ -113,11 +101,9 @@ class UserStatus(object):
         self.accesskey = accesskey
         self.UpdateFromServer()
 
-
     def UpdateFromServer(self):
         """ Update user status from server """
         self.status = GetUserStatus(self.accesskey)
-
 
     def LocalUpdate(self):
         """
@@ -125,47 +111,44 @@ class UserStatus(object):
         """
 
         # Get current timestamp in miliseconds from unix epoch
-        t = int(time.time()*1000)
+        t = int(time.time() * 1000)
 
         # Number of times refill has occured
         lstrefil = self.status['timestamp'] - (60000 - self.status['refillIn'])
-        nrefil = (t - lstrefil)/60000.0
+        nrefil = (t - lstrefil) / 60000.0
 
         if nrefil > 1:
-            self.status['tokensLeft'] += self.status['refillRate']*int(nrefil)
+            self.status['tokensLeft'] += self.status['refillRate'] * \
+                int(nrefil)
 
-            if self.status['tokensLeft'] > 60*self.status['refillRate']:
-                self.status['tokensLeft'] = 60*self.status['refillRate']
+            if self.status['tokensLeft'] > 60 * self.status['refillRate']:
+                self.status['tokensLeft'] = 60 * self.status['refillRate']
 
         # Update timestamps
         self.status['timestamp'] = t
-        self.status['refillIn'] = int((1 - nrefil % 1)*60000)
-
+        self.status['refillIn'] = int((1 - nrefil % 1) * 60000)
 
     def RemoveTokens(self, tokens):
         """ Remove tokens from tokensLeft to track requests to server """
         self.LocalUpdate()
         self.status['tokensLeft'] -= tokens
 
-
     def RemainingTokens(self):
         """ Returns the tokens remaining to the user """
         return self.status['tokensLeft']
 
-
     def TimeToRefill(self, ):
         """ Returns the time to refill in seconds """
         # Get current timestamp in miliseconds from unix epoch
-        now = int(time.time()*1000)
+        now = int(time.time() * 1000)
         timeatrefile = self.status['timestamp'] + self.status['refillIn']
 
-        timetorefil = timeatrefile - now + 1000 # plus one second fudge factor
+        timetorefil = timeatrefile - now + 1000  # plus one second fudge factor
         if timetorefil < 0:
             timetorefil = 0
 
         # Return value in seconds
-        return timetorefil/1000.0
-
+        return timetorefil / 1000.0
 
     def UpdateFromResponse(self, response):
         """ Updates user status from response """
@@ -177,59 +160,56 @@ def ProductQuery(asins, settings):
     """
     Sends query to keepa API and returns parsed JSON result
 
-    INPUTS
-
     Parameters
     ----------
-    asins (np.ndarray)
+    asins : np.ndarray
         Array of ASINs.  Must be between 1 and 100 ASINs
     settings (dictonary) containing:
 
-    accesskey: (string)
+    accesskey : str
         keepa access key string
 
-    stats: (int or date format)
+    stats : int or date format
         Set the stats time for get sales rank inside this range
 
-    domain: (string)
+    domain : str
         One of the following Amazon domains:
         RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
 
-    offers (bool default False)
-        Adds product offers to product data
+    offers : bool, optional
+        Adds product offers to product data.  Default False
 
-    update (int default None)
+    update : int, optional
         If data is older than the input interger, keepa will update
         their database and return live data.  If set to 0 (live data),
-        then request may cost an additional token
+        then request may cost an additional token.
 
-    history (bool default True)
+    history : bool, optional
         When set to True includes the price, sales, and offer history
         of a product.  Set to False to reduce request time if data is
-        not required
+        not required.
 
     Returns
     -------
-    products
-        Dictionary of product data.  Length equal to number of successful
-        ASINs
+    products : list
+        List of products.  Length equal to number of successful
+        ASINs.
 
-    refillIn
-        Time in miliseconds to the next refill of tokens
+    refillIn : float
+        Time in miliseconds to the next refill of tokens.
 
-    refilRate
+    refilRate : float
         Number of tokens refilled per minute
 
-    timestamp
+    timestamp : float
 
-    tokensLeft
+    tokensLeft : int
         Remaining tokens
 
     tz
         Timezone.  0 is UTC
 
     """
-
     # ASINs convert to comma joined string
     nitems = len(asins)
     if nitems > 100:
@@ -245,12 +225,11 @@ def ProductQuery(asins, settings):
     if settings['stats']:
         payload['stats'] = settings['stats']
 
-    # not sure why this can't just be True.  This seems to only work when it's
-    # a large number.
+    # This seems to only work when it's a large number.
     if settings['offers']:
         payload['offers'] = 1000
 
-    if settings['update'] != None:
+    if settings['update'] is not None:
         payload['update'] = int(settings['update'])
 
     if not settings['history']:
@@ -265,13 +244,14 @@ def ProductQuery(asins, settings):
     # Return parsed response if successful
     if status_code == 200:
         # Parse JSON response
-        response =  r.json()
+        response = r.json()
 
         # Replace csv with parsed data if history enabled
         if settings['history']:
             for product in response['products']:
-                if product['csv']: # if data exists
-                    product['data'] = ParseCSV(product['csv'], settings['to_datetime'])
+                if product['csv']:  # if data exists
+                    product['data'] = ParseCSV(
+                        product['csv'], settings['to_datetime'])
 
         return response
 
@@ -283,10 +263,8 @@ def ProductQuery(asins, settings):
 
 
 def ParseCSV(csv, to_datetime):
-    """
-    Parses csv list from keepa into a python dictionary
+    """Parses csv list from keepa into a python dictionary
 
-    
     Parameters
     ----------
     csv : list
@@ -296,113 +274,107 @@ def ParseCSV(csv, to_datetime):
     -------
     product_data : dict
         Dictionary containing the following fields with timestamps:
-    
-        AMAZON
-            Amazon price history
-            
-        NEW
-            Marketplace/3rd party New price history - Amazon is considered to be part of the marketplace as well,
-            so if Amazon has the overall lowest new (!) price, the marketplace new price in the corresponding time interval
-            will be identical to the Amazon price (except if there is only one marketplace offer).
-            Shipping and Handling costs not included!
 
-        USED
-            Marketplace/3rd party Used price history
+        AMAZON: Amazon price history
 
-        SALES
-            Sales Rank history. Not every product has a Sales Rank.
+        NEW: Marketplace/3rd party New price history - Amazon is
+            considered to be part of the marketplace as well, so if
+            Amazon has the overall lowest new (!) price, the
+            marketplace new price in the corresponding time interval
+            will be identical to the Amazon price (except if there is
+            only one marketplace offer).  Shipping and Handling costs
+            not included!
 
-        LISTPRICE
-            List Price history
+        USED: Marketplace/3rd party Used price history
 
-        5 COLLECTIBLE
-            Collectible Price history
+        SALES: Sales Rank history. Not every product has a Sales Rank.
 
-        6 REFURBISHED
-            Refurbished Price history
+        LISTPRICE: List Price history
 
-        7 NEW_FBM_SHIPPING
-            3rd party (not including Amazon) New price history including shipping costs, only fulfilled by merchant (FBM).
+        5 COLLECTIBLE: Collectible Price history
 
-        8 LIGHTNING_DEAL
-            3rd party (not including Amazon) New price history including shipping costs, only fulfilled by merchant (FBM).
+        6 REFURBISHED: Refurbished Price history
 
-        9 WAREHOUSE
-            Amazon Warehouse Deals price history. Mostly of used condition, rarely new.
+        7 NEW_FBM_SHIPPING: 3rd party (not including Amazon) New price
+            history including shipping costs, only fulfilled by
+            merchant (FBM).
 
-        10 NEW_FBA
-             Price history of the lowest 3rd party (not including Amazon/Warehouse) New offer that is fulfilled by Amazon
-        
-        11 COUNT_NEW
-             New offer count history
-        
-        12 COUNT_USED
-            Used offer count history
-        
-        13 COUNT_REFURBISHED
-             Refurbished offer count history
-        
-        14 COUNT_COLLECTIBLE
-             Collectible offer count history
-        
-        16 RATING
-             The product's rating history. A rating is an integer from 0 to 50 (e.g. 45 = 4.5 stars)
+        8 LIGHTNING_DEAL:  3rd party (not including Amazon) New price
+            history including shipping costs, only fulfilled by
+            merchant (FBM).
 
-        17 COUNT_REVIEWS
-            The product's review count history.
+        9 WAREHOUSE: Amazon Warehouse Deals price history. Mostly of
+            used condition, rarely new.
 
-        18 BUY_BOX_SHIPPING(18, true, false, true, true),
-            The price history of the buy box. If no offer qualified for the buy box the price has the value -1. Including shipping costs.
-        
-        19 USED_NEW_SHIPPING(19, true, true, true, true),
-            "Used - Like New" price history including shipping costs.
-        
-        20 USED_VERY_GOOD_SHIPPING(20, true, true, true, true),
-            "Used - Very Good" price history including shipping costs.
-        
-        21 USED_GOOD_SHIPPING(21, true, true, true, true),
-            "Used - Good" price history including shipping costs.
-        
-        22 USED_ACCEPTABLE_SHIPPING(22, true, true, true, true),
-            "Used - Acceptable" price history including shipping costs.
-        
-        23 COLLECTIBLE_NEW_SHIPPING(23, true, true, true, true),
-            "Collectible - Like New" price history including shipping costs.
-        
-        24 COLLECTIBLE_VERY_GOOD_SHIPPING(24, true, true, true, true),
-            "Collectible - Very Good" price history including shipping costs.
-        
-        25 COLLECTIBLE_GOOD_SHIPPING(25, true, true, true, true),
-            "Collectible - Good" price history including shipping costs.
+        10 NEW_FBA: Price history of the lowest 3rd party (not
+             including Amazon/Warehouse) New offer that is fulfilled
+             by Amazon
 
-        26 COLLECTIBLE_ACCEPTABLE_SHIPPING(26, true, true, true, true),
-            "Collectible - Acceptable" price history including shipping costs.
+        11 COUNT_NEW: New offer count history
 
-        27 REFURBISHED_SHIPPING
-            Refurbished price history including shipping costs.
-        
-        30 TRADE_IN
-            The trade in price history. Amazon trade-in is not available for every locale.
+        12 COUNT_USED: Used offer count history
+
+        13 COUNT_REFURBISHED: Refurbished offer count history
+
+        14 COUNT_COLLECTIBLE: Collectible offer count history
+
+        16 RATING: The product's rating history. A rating is an
+             integer from 0 to 50 (e.g. 45 = 4.5 stars)
+
+        17 COUNT_REVIEWS: The product's review count history.
+
+        18 BUY_BOX_SHIPPING: The price history of the buy box. If no
+            offer qualified for the buy box the price has the value
+            -1. Including shipping costs.
+
+        19 USED_NEW_SHIPPING: "Used - Like New" price history
+            including shipping costs.
+
+        20 USED_VERY_GOOD_SHIPPING: "Used - Very Good" price history
+            including shipping costs.
+
+        21 USED_GOOD_SHIPPING: "Used - Good" price history including
+            shipping costs.
+
+        22 USED_ACCEPTABLE_SHIPPING: "Used - Acceptable" price history
+            including shipping costs.
+
+        23 COLLECTIBLE_NEW_SHIPPING: "Collectible - Like New" price
+            history including shipping costs.
+
+        24 COLLECTIBLE_VERY_GOOD_SHIPPING: "Collectible - Very Good"
+            price history including shipping costs.
+
+        25 COLLECTIBLE_GOOD_SHIPPING: "Collectible - Good" price
+            history including shipping costs.
+
+        26 COLLECTIBLE_ACCEPTABLE_SHIPPING: "Collectible - Acceptable"
+            price history including shipping costs.
+
+        27 REFURBISHED_SHIPPING: Refurbished price history including
+            shipping costs.
+
+        30 TRADE_IN: The trade in price history. Amazon trade-in is
+            not available for every locale.
 
     """
-
     # [index in csv, key name, isfloat (is price)]
-    indices = [[ 0, 'AMAZON', True],
-               [ 1, 'NEW', True],
-               [ 2, 'USED', True],
-               [ 3, 'SALES', False],
-               [ 4, 'LISTPRICE', True],
-               [ 5, 'COLLECTIBLE', True],
-               [ 6, 'REFURBISHED', True],
-               [ 7, 'NEW_FBM_SHIPPING', True],
-               [ 8, 'LIGHTNING_DEAL', True],
-               [ 9, 'WAREHOUSE', True],
+    indices = [[0, 'AMAZON', True],
+               [1, 'NEW', True],
+               [2, 'USED', True],
+               [3, 'SALES', False],
+               [4, 'LISTPRICE', True],
+               [5, 'COLLECTIBLE', True],
+               [6, 'REFURBISHED', True],
+               [7, 'NEW_FBM_SHIPPING', True],
+               [8, 'LIGHTNING_DEAL', True],
+               [9, 'WAREHOUSE', True],
                [10, 'NEW_FBA', True],
                [11, 'COUNT_NEW', False],
                [12, 'COUNT_USED', False],
                [13, 'COUNT_REFURBISHED', False],
                [14, 'CollectableOffers', False],
-               [16, 'RATING', False],
+               [16, 'RATING', True],
                [17, 'COUNT_REVIEWS', False],
                [18, 'BUY_BOX_SHIPPING', True],
                [19, 'USED_NEW_SHIPPING', True],
@@ -416,27 +388,32 @@ def ParseCSV(csv, to_datetime):
                [27, 'REFURBISHED_SHIPPING', True],
                [30, 'TRADE_IN', True]]
 
-
     product_data = {}
 
-    for index in indices:
-        # Check if it exists
-        ind = index[0]
-        if csv[ind]:
-            key = index[1]
-
-            # Data goes [time0, value0, time1, value1, ...]
-            product_data[key + '_time'] = keepaTime.KeepaMinutesToTime(csv[ind][::2], to_datetime)
-
-            # Convert to float price if applicable
-            if index[2]:
-                product_data[key] = np.array(csv[ind][1::2], np.float)/100.0
+    for ind, key, isfloat in indices:
+        if csv[ind]:  # Check if entry it exists
+            if 'SHIPPING' in key:  # shipping price is included
+                # Data goes [time0, value0, shipping0, time1, value1,
+                #            shipping1, ...]
+                times = csv[ind][::3]
+                values = np.array(csv[ind][1::3])
+                values += np.array(csv[ind][2::3])
             else:
-                if index[1] == 'Rating':
-                    product_data[key] = np.asarray(
-                            csv[ind][1::2], np.float)/10.0
-                else:
-                    product_data[key] = np.asarray(csv[ind][1::2])
+                # Data goes [time0, value0, time1, value1, ...]
+                times = csv[ind][::2]
+                values = np.array(csv[ind][1::2])
+
+            if isfloat:  # Convert to float price if applicable
+                nanmask = values < 0
+                values = values.astype(np.float)/100
+                values[nanmask] = np.nan
+
+            if key == 'RATING':
+                values /= 10
+
+            timeval = keepaTime.KeepaMinutesToTime(times, to_datetime)
+            product_data['%s_time' % key] = timeval
+            product_data[key] = values
 
     return product_data
 
@@ -446,15 +423,13 @@ def CheckASINs(asins):
     if isinstance(asins, list) or isinstance(asins, np.ndarray):
         return np.unique(asins)
 
-    elif isinstance(asins, str):# or isinstance(asins, unicode):
+    elif isinstance(asins, str):  # or isinstance(asins, unicode):
         if len(asins) != 10:
             return np.array([])
         else:
             return np.asarray([asins])
 
-#==============================================================================
-# Main API
-#==============================================================================
+
 class API(object):
     """
     Class to support html interface to keepa server.
@@ -468,74 +443,61 @@ class API(object):
         64 character string.  Example string (does not work):
         e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021
 
-    logging : bool, optional
-        Controls if logging requests are printed to screen.  Default True.
+    logging : depreciated
+        Depreciated
 
-        
+
     Examples
     --------
-    import keepaAPI
+    Create the api object
+    Access key from https://keepa.com/#!api  (this key does not work)
+    >>> import keepaAPI
+    >>> mykey = 'e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021'
+    >>> # Create API
+    >>> api = keepaAPI.API(mykey)
 
-    # Access key from https://keepa.com/#!api  (this key does not work)
-    mykey = 'e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021'
+    Request data from two ASINs
+    >>> products = api.ProductQuery(['0439064872', '1426208081'])
 
-    # Create API
-    api = keepaAPI.API(mykey)
+    Print item details
+    >>> print('Item 1')
+    >>> print('\t ASIN: {:s}'.format(products[0]['asin']))
+    >>> print('\t Title: {:s}'.format(products[0]['title']))
 
-    # Request data from two ASINs
-    products = api.ProductQuery(['0439064872', '1426208081'])
-
-    # Print item details
-    print('Item 1')
-    print('\t ASIN: {:s}'.format(products[0]['asin']))
-    print('\t Title: {:s}'.format(products[0]['title']))
-
-    # Print item price
-    usedprice = products[0]['data']['MarketplaceUsed']
-    usedtimes = products[0]['data']['MarketplaceUsed_time']
-    print('\t Used price: ${:.2f}'.format(usedprice[-1]))
-    print('\t as of: {:s}'.format(str(usedtimes[-1])))
+    Print item price
+    >>> usedprice = products[0]['data']['MarketplaceUsed']
+    >>> usedtimes = products[0]['data']['MarketplaceUsed_time']
+    >>> print('\t Used price: ${:.2f}'.format(usedprice[-1]))
+    >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
 
     """
 
-    def __init__(self, accesskey, log=True):
+    def __init__(self, accesskey, logging=None):
         """ Initializes object """
-
-        # Create logger
-        if log:
-            logstr = '%(levelname)-7s: %(message)s'
-            logging.basicConfig(format=logstr, level='DEBUG', filename='')
-            logging.info('Connecting to keepa using key {:s}'.format(accesskey))
+        if logging:
+            warnings.warn('logging parameter is depreciated')
 
         # Store access key
         self.accesskey = accesskey
 
         # Store user's available tokens
         self.user = UserStatus(self.accesskey)
-        logging.info('{:d} tokens remain'.format(self.user.RemainingTokens()))
-
+        log.info('%d tokens remain' % self.user.RemainingTokens())
 
     def WaitForTokens(self, updatetype='server'):
         """
         Checks local user status for any remaining tokens and waits if none are
         available
 
-
         Parameters
         ----------
         updatetype : string, optional
             Updates available tokens based on a client side update or server
-            side update.  Input 'client' for a client side update.  Defaults 
-            to 'server'
-
-
-        Returns
-        -------
-        None
-
+            side update.  Input 'client' for a client side update.  Defaults
+            to 'server'.
         """
 
-        if updatetype=='server':
+        if updatetype == 'server':
             # Perform server update
             self.user.UpdateFromServer()
         else:
@@ -545,10 +507,10 @@ class API(object):
         # Wait if no tokens available
         if self.user.RemainingTokens() <= 0:
             tdelay = self.user.TimeToRefill()
-            logging.info('Waiting {:.2f} seconds for additional tokens'.format(tdelay))
+            log.info(
+                'Waiting {:.2f} seconds for additional tokens'.format(tdelay))
             time.sleep(tdelay)
             self.user.LocalUpdate()
-
 
     def ProductQuery(self, asins, stats=None, domain='US', history=True,
                      offers=False, update=None, nthreads=4, to_datetime=True,
@@ -556,7 +518,6 @@ class API(object):
         """
         Performs a product query of a list, array, or single ASIN.  Returns a
         list of product data with one entry for each product.
-
 
         Parameters
         ----------
@@ -572,7 +533,7 @@ class API(object):
             will also provide stock counts and buy box information.
 
             You can provide the stats parameter in two forms:
-            
+
             Last x days (positive integer value): calculates the stats of
             the last x days, where x is the value of the stats parameter.
             Interval: You can provide a date range for the stats
@@ -593,47 +554,49 @@ class API(object):
             their database and return live data.  If set to 0 (live data),
             request may cost an additional token.  Default None
 
-        history bool, optional
+        history : bool, optional
             When set to True includes the price, sales, and offer history
             of a product.  Set to False to reduce request time if data is
             not required.  Default True
 
-        rating bool, optional
+        rating : bool, optional
             When set to to True, includes the existing RATING and COUNT_REVIEWS
             history of the csv field.  Default False
 
-        nthreads int, optional
+        nthreads : int, optional
             Number of threads to interface to keepa with.  More threads
             means potentially faster batch response, but more bandwidth.
             Probably should be kept under 20.  Default 4
 
-        to_datetime bool, optional
+        to_datetime : bool, optional
             Modifies numpy minutes to datetime.datetime values.  Default True.
-
 
         Returns
         -------
         products : list
-            
+
             See: https://keepa.com/#!discuss/t/product-object/116
-            
+
             List of products.  Each product within the list is a dictionary.
             The keys of each item may vary, so see the keys within each product
             for further details.
-            
+
             Each product should contain at a minimum a "data" key containing
             a formatted dictonary with the following fields:
-                
-        ############################# Data fields #############################
+
+        Notes
+        -----
+        The following are data fields a product dictionary
+
         AMAZON
             Amazon price history
-            
+
         NEW
-            Marketplace/3rd party New price history - Amazon is considered to 
-            be part of the marketplace as well, so if Amazon has the overall 
-            lowest new (!) price, the marketplace new price in the 
-            corresponding time interval will be identical to the Amazon price 
-            (except if there is only one marketplace offer).  Shipping and 
+            Marketplace/3rd party New price history - Amazon is considered to
+            be part of the marketplace as well, so if Amazon has the overall
+            lowest new (!) price, the marketplace new price in the
+            corresponding time interval will be identical to the Amazon price
+            (except if there is only one marketplace offer).  Shipping and
             Handling costs not included!
 
         USED
@@ -652,35 +615,35 @@ class API(object):
             Refurbished Price history
 
         NEW_FBM_SHIPPING
-            3rd party (not including Amazon) New price history including 
+            3rd party (not including Amazon) New price history including
             shipping costs, only fulfilled by merchant (FBM).
 
         LIGHTNING_DEAL
-            3rd party (not including Amazon) New price history including 
+            3rd party (not including Amazon) New price history including
             shipping costs, only fulfilled by merchant (FBM).
 
         WAREHOUSE
-            Amazon Warehouse Deals price history. Mostly of used condition, 
+            Amazon Warehouse Deals price history. Mostly of used condition,
             rarely new.
 
         NEW_FBA
-             Price history of the lowest 3rd party (not including 
+             Price history of the lowest 3rd party (not including
              Amazon/Warehouse) New offer that is fulfilled by Amazon
-        
+
         COUNT_NEW
              New offer count history
-        
+
         COUNT_USED
             Used offer count history
-        
+
         COUNT_REFURBISHED
              Refurbished offer count history
-        
+
         COUNT_COLLECTIBLE
              Collectible offer count history
-        
+
         RATING
-             The product's rating history. A rating is an integer from 0 to 50 
+             The product's rating history. A rating is an integer from 0 to 50
              (e.g. 45 = 4.5 stars)
 
         COUNT_REVIEWS
@@ -689,25 +652,25 @@ class API(object):
         BUY_BOX_SHIPPING(18, true, false, true, true),
             The price history of the buy box. If no offer qualified for the buy
             box the price has the value -1. Including shipping costs.
-        
+
         USED_NEW_SHIPPING(19, true, true, true, true),
             "Used - Like New" price history including shipping costs.
-        
+
         USED_VERY_GOOD_SHIPPING(20, true, true, true, true),
             "Used - Very Good" price history including shipping costs.
-        
+
         USED_GOOD_SHIPPING(21, true, true, true, true),
             "Used - Good" price history including shipping costs.
-        
+
         USED_ACCEPTABLE_SHIPPING(22, true, true, true, true),
             "Used - Acceptable" price history including shipping costs.
-        
+
         COLLECTIBLE_NEW_SHIPPING(23, true, true, true, true),
             "Collectible - Like New" price history including shipping costs.
-        
+
         COLLECTIBLE_VERY_GOOD_SHIPPING(24, true, true, true, true),
             "Collectible - Very Good" price history including shipping costs.
-        
+
         COLLECTIBLE_GOOD_SHIPPING(25, true, true, true, true),
             "Collectible - Good" price history including shipping costs.
 
@@ -716,23 +679,23 @@ class API(object):
 
         REFURBISHED_SHIPPING
             Refurbished price history including shipping costs.
-        
+
         TRADE_IN
-            The trade in price history. Amazon trade-in is not available for 
+            The trade in price history. Amazon trade-in is not available for
             every locale.
 
         """
         # Format asins into numpy array
         try:
             asins = CheckASINs(asins)
-        except:
+        except BaseException:
             raise Exception('Invalid ASIN input')
 
         nitems = len(asins)
         if nitems == 1:
-            logging.info('Executing single product query'.format(nitems))
+            log.info('Executing single product query'.format(nitems))
         else:
-            logging.info('Executing {:d} item product query'.format(nitems))
+            log.info('Executing {:d} item product query'.format(nitems))
 
         # Update user status and determine if there any tokens available
         self.user.UpdateFromServer()
@@ -748,11 +711,17 @@ class API(object):
                     'to_datetime': to_datetime}
 
         # Report time to completion
-        tcomplete = float(nitems - self.user.RemainingTokens())/self.user.status['refillRate'] - (60000 - self.user.status['refillIn'])/60000.0
+        tcomplete = float(
+            nitems - self.user.RemainingTokens()) / self.user.status['refillRate'] - (
+            60000 - self.user.status['refillIn']) / 60000.0
         if tcomplete < 0.0:
             tcomplete = 0.5
-        logging.info('Estimated time to complete {:d} request(s) is {:.2f} minutes'.format(len(asins), tcomplete))
-        logging.info('\twith a refill rate of {:d} token(s) per minute'.format(self.user.status['refillRate']))
+        log.info(
+            'Estimated time to complete {:d} request(s) is {:.2f} minutes'.format(
+                len(asins), tcomplete))
+        log.info(
+            '\twith a refill rate of {:d} token(s) per minute'.format(
+                self.user.status['refillRate']))
 
         # initialize product and thread lists
         products = []
@@ -766,12 +735,12 @@ class API(object):
 
         # Number of requests is dependent on the number of items and request limit
         # Use available tokens first
-        idx = 0 # or number complete
+        idx = 0  # or number complete
         while idx < nitems:
 
             # listen for error
             if err:
-                raise Exception ('Error in thread')
+                raise Exception('Error in thread')
 
             # Check and then wait for tokens if applicable
             self.WaitForTokens('local')
@@ -789,7 +758,7 @@ class API(object):
 
             # Request data from server
             # Assemble partial array of ASINs for this request
-            sema.acquire() # Limit to nthreads.  Wait if requesting more
+            sema.acquire()  # Limit to nthreads.  Wait if requesting more
             t = threading.Thread(target=ThreadRequest, args=(asin_request,
                                                              settings,
                                                              products, sema,
@@ -802,7 +771,6 @@ class API(object):
             t.join()
 
         return products
-
 
     def BestSellersQuery(self, category, domain='US'):
         """
@@ -829,7 +797,6 @@ class API(object):
         We can not correctly identify the sales rank reference category in all
         cases, so some products may be misplaced.
 
-
         Parameters
         ----------
         categoryId : string
@@ -846,10 +813,7 @@ class API(object):
         -------
         bestSellersList : list
             List of best seller ASINs
-
-
         """
-
         if domain not in dcodes:
             raise Exception('Invalid domain code')
 
@@ -858,40 +822,39 @@ class API(object):
                    'category': category}
 
         r = requests.get('https://api.keepa.com/bestsellers/?', params=payload)
-        response =  r.json()
+        response = r.json()
 
         if 'bestSellersList' in response:
             return response['bestSellersList']['asinList']
         else:
-            logging.info('Best sellers search results not yet available')
-
+            log.info('Best sellers search results not yet available')
 
     def SearchForCategories(self, searchterm, domain='US'):
         """
-        DESCRIPTION
+        Searches for categories from Amazon.
 
-        EXAMPLE
-        categories = api.SearchForCategories('science')
-
-        # Print all categories
-        for catId in categories:
-            print(catId, categories[catId]['name'])
-
-
-        INPUT
-        searchterm (string)
+        Parameters
+        ----------
+        searchterm : str
             Input search term.
 
+        Returns
+        -------
+        categories : list
+            The response contains a categories list with all matching
+            categories.
 
-        OUTPUT
-        categories (list)
-            The response contains a categories list with all matching categories.
+        Examples
+        --------
+        Print all categories from science
+        >>> categories = api.SearchForCategories('science')
+        >>> for catId in categories:
+        >>>    print(catId, categories[catId]['name'])
 
         """
         # Check if valid domain
         if domain not in dcodes:
             raise Exception('Invalid domain code')
-
 
         payload = {'key': self.accesskey,
                    'domain': dcodes.index(domain),
@@ -902,13 +865,11 @@ class API(object):
         response = r.json()
 
         if response['categories'] == {}:
-            logging.info('Categories search results not yet available or no' +\
-                         'search terms found.')
+            log.info('Categories search results not yet available or no ' +
+                     'search terms found.')
         else:
             return response['categories']
-
 
     def GetAvailableTokens(self):
         """ Returns available tokens """
         return self.user.RemainingTokens()
-
