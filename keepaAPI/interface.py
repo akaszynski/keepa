@@ -54,8 +54,8 @@ def ThreadRequest(asins, settings, products, sema, err, max_try=5):
             response = ProductQuery(asins, settings)
             products.extend(response['products'])
         except Exception as e:
-            log.warning('Exception %s in thread.  Waiting 10 seconds for retry.' % e)
-            time.sleep(10)
+            log.warning('Exception %s in thread.  Waiting 60 seconds for retry.' % e)
+            time.sleep(60)
 
         ntry += 1
         if ntry > max_try:
