@@ -65,7 +65,7 @@ def ThreadRequest(asins, settings, products, sema, err, max_try=5):
         log.error('Request for asins %s failed' % str(asins))
         err[0] = True  # store error occured
     else:
-        log.info('Completed ASIN(s)'.format(len(products)))
+        log.info('Completed %d ASIN(s)' % len(products))
 
     # finally, release thread
     sema.release()
