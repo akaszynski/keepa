@@ -38,7 +38,7 @@ dcodes = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES',
           'IN', 'MX']
 
 
-def ThreadRequest(asins, settings, products, sema, err):
+def ThreadRequest(asins, settings, products, sema, err, max_try=5):
     """
     Function to send query to keepa and store results
 
@@ -47,29 +47,25 @@ def ThreadRequest(asins, settings, products, sema, err):
     """
 
     # Attempt request
-    try:
+    response = None
+    ntry = 0
+    while response is None:
         try:
             response = ProductQuery(asins, settings)
             products.extend(response['products'])
         except Exception as e:
-            log.warning(
-                'Exception %s in thread.  Waiting 60 seconds for retry.' % e)
-            time.sleep(60)
+            log.warning('Exception %s in thread.  Waiting 10 seconds for retry.' % e)
+            time.sleep(10)
 
-            # Try again
-            response = ProductQuery(asins, settings)
-            products.extend(response['products'])
+        ntry += 1
+        if ntry > max_try:
+            break
 
-    except BaseException:
-        # Track error
-        err = True
-
-    # Log
-    if not err:
-        log.info('Completed {:d} ASIN(s)'.format(len(products)))
-
+    if response is None:
+        log.error('Request for asins %s failed' % str(asins))
+        err[0] = True  # store error occured
     else:
-        log.error('Request failed')
+        log.info('Completed ASIN(s)'.format(len(products)))
 
     # finally, release thread
     sema.release()
@@ -515,7 +511,7 @@ class API(object):
 
     def ProductQuery(self, asins, stats=None, domain='US', history=True,
                      offers=False, update=None, nthreads=4, to_datetime=True,
-                     rating=False):
+                     rating=False, allow_errors=False):
         """
         Performs a product query of a list, array, or single ASIN.  Returns a
         list of product data with one entry for each product.
@@ -571,6 +567,10 @@ class API(object):
 
         to_datetime : bool, optional
             Modifies numpy minutes to datetime.datetime values.  Default True.
+
+        allow_errors : bool, optional
+            Permits errors in requests.  List of products may not match input
+            asin list.
 
         Returns
         -------
@@ -729,7 +729,7 @@ class API(object):
         threads = []
 
         # Error tracking
-        err = False
+        err = [False]
 
         # Create thread pool
         sema = threading.BoundedSemaphore(value=nthreads)
@@ -740,8 +740,9 @@ class API(object):
         while idx < nitems:
 
             # listen for error
-            if err:
-                raise Exception('Error in thread')
+            if not allow_errors:
+                if err[0]:
+                    raise Exception('Error in thread')
 
             # Check and then wait for tokens if applicable
             self.WaitForTokens('local')
