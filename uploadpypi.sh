@@ -4,7 +4,7 @@
 rm -rf ./dist/*
 
 # build dist
-python setup.py sdist
+python3 setup.py sdist
 
 # upload to PyPI
 twine upload dist/*

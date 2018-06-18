@@ -258,7 +258,7 @@ def ProductQuery(asins, settings):
         raise Exception('REQUEST_FAILED')
 
 
-def ParseCSV(csv, to_datetime):
+def ParseCSV(csv, to_datetime=True):
     """Parses csv list from keepa into a python dictionary
 
     Parameters
@@ -928,3 +928,36 @@ class API(object):
     def GetAvailableTokens(self):
         """ Returns available tokens """
         return self.user.RemainingTokens()
+
+
+def ConvertOfferHistory(csv, as_datetime=True):
+    """
+    Converts an offer history to human readable values
+
+    Parameters
+    ----------
+    csv : list
+       Offer list csv obtained from ['offerCSV']
+
+    Returns
+    -------
+    times : numpy.ndarray
+        List of time values for an offer history.
+
+    prices : numpy.ndarray
+        Price (including shipping) of an offer for each time at an index 
+        of times.
+
+    """
+
+    # convert these values to numpy arrays
+    times = csv[::3]
+    values = np.array(csv[1::3])
+    values += np.array(csv[2::3])  # add in shipping
+
+    # convert to dollars and datetimes
+    to_datetime = True
+    times = keepaTime.KeepaMinutesToTime(times, to_datetime)
+    prices = values/100.0
+
+    return times, prices

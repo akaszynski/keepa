@@ -105,6 +105,44 @@ The product history can also be plotted from the module if ``matplotlib`` is ins
 
     keepaAPI.PlotProduct(products[0])
 
+You can obtain the offers history for an ASIN (or multiple ASINs) using the ``offers`` parameter.  See the documentation at `Request Products <https://keepa.com/#!discuss/t/request-products/110/1>`_ for further details.
+
+.. code:: python
+
+    products = api.ProductQuery(asins)
+    product = products[0]
+    offers = product['offers']
+
+    # each offer contains the price history of each offer
+    offer = offers[0]
+    csv = offer['offerCSV']
+
+    # convert these values to numpy arrays
+    times, prices = ConvertOfferHistory(csv)
+
+    # for a list of active offers, see
+    indices = product['liveOffersOrder']
+
+    # with this you can loop through active offers:
+    indices = product['liveOffersOrder']
+    offer_times = []
+    offer_prices = []
+    for index in indices:
+        csv = offers[index]['offerCSV']
+        times, prices = keepaAPI.ConvertOfferHistory(csv)
+        offer_times.append(times)
+        offer_prices.append(prices)
+
+    # you can aggregrate these using np.hstack or plot at the history individually
+    import matplotlib.pyplot as plt
+    for i in range(len(offer_prices)):
+        plt.step(offer_times[i], offer_prices[i])
+    plt.show()
+
+    
+    
+    
+
 
 Credits
 -------
