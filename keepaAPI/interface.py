@@ -510,7 +510,7 @@ class API(object):
             self.user.LocalUpdate()
 
     def ProductQuery(self, asins, stats=None, domain='US', history=True,
-                     offers=False, update=None, nthreads=4, to_datetime=True,
+                     offers=0, update=None, nthreads=4, to_datetime=True,
                      rating=False, allow_errors=False):
         """
         Performs a product query of a list, array, or single ASIN.  Returns a
@@ -543,8 +543,9 @@ class API(object):
             RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
             Defaults to US.
 
-        offers : bool, optional
-            Adds available offers to product data.  Default False
+        offers : int, optional
+            Adds available offers to product data.  Default 0.  Must be between 
+            20 and 100.
 
         update : int, optional
             If data is older than the input interger, keepa will update
@@ -700,6 +701,17 @@ class API(object):
 
         # Update user status and determine if there any tokens available
         self.user.UpdateFromServer()
+
+        # check offer input
+        if offers:
+            if not isinstance(offers, int):
+                try:
+                    offers = int(offers)
+                except:
+                    raise Exception('Parameter "offers" must be an interger')
+
+            if offers > 100 or offers < 20:
+                raise Exception('Parameter "offers" must be between 20 and 100')
 
         # Assemble settings
         settings = {'stats': stats,

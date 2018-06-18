@@ -22,3 +22,4 @@ keepaAPI/__pycache__/
 # testing
 Testing/
 test.sh
+.pytest_cache/

@@ -8,9 +8,9 @@ from keepaAPI import keepaTime
 try:
     import matplotlib.pyplot as plt
     plt_loaded = True
-except BaseException:
+except BaseException as e:
     plt_loaded = False
-    warnings.warn('keepaAPI plotting unavailable')
+    warnings.warn('keepaAPI plotting unavailable: %s' % str(e))
 
 
 def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
