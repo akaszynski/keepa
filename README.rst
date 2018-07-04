@@ -139,10 +139,6 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
         plt.step(offer_times[i], offer_prices[i])
     plt.show()
 
-    
-    
-    
-
 
 Credits
 -------

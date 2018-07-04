@@ -218,12 +218,12 @@ def ProductQuery(asins, settings):
                'domain': dcodes.index(settings['domain']),
                'asin': asinstr}
 
+    # parse settings
     if settings['stats']:
         payload['stats'] = settings['stats']
 
-    # This seems to only work when it's a large number.
     if settings['offers']:
-        payload['offers'] = 1000
+        payload['offers'] = settings['offers']
 
     if settings['update'] is not None:
         payload['update'] = int(settings['update'])
