@@ -1,5 +1,7 @@
 keepaAPI
 ========
+.. image:: https://travis-ci.org/akaszynski/keepaAPI.svg?branch=master
+    :target: https://travis-ci.org/akaszynski/keepaAPI
 
 Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
 

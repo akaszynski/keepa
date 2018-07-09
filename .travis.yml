@@ -33,11 +33,6 @@ cache:
   directories:
     - $HOME/.cache/pip
 
-
-# testing key
-secure: "E9XK3wS0XuiQUPp1ZhWwaEFkEx2qwXumxZcStKDHLFlOuejpGRYDvAaYLC+i3XQWD9wwbGi81in8Ih1/S/WjyOeCGj67Oiqg/WUu3cnxySHrD07tERv+C8yUAam66xniK4SrsrvQ4YdyQUBMkaK8l1a/0gKnHmonFxb2c9ae7GDiS2Grsd2LQ6dDVxBhk1KOCOy2gLVt6jcQfhIzx4fGuxa6TIJPqYW/p4BahC5m1f9Bm7ETTrXSpVGrUF1ztMRAxXys25WZ0gL0dc2JsOwj6u7adQJVdFHcNkWkkDIxOmEA+2tZxJzWeMdPtuLtHIg6ospfZSd9InEbZYpr2GFtiyhSaefta00Npib2bl0LQLMESpgM2KMYW7BwxF/2l6/u++utsuYR1H29QKXpY/6ANdMsbQBg/U2uijqJm30S6Qjb7HLoHaY2lqaoDzL4kjQ1cxRUnSkgJu5xz711ur2X8RkwBB98xxdllNw9k1RraLZVOS6z4f3JFbe5yHnNQp/IoFlol3LOZ+K4yrbat4TLi3RlU6//ZFq2VUXx909a1IL2r9w7tz6SGK4YZmXbPKhoo7RgLCQs6fiBBnpYVMLNLO7oTikB8ANOs/jn5ugd4ZcE9Z5cXiQN6Q3n1M86NEQTBKWlUEowaAjlleKKd5h/PlJk6bGQmq7axfdPAkrcU3s="
-
-
 # after_success:
     # - coveralls
 
