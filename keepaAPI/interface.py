@@ -133,7 +133,7 @@ class UserStatus(object):
         """ Returns the tokens remaining to the user """
         return self.status['tokensLeft']
 
-    def TimeToRefill(self, ):
+    def TimeToRefill(self):
         """ Returns the time to refill in seconds """
         # Get current timestamp in miliseconds from unix epoch
         now = int(time.time() * 1000)
@@ -353,6 +353,12 @@ def ParseCSV(csv, to_datetime=True):
         30 TRADE_IN: The trade in price history. Amazon trade-in is
             not available for every locale.
 
+        31 RENT: Rental price history. Requires use of the rental 
+            and offers parameter. Amazon Rental is only available
+            for Amazon US.
+
+
+
     """
     # [index in csv, key name, isfloat (is price)]
     indices = [[0, 'AMAZON', True],
@@ -382,7 +388,8 @@ def ParseCSV(csv, to_datetime=True):
                [25, 'COLLECTIBLE_GOOD_SHIPPING', True],
                [26, 'COLLECTIBLE_ACCEPTABLE_SHIPPING', True],
                [27, 'REFURBISHED_SHIPPING', True],
-               [30, 'TRADE_IN', True]]
+               [30, 'TRADE_IN', True],
+               [31, 'TRADE_IN', False]]
 
     product_data = {}
 
@@ -518,7 +525,7 @@ class API(object):
 
         Parameters
         ----------
-        asins : string,  list, np.ndarray
+        asins : string, list, np.ndarray
             A list, array, or single ASIN.  Each ASIN should be 10
             characters and match a product on Amazon.  ASINs not matching
             Amazon product or duplicate ASINs will return no data.
@@ -548,7 +555,7 @@ class API(object):
             20 and 100.
 
         update : int, optional
-            If data is older than the input interger, keepa will update
+            if data is older than the input interger, keepa will update
             their database and return live data.  If set to 0 (live data),
             request may cost an additional token.  Default None
 
