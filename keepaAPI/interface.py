@@ -446,10 +446,6 @@ class API(object):
         64 character string.  Example string (does not work):
         e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021
 
-    logging : depreciated
-        Depreciated
-
-
     Examples
     --------
     Create the api object
@@ -475,10 +471,8 @@ class API(object):
 
     """
 
-    def __init__(self, accesskey, logging=None):
+    def __init__(self, accesskey):
         """ Initializes object """
-        if logging:
-            warnings.warn('logging parameter is depreciated')
 
         # Store access key
         self.accesskey = accesskey

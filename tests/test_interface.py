@@ -107,6 +107,3 @@ def test_keepatime():
     keepa_st_ordinal = datetime.datetime(2011, 1, 1)
     assert keepa_st_ordinal == keepaAPI.KeepaMinutesToTime(0)
     assert keepa_st_ordinal == keepaAPI.KeepaMinutesToTime(0, to_datetime=False)
-
-# self = TestInterface()
-
