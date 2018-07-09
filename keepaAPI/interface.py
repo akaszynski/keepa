@@ -718,7 +718,7 @@ class API(object):
                     'domain': domain,
                     'accesskey': self.accesskey,
                     'offers': offers,
-                    'update': None,
+                    'update': update,
                     'history': history,
                     'rating': rating,
                     'to_datetime': to_datetime}

@@ -23,3 +23,10 @@ keepaAPI/__pycache__/
 Testing/
 test.sh
 .pytest_cache/
+tests/.coverage
+tests/htmlcov/
+
+# key storage
+storekey.sh
+tests/key
+
