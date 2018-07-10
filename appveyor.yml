@@ -55,21 +55,32 @@ install:
   - "%PYTHON% -m ensurepip"
   - "%PYTHON% -m pip install -U wheel pip"
   - "%PYTHON% -m pip install pytest"
+  # - "%PYTHON% pip install requirements.txt"
+
   # - "%WITH_COMPILER% %PYTHON% config.py -auto"
-  - "%WITH_COMPILER% %PYTHON% setup.py build"
+  # - "%PYTHON% setup.py build"
   # - "%WITH_COMPILER% %PYTHON% setup.py -setuptools %DISTRIBUTIONS%"
   # - ps: "ls dist"
 
   # Install the wheel to test it
-  - "%PYTHON% -m pip install --ignore-installed --pre --no-index --find-links dist/ keepaAPI"
+  # - "%PYTHON% -m pip install --ignore-installed --pre --no-index --find-links dist/ keepaAPI"
+
+
+
+build_script:
+  # Build the compiled extension
+  # - "%WITH_COMPILER% %PYTHON% setup.py build"
+  - "%PYTHON% setup.py build"
+
+# after_test:
+  # If tests are successful, create binary packages for the project.
+  # - "%CMD_IN_ENV% python setup.py bdist_wheel"
 
 # Appveyor's build step is specific to .NET projects, so we build in the
 # install step instead.
-build: off
+# build: off
 
 test_script:
-  # - "mkdir empty_folder"
-  # - "cd empty_folder"
   - "%PYTHON% -m pytest"
 
   # Move back to the project folder
