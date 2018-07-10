@@ -55,7 +55,7 @@ install:
   - "%PYTHON% -m ensurepip"
   - "%PYTHON% -m pip install -U wheel pip"
   - "%PYTHON% -m pip install pytest"
-  - "%PYTHON% -m pip install requirements.txt"
+  - "%PYTHON% -m pip install -r requirements.txt"
 
   # - "%WITH_COMPILER% %PYTHON% config.py -auto"
   # - "%PYTHON% setup.py build"
