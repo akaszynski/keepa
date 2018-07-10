@@ -34,5 +34,4 @@ cache:
 deploy:
   provider: pypi
   user: akaszynski
-  password:
-    secure: $PYIP_PASS
+  password: $PYIP_PASS
