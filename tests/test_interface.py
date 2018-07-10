@@ -9,7 +9,7 @@ if os.path.isfile(keyfile):
     with open(keyfile) as f:
         TESTINGKEY = f.read()
 else:
-    # from travis-ci
+    # from travis-ci or appveyor
     TESTINGKEY = os.environ.get('KEEPAKEY')
 
 # this key returns "payment required"

@@ -27,6 +27,4 @@ tests/.coverage
 tests/htmlcov/
 
 # key storage
-storekey.sh
-tests/key
-
+key.txt

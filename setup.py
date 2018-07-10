@@ -37,10 +37,7 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     url='https://github.com/akaszynski/keepaAPI',
-
     keywords='keepa',
-
-    # Might work with earlier versions (untested)
     install_requires=['numpy>=1.9.3', 'requests>=2.2']
 
 )
