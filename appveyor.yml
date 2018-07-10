@@ -36,10 +36,12 @@ build_script:
 # install step instead.
 # build: off
 
+# it's not apparent that the root directory changes
 test_script:
-  - cd tests
+  # - cd tests
+  - ps: cd tests
   - "%PYTHON% -m pytest"
-  - "cd .."
+  - ps: cd ..
 
 # artifacts:
   # - path: 'dist\*'
