@@ -35,5 +35,11 @@ deploy:
   provider: pypi
   user: akaszynski
   distributions: sdist
+  on:
+    tags: true
+    branch: master
   password:
     secure: Gn+G104P8l5xi9MiecwTgYqRlZFlaoKebESUv5usjndgNKBfmS3bcsTeHC0jpHCLACoWTThqcsjAH5HHhm0vHPK8cO4/We0zPmezmQLNoXJowkvm/gT2WwIkTukfoe6hc+TU0uYNkWDC5JepPlur0gQHiHt0om1MlfSwPXmsFXkjQtw+kQcY34MFK2Y1SvH52SyBiI1ONYNPXDZifkuDhaQFU3JHc7N/KrqTChfBNLAZ6H27rugy9B2FOTHodZRHg6za1rJbkW/bD2GL227kzHFyL7xmEt1buBLtX9exJgT+IufYVq8YvtWT1Oi5QX5sLSZEJI32e6/DwqVfRMDsb4VFBz+pASAC2Xm6r/SJap6rUstMVLx2qS69uxOv5hyN+ZYrqeRRtCKoXcP2iXy6K2vmnxXvlduUHnfxyGFNiQka/ujsHGoiDFPQbS6WHBGgjWGhiMm07E8O/x/LzQ8ebEL+EhltTle7nBSkhEPRc2vXUiLg16CLPHft7w2CLrB1fjeML7lAUfDfBZMlLi3zEn837A9XqDto6/lILfGEZQbD+XtVDVJBsxZdoSCwLeCgqHahtkwtIeo5svilFYyWMPotQVlDoteowSPRx5qowa0BD8XWW5bStnSJzsatA9mXPA3NnCwEXOsnxglFkOY5viSZSxAoH1Spa8xzml115rI=
+  on:
+    condition: [ "$TRAVIS_PYTHON_VERSION" == 3.6 ] && [ "$TRAVIS_OS_NAME" != 'linux' ]
+  
