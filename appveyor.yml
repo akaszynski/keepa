@@ -38,10 +38,9 @@ build_script:
 
 # it's not apparent that the root directory changes
 test_script:
-  # - cd tests
-  - ps: cd tests
+  - "cd tests"
   - "%PYTHON% -m pytest"
-  - ps: cd ..
+  - "cd .."
 
 # artifacts:
   # - path: 'dist\*'
