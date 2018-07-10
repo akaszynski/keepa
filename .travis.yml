@@ -13,14 +13,8 @@ python:
   - "3.6"
   - "3.7-dev"
 
-# matrix:
-#   exclude:
-#   - os: windows
-#     python: "2.7"
-
 # install dependencies
 install:
-  # - pip install -r requirements.txt
   - pip install pytest
   - pip install .
 
@@ -33,6 +27,12 @@ cache:
   directories:
     - $HOME/.cache/pip
 
+# add this eventually
 # after_success:
     # - coveralls
 
+deploy:
+  provider: pypi
+  user: akaszynski
+  password:
+    secure: $PYIP_PASS
