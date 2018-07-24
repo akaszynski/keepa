@@ -65,7 +65,7 @@ def ThreadRequest(asins, settings, products, sema, err, max_try=5):
         log.error('Request for asins %s failed' % str(asins))
         err[0] = True  # store error occured
     else:
-        log.info('Completed %d ASIN(s)' % len(products))
+        log.debug('Completed %d ASIN(s)' % len(products))
 
     # finally, release thread
     sema.release()
@@ -696,9 +696,9 @@ class API(object):
 
         nitems = len(asins)
         if nitems == 1:
-            log.info('Executing single product query'.format(nitems))
+            log.debug('Executing single product query'.format(nitems))
         else:
-            log.info('Executing {:d} item product query'.format(nitems))
+            log.debug('Executing {:d} item product query'.format(nitems))
 
         # Update user status and determine if there any tokens available
         self.user.UpdateFromServer()
@@ -730,10 +730,10 @@ class API(object):
             60000 - self.user.status['refillIn']) / 60000.0
         if tcomplete < 0.0:
             tcomplete = 0.5
-        log.info(
+        log.debug(
             'Estimated time to complete {:d} request(s) is {:.2f} minutes'.format(
                 len(asins), tcomplete))
-        log.info(
+        log.debug(
             '\twith a refill rate of {:d} token(s) per minute'.format(
                 self.user.status['refillRate']))
 
