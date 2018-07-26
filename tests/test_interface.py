@@ -50,7 +50,7 @@ class TestInterface(object):
         # should be live data
         now = datetime.datetime.now()
         delta = now - product['data']['USED_time'][-1]
-        assert delta.days <= 1
+        assert delta.days <= 10
 
         # check for empty arrays
         history = product['data']
