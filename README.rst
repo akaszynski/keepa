@@ -3,7 +3,13 @@ keepaAPI
 .. image:: https://travis-ci.org/akaszynski/keepaAPI.svg?branch=master
     :target: https://travis-ci.org/akaszynski/keepaAPI
 
+.. image:: https://readthedocs.org/projects/keepaapi/badge/?version=latest
+:target: https://keepaapi.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
+
 Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
+
+Documentation can be found on readthedocs at _`keepaAPI Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
 
 Requirements
 ------------
