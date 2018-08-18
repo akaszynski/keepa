@@ -246,8 +246,8 @@ def ProductQuery(asins, settings):
         if settings['history']:
             for product in response['products']:
                 if product['csv']:  # if data exists
-                    product['data'] = ParseCSV(
-                        product['csv'], settings['to_datetime'])
+                    product['data'] = ParseCSV(product['csv'], settings['to_datetime'],
+                                               settings['out_of_stock_as_nan'])
 
         return response
 
@@ -258,13 +258,18 @@ def ProductQuery(asins, settings):
         raise Exception('REQUEST_FAILED')
 
 
-def ParseCSV(csv, to_datetime=True):
+def ParseCSV(csv, to_datetime=True, out_of_stock_as_nan=True):
     """Parses csv list from keepa into a python dictionary
 
     Parameters
     ----------
     csv : list
         csv list from keepa
+
+    out_of_stock_as_nan : bool, optional
+        When True, prices are NAN when price category is out of stock.
+        When False, prices are -0.01
+        Default True
 
     Returns
     -------
@@ -357,7 +362,9 @@ def ParseCSV(csv, to_datetime=True):
             and offers parameter. Amazon Rental is only available
             for Amazon US.
 
-
+    Notes
+    -----
+    Negative prices
 
     """
     # [index in csv, key name, isfloat (is price)]
@@ -406,10 +413,12 @@ def ParseCSV(csv, to_datetime=True):
                 times = csv[ind][::2]
                 values = np.array(csv[ind][1::2])
 
-            if isfloat:  # Convert to float price if applicable
-                nanmask = values < 0
+            # Convert to float price if applicable
+            if isfloat:
+                nan_mask = values < 0
                 values = values.astype(np.float)/100
-                values[nanmask] = np.nan
+                if out_of_stock_as_nan:
+                    values[nan_mask] = np.nan
 
             if key == 'RATING':
                 values /= 10
@@ -442,28 +451,29 @@ class API(object):
 
     Parameters
     ----------
-    accesskey : string
-        64 character string.  Example string (does not work):
-        e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021
+    accesskey : str
+        64 character access key string.
 
     Examples
     --------
     Create the api object
-    Access key from https://keepa.com/#!api  (this key does not work)
+
     >>> import keepaAPI
-    >>> mykey = 'e1aazzz26f8e0ecebzzz15416a0zzz61310a3b66ac7c6935c348894008a56021'
-    >>> # Create API
+    >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     >>> api = keepaAPI.API(mykey)
 
     Request data from two ASINs
+
     >>> products = api.ProductQuery(['0439064872', '1426208081'])
 
     Print item details
+
     >>> print('Item 1')
     >>> print('\t ASIN: {:s}'.format(products[0]['asin']))
     >>> print('\t Title: {:s}'.format(products[0]['title']))
 
     Print item price
+
     >>> usedprice = products[0]['data']['MarketplaceUsed']
     >>> usedtimes = products[0]['data']['MarketplaceUsed_time']
     >>> print('\t Used price: ${:.2f}'.format(usedprice[-1]))
@@ -512,7 +522,7 @@ class API(object):
 
     def ProductQuery(self, asins, stats=None, domain='US', history=True,
                      offers=0, update=None, nthreads=4, to_datetime=True,
-                     rating=False, allow_errors=False):
+                     rating=False, allow_errors=False, out_of_stock_as_nan=True):
         """
         Performs a product query of a list, array, or single ASIN.  Returns a
         list of product data with one entry for each product.
@@ -573,6 +583,11 @@ class API(object):
         allow_errors : bool, optional
             Permits errors in requests.  List of products may not match input
             asin list.
+
+        out_of_stock_as_nan : bool, optional
+            When True, prices are NAN when price category is out of stock.
+            When False, prices are -0.01
+            Default True
 
         Returns
         -------
@@ -652,32 +667,32 @@ class API(object):
         COUNT_REVIEWS
             The product's review count history.
 
-        BUY_BOX_SHIPPING(18, true, false, true, true),
+        BUY_BOX_SHIPPING
             The price history of the buy box. If no offer qualified for the buy
             box the price has the value -1. Including shipping costs.
 
-        USED_NEW_SHIPPING(19, true, true, true, true),
+        USED_NEW_SHIPPING
             "Used - Like New" price history including shipping costs.
 
-        USED_VERY_GOOD_SHIPPING(20, true, true, true, true),
+        USED_VERY_GOOD_SHIPPING
             "Used - Very Good" price history including shipping costs.
 
-        USED_GOOD_SHIPPING(21, true, true, true, true),
+        USED_GOOD_SHIPPING
             "Used - Good" price history including shipping costs.
 
-        USED_ACCEPTABLE_SHIPPING(22, true, true, true, true),
+        USED_ACCEPTABLE_SHIPPING
             "Used - Acceptable" price history including shipping costs.
 
-        COLLECTIBLE_NEW_SHIPPING(23, true, true, true, true),
+        COLLECTIBLE_NEW_SHIPPING
             "Collectible - Like New" price history including shipping costs.
 
-        COLLECTIBLE_VERY_GOOD_SHIPPING(24, true, true, true, true),
+        COLLECTIBLE_VERY_GOOD_SHIPPING
             "Collectible - Very Good" price history including shipping costs.
 
-        COLLECTIBLE_GOOD_SHIPPING(25, true, true, true, true),
+        COLLECTIBLE_GOOD_SHIPPING
             "Collectible - Good" price history including shipping costs.
 
-        COLLECTIBLE_ACCEPTABLE_SHIPPING(26, true, true, true, true),
+        COLLECTIBLE_ACCEPTABLE_SHIPPING
             "Collectible - Acceptable" price history including shipping costs.
 
         REFURBISHED_SHIPPING
@@ -722,7 +737,8 @@ class API(object):
                     'update': update,
                     'history': history,
                     'rating': rating,
-                    'to_datetime': to_datetime}
+                    'to_datetime': to_datetime,
+                    'out_of_stock_as_nan': out_of_stock_as_nan}
 
         # Report time to completion
         tcomplete = float(

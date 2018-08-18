@@ -1,9 +1,10 @@
 """
 Plotting module product data returned from keepa interface module
 """
+import datetime
 import warnings
 import numpy as np
-from keepaAPI import keepaTime
+from keepaAPI import keepaTime, ParseCSV
 
 try:
     import matplotlib.pyplot as plt
@@ -13,7 +14,8 @@ except BaseException as e:
     warnings.warn('keepaAPI plotting unavailable: %s' % str(e))
 
 
-def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
+def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
+                price_limit=1000):
     """
     Plots a product using matplotlib
 
@@ -25,29 +27,42 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
     keys : list, optional
         Keys to plot.  Defaults to ['AMAZON', 'USED', 'COUNT_USED', 'SALES']
 
-    """
+    price_limit : float, optional
+        Prices over this value will not be plotted.  Used to ignore
+        extreme prices.
 
+    """
     if not plt_loaded:
-        raise Exception('Plotting not available.  Check matplotlib install')
+        raise Exception('Plotting not available.  Install matplotlib with:\n' +
+                        'pip install matplotlib')
+
+    if 'data' not in product:
+        product['data'] = ParseCSV[product['csv']]
 
     # Use all keys if not specified
     if not keys:
         keys = product['data'].keys()
 
     # Create three figures, one for price data, offers, and sales rank
-    pricefig, priceax = plt.subplots()
+    pricefig, priceax = plt.subplots(figsize=(10, 5))
     pricefig.canvas.set_window_title('Product Price Plot')
     plt.title(product['title'])
+    plt.xlabel('Date')
+    plt.ylabel('Price')
     pricelegend = []
 
-    offerfig, offerax = plt.subplots()
+    offerfig, offerax = plt.subplots(figsize=(10, 5))
     offerfig.canvas.set_window_title('Product Offer Plot')
     plt.title(product['title'])
+    plt.xlabel('Date')
+    plt.ylabel('Listings')
     offerlegend = []
 
-    salesfig, salesax = plt.subplots()
+    salesfig, salesax = plt.subplots(figsize=(10, 5))
     salesfig.canvas.set_window_title('Product Sales Rank Plot')
     plt.title(product['title'])
+    plt.xlabel('Date')
+    plt.ylabel('Sales Rank')
     saleslegend = []
 
     # Add in last update time
@@ -55,12 +70,15 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
 
     # Attempt to plot each key
     for key in keys:
-
         # Continue if key does not exist
-        if key not in product['data'].keys():
+        if key not in product['data']:
+            print('%s not in product' % key)
             continue
 
         elif 'SALES' in key and 'time' not in key:
+            if product['data'][key].size == 1:
+                print('%s not in product' % key)
+                continue
             x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
@@ -68,15 +86,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
             salesax.step(x, y, where='pre')
             saleslegend.append(key)
 
-        elif 'COUNT_NEW' in key and 'time' not in key:
-            x = np.append(product['data'][key + '_time'], lstupdate)
-            y = np.append(product['data'][key],
-                          product['data'][key][-1]).astype(np.float)
-            ReplaceInvalid(y)
-            offerax.step(x, y, where='pre')
-            offerlegend.append(key)
-
-        elif 'COUNT_USED' in key and 'time' not in key:
+        elif 'COUNT_' in key and 'time' not in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
@@ -88,7 +98,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
             x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
-            ReplaceInvalid(y)
+            ReplaceInvalid(y, max_value=price_limit)
             priceax.step(x, y, where='pre')
             pricelegend.append(key)
 
@@ -110,8 +120,10 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES']):
     plt.draw()
 
 
-def ReplaceInvalid(arr):
+def ReplaceInvalid(arr, max_value=None):
     """ Replace invalid data with nan """
-    mask = arr < 0.0
-    if mask.any():
-        arr[mask] = np.nan
+    with np.warnings.catch_warnings():
+        np.warnings.filterwarnings('ignore')
+        arr[arr < 0.0] = np.nan
+        if max_value:
+            arr[arr > max_value] = np.nan

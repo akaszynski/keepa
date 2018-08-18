@@ -7,7 +7,6 @@ Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon 
 
 Requirements
 ------------
-
 Module is compatible with Python 2 and 3. keepaAPI requires:
 
  - ``numpy``
@@ -15,7 +14,7 @@ Module is compatible with Python 2 and 3. keepaAPI requires:
 
 Product history can be plotted from the raw data when ``matplotlib`` is installed.
 
-Interfacing with the ``keepaAPI`` requires an accesskey and a monthly subscription from https://keepa.com/#!api
+Interfacing with the ``keepaAPI`` requires an accesskey and a monthly subscription from `keepa <https://keepa.com/#!api>`_
 
 
 Installation
@@ -36,10 +35,20 @@ Brief Example
     api = keepaAPI.API(accesskey)
 
     # Single ASIN query
-    products = api.ProductQuery('059035342X') # returns list of product data
+    products = api.ProductQuery('B0088PUEPK') # returns list of product data
 
     # Plot result (requires matplotlib)
     keepaAPI.PlotProduct(products[0])
+
+.. figure:: https://github.com/akaszynski/keepaAPI/raw/master/docs/source/images/Product_Price_Plot.png
+    :width: 500pt
+
+    Product Price Plot
+
+.. figure:: https://github.com/akaszynski/keepaAPI/raw/master/docs/source/images/Product_Offer_Plot.png
+    :width: 500pt
+
+    Product Offers Plot
 
 
 Detailed Example
@@ -111,7 +120,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
 
 .. code:: python
 
-    products = api.ProductQuery(asins)
+    products = api.ProductQuery(asins, offers=20)
     product = products[0]
     offers = product['offers']
 
@@ -144,7 +153,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
 
 Credits
 -------
-This Python code, written by Alex Kaszynski, is based on Java code writen by Marius Johann, CEO keepa. Java source is can be found at https://github.com/keepacom/api_backend/
+This Python code, written by Alex Kaszynski, is based on Java code writen by Marius Johann, CEO keepa. Java source is can be found at `keepa <https://github.com/keepacom/api_backend/>`_.
 
 
 License
