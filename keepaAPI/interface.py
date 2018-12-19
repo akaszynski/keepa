@@ -222,6 +222,10 @@ def ProductQuery(asins, settings):
     if settings['stats']:
         payload['stats'] = settings['stats']
 
+    if settings['stock']:
+        if settings['stock']:
+            payload['stock'] = 1
+
     if settings['offers']:
         payload['offers'] = settings['offers']
 
@@ -367,6 +371,8 @@ def ParseCSV(csv, to_datetime=True, out_of_stock_as_nan=True):
     Negative prices
 
     """
+    # https://github.com/keepacom/api_backend
+    # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
     # [index in csv, key name, isfloat (is price)]
     indices = [[0, 'AMAZON', True],
                [1, 'NEW', True],
@@ -383,6 +389,7 @@ def ParseCSV(csv, to_datetime=True, out_of_stock_as_nan=True):
                [12, 'COUNT_USED', False],
                [13, 'COUNT_REFURBISHED', False],
                [14, 'CollectableOffers', False],
+               [15, 'EXTRA_INFO_UPDATES', False],
                [16, 'RATING', True],
                [17, 'COUNT_REVIEWS', False],
                [18, 'BUY_BOX_SHIPPING', True],
@@ -395,8 +402,10 @@ def ParseCSV(csv, to_datetime=True, out_of_stock_as_nan=True):
                [25, 'COLLECTIBLE_GOOD_SHIPPING', True],
                [26, 'COLLECTIBLE_ACCEPTABLE_SHIPPING', True],
                [27, 'REFURBISHED_SHIPPING', True],
+               [28, 'EBAY_NEW_SHIPPING', True],
+               [29, 'EBAY_USED_SHIPPING', True],
                [30, 'TRADE_IN', True],
-               [31, 'TRADE_IN', False]]
+               [31, 'RENT', False]]
 
     product_data = {}
 
@@ -522,72 +531,84 @@ class API(object):
 
     def ProductQuery(self, asins, stats=None, domain='US', history=True,
                      offers=0, update=None, nthreads=4, to_datetime=True,
-                     rating=False, allow_errors=False, out_of_stock_as_nan=True):
+                     rating=False, allow_errors=False, out_of_stock_as_nan=True,
+                     stock=False):
         """
-        Performs a product query of a list, array, or single ASIN.  Returns a
-        list of product data with one entry for each product.
+        Performs a product query of a list, array, or single ASIN.
+        Returns a list of product data with one entry for each
+        product.
 
         Parameters
         ----------
         asins : string, list, np.ndarray
             A list, array, or single ASIN.  Each ASIN should be 10
-            characters and match a product on Amazon.  ASINs not matching
-            Amazon product or duplicate ASINs will return no data.
+            characters and match a product on Amazon.  ASINs not
+            matching Amazon product or duplicate ASINs will return no
+            data.
 
         stats : int or date, optional
-            No extra token cost. If specified the product object will have a
-            stats field with quick access to current prices, min/max prices
-            and the weighted mean values. If the offers parameter was used it
-            will also provide stock counts and buy box information.
+            No extra token cost. If specified the product object will
+            have a stats field with quick access to current prices,
+            min/max prices and the weighted mean values. If the offers
+            parameter was used it will also provide stock counts and
+            buy box information.
 
             You can provide the stats parameter in two forms:
 
-            Last x days (positive integer value): calculates the stats of
-            the last x days, where x is the value of the stats parameter.
-            Interval: You can provide a date range for the stats
-            calculation. You can specify the range via two timestamps
-            (unix epoch time milliseconds) or two date strings (ISO8601,
-            with or without time in UTC).
+            Last x days (positive integer value): calculates the stats
+            of the last x days, where x is the value of the stats
+            parameter.  Interval: You can provide a date range for the
+            stats calculation. You can specify the range via two
+            timestamps (unix epoch time milliseconds) or two date
+            strings (ISO8601, with or without time in UTC).
 
         domain : string, optional
-            One of the following Amazon domains:
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
-            Defaults to US.
+            One of the following Amazon domains: RESERVED, US, GB, DE,
+            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
 
         offers : int, optional
-            Adds available offers to product data.  Default 0.  Must be between 
-            20 and 100.
+            Adds available offers to product data.  Default 0.  Must
+            be between 20 and 100.
 
         update : int, optional
-            if data is older than the input interger, keepa will update
-            their database and return live data.  If set to 0 (live data),
-            request may cost an additional token.  Default None
+            if data is older than the input interger, keepa will
+            update their database and return live data.  If set to 0
+            (live data), request may cost an additional token.
+            Default None
 
         history : bool, optional
-            When set to True includes the price, sales, and offer history
-            of a product.  Set to False to reduce request time if data is
-            not required.  Default True
+            When set to True includes the price, sales, and offer
+            history of a product.  Set to False to reduce request time
+            if data is not required.  Default True
 
         rating : bool, optional
-            When set to to True, includes the existing RATING and COUNT_REVIEWS
-            history of the csv field.  Default False
+            When set to to True, includes the existing RATING and
+            COUNT_REVIEWS history of the csv field.  Default False
 
         nthreads : int, optional
-            Number of threads to interface to keepa with.  More threads
-            means potentially faster batch response, but more bandwidth.
-            Probably should be kept under 20.  Default 4
+            Number of threads to interface to keepa with.  More
+            threads means potentially faster batch response, but more
+            bandwidth.  Probably should be kept under 20.  Default 4
 
         to_datetime : bool, optional
-            Modifies numpy minutes to datetime.datetime values.  Default True.
+            Modifies numpy minutes to datetime.datetime values.
+            Default True.
 
         allow_errors : bool, optional
-            Permits errors in requests.  List of products may not match input
-            asin list.
+            Permits errors in requests.  List of products may not
+            match input asin list.
 
         out_of_stock_as_nan : bool, optional
-            When True, prices are NAN when price category is out of stock.
-            When False, prices are -0.01
-            Default True
+            When True, prices are NAN when price category is out of
+            stock.  When False, prices are -0.01 Default True
+
+        stock : bool, optional
+            Can only be used if the offers parameter is also True. If
+            True, the stock will be collected for all retrieved live
+            offers. Note: We can only determine stock up 10 qty. Stock
+            retrieval takes additional time, expect the request to
+            take longer. Existing stock history will be included
+            whether or not the stock parameter is used.
 
         Returns
         -------
@@ -733,6 +754,7 @@ class API(object):
         settings = {'stats': stats,
                     'domain': domain,
                     'accesskey': self.accesskey,
+                    'stock': stock,
                     'offers': offers,
                     'update': update,
                     'history': history,
