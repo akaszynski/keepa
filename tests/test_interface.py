@@ -20,9 +20,6 @@ PRODUCT_ASIN = '0439064872'
 PRODUCT_ASINS = ['0439064872', '0439136369', '059035342X', '0439139600', '0439358078',
                  '0439785960', '0545139708']
 
-import femorph
-femorph.open_logger()
-
 # open connection to keepaAPI
 api = keepaAPI.API(TESTINGKEY)
 assert api.user.RemainingTokens()
