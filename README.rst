@@ -133,7 +133,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     csv = offer['offerCSV']
 
     # convert these values to numpy arrays
-    times, prices = ConvertOfferHistory(csv)
+    times, prices = keepaAPI.ConvertOfferHistory(csv)
 
     # for a list of active offers, see
     indices = product['liveOffersOrder']
