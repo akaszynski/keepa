@@ -4,25 +4,25 @@ Plotting module product data returned from keepa interface module
 import datetime
 import warnings
 import numpy as np
-from keepaAPI import keepaTime, ParseCSV
+from keepa.interface import keepa_minutes_to_time, parse_csv
 
 try:
     import matplotlib.pyplot as plt
     plt_loaded = True
 except BaseException as e:
     plt_loaded = False
-    warnings.warn('keepaAPI plotting unavailable: %s' % str(e))
+    warnings.warn('keepa plotting unavailable: %s' % str(e))
 
 
-def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
-                price_limit=1000):
+def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
+                 price_limit=1000):
     """
     Plots a product using matplotlib
 
     Parameters
     ----------
     product : list
-        Single product from keepaAPI.ProductQuery
+        Single product from keepa.query
 
     keys : list, optional
         Keys to plot.  Defaults to ['AMAZON', 'USED', 'COUNT_USED', 'SALES']
@@ -37,7 +37,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
                         'pip install matplotlib')
 
     if 'data' not in product:
-        product['data'] = ParseCSV[product['csv']]
+        product['data'] = parse_csv[product['csv']]
 
     # Use all keys if not specified
     if not keys:
@@ -66,7 +66,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
     saleslegend = []
 
     # Add in last update time
-    lstupdate = keepaTime.KeepaMinutesToTime(product['lastUpdate'])
+    lstupdate = keepa_minutes_to_time(product['lastUpdate'])
 
     # Attempt to plot each key
     for key in keys:
@@ -82,7 +82,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
             x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
-            ReplaceInvalid(y)
+            replace_invalid(y)
             salesax.step(x, y, where='pre')
             saleslegend.append(key)
 
@@ -90,7 +90,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
             x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
-            ReplaceInvalid(y)
+            replace_invalid(y)
             offerax.step(x, y, where='pre')
             offerlegend.append(key)
 
@@ -98,7 +98,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
             x = np.append(product['data'][key + '_time'], lstupdate)
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
-            ReplaceInvalid(y, max_value=price_limit)
+            replace_invalid(y, max_value=price_limit)
             priceax.step(x, y, where='pre')
             pricelegend.append(key)
 
@@ -120,7 +120,7 @@ def PlotProduct(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
     plt.draw()
 
 
-def ReplaceInvalid(arr, max_value=None):
+def replace_invalid(arr, max_value=None):
     """ Replace invalid data with nan """
     with np.warnings.catch_warnings():
         np.warnings.filterwarnings('ignore')

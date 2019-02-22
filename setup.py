@@ -1,11 +1,11 @@
 """
-Setup for keepaAPI
+Setup for keepa
 """
 from setuptools import setup
 import os
 from io import open as io_open
 
-package_name = 'keepaAPI'
+package_name = 'keepa'
 
 # Get version from ./_version.py
 __version__ = None
@@ -36,7 +36,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    url='https://github.com/akaszynski/keepaAPI',
+    url='https://github.com/akaszynski/keepa',
     keywords='keepa',
     install_requires=['numpy>=1.9.3', 'requests>=2.2']
 

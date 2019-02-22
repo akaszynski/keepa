@@ -1,7 +1,7 @@
-keepaAPI
+keepa
 ========
-.. image:: https://travis-ci.org/akaszynski/keepaAPI.svg?branch=master
-    :target: https://travis-ci.org/akaszynski/keepaAPI
+.. image:: https://travis-ci.org/akaszynski/keepa.svg?branch=master
+    :target: https://travis-ci.org/akaszynski/keepa
 
 .. image:: https://readthedocs.org/projects/keepaapi/badge/?version=latest
     :target: https://keepaapi.readthedocs.io/en/latest/?badge=latest
@@ -9,47 +9,48 @@ keepaAPI
 
 Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
 
-Documentation can be found on readthedocs at `keepaAPI <https://keepaapi.readthedocs.io/en/latest/>`_.
+Documentation can be found on readthedocs at `keepa <https://keepaapi.readthedocs.io/en/latest/>`_.
+
 
 Requirements
 ------------
-Module is compatible with Python 2 and 3. keepaAPI requires:
+Module is compatible with Python 2 and 3. keepa requires:
 
  - ``numpy``
  - ``requests``
 
 Product history can be plotted from the raw data when ``matplotlib`` is installed.
 
-Interfacing with the ``keepaAPI`` requires an accesskey and a monthly subscription from `keepa <https://keepa.com/#!api>`_
+Interfacing with the ``keepa`` requires an accesskey and a monthly subscription from `keepa <https://keepa.com/#!api>`_
 
 
 Installation
 ------------
-Module can be installed from PyPi using ``pip install keepaAPI``
+Module can be installed from PyPi using ``pip install keepa``
 
-Source code can also be downloaded from `GitHub <https://github.com/akaszynski/keepaAPI>`_ and installed using ``python setup.py install`` or ``pip install .``
+Source code can also be downloaded from `GitHub <https://github.com/akaszynski/keepa>`_ and installed using ``python setup.py install`` or ``pip install .``
 
 
 Brief Example
 -------------
 .. code:: python
 
-    import keepaAPI
+    import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepaAPI.API(accesskey)
+    api = keepa.API(accesskey)
 
     # Single ASIN query
-    products = api.ProductQuery('B0088PUEPK') # returns list of product data
+    products = api.query('B0088PUEPK') # returns list of product data
 
     # Plot result (requires matplotlib)
-    keepaAPI.PlotProduct(products[0])
+    keepa.plot_product(products[0])
 
-.. figure:: https://github.com/akaszynski/keepaAPI/raw/master/docs/source/images/Product_Price_Plot.png
+.. figure:: https://github.com/akaszynski/keepa/raw/master/docs/source/images/Product_Price_Plot.png
     :width: 500pt
 
     Product Price Plot
 
-.. figure:: https://github.com/akaszynski/keepaAPI/raw/master/docs/source/images/Product_Offer_Plot.png
+.. figure:: https://github.com/akaszynski/keepa/raw/master/docs/source/images/Product_Offer_Plot.png
     :width: 500pt
 
     Product Offers Plot
@@ -62,31 +63,31 @@ Import interface and establish connection to server
 
 .. code:: python
 
-    import keepaAPI
+    import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepaAPI.API(accesskey)
+    api = keepa.API(accesskey)
 
 Single ASIN query
 
 .. code:: python
 
-    products = api.ProductQuery('059035342X')
+    products = api.query('059035342X')
 
-    # See help(api.ProductQuery) for available options when querying the API
+    # See help(api.query) for available options when querying the API
 
 Multiple ASIN query from List
 
 .. code:: python
 
     asins = ['0022841350', '0022841369', '0022841369', '0022841369']
-    products = api.ProductQuery(asins)
+    products = api.query(asins)
 
 Multiple ASIN query from numpy array
 
 .. code:: python
 
     asins = np.asarray(['0022841350', '0022841369', '0022841369', '0022841369'])
-    products = api.ProductQuery(asins)
+    products = api.query(asins)
 
 Products is a list of product data with one entry per successful result from the Keepa server. Each entry is a dictionary containing the same product data available from `Amazon <http://www.amazon.com>`_.
 
@@ -118,13 +119,13 @@ The product history can also be plotted from the module if ``matplotlib`` is ins
 
 .. code:: python
 
-    keepaAPI.PlotProduct(products[0])
+    keepa.plot_product(products[0])
 
 You can obtain the offers history for an ASIN (or multiple ASINs) using the ``offers`` parameter.  See the documentation at `Request Products <https://keepa.com/#!discuss/t/request-products/110/1>`_ for further details.
 
 .. code:: python
 
-    products = api.ProductQuery(asins, offers=20)
+    products = api.query(asins, offers=20)
     product = products[0]
     offers = product['offers']
 
@@ -133,7 +134,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     csv = offer['offerCSV']
 
     # convert these values to numpy arrays
-    times, prices = ConvertOfferHistory(csv)
+    times, prices = convert_offer_history(csv)
 
     # for a list of active offers, see
     indices = product['liveOffersOrder']
@@ -144,7 +145,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     offer_prices = []
     for index in indices:
         csv = offers[index]['offerCSV']
-        times, prices = keepaAPI.ConvertOfferHistory(csv)
+        times, prices = keepa.convert_offer_history(csv)
         offer_times.append(times)
         offer_prices.append(prices)
 

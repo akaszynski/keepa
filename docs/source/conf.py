@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# keepaAPI documentation build configuration file, created by
+# keepa documentation build configuration file, created by
 # sphinx-quickstart on Mon Feb 26 13:42:51 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'keepaAPI'
+project = 'keepa'
 copyright = '2018, Alex Kaszynski'
 author = 'Alex Kaszynski'
 
@@ -117,7 +117,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'keepaAPIdoc'
+htmlhelp_basename = 'keepadoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -144,7 +144,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'keepaAPI.tex', 'keepaAPI Documentation',
+    (master_doc, 'keepa.tex', 'keepa Documentation',
      'Alex Kaszynski', 'manual'),
 ]
 
@@ -154,7 +154,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'keepaapi', 'keepaAPI Documentation',
+    (master_doc, 'keepaapi', 'keepa Documentation',
      [author], 1)
 ]
 
@@ -165,8 +165,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'keepaAPI', 'keepaAPI Documentation',
-     author, 'keepaAPI', 'One line description of project.',
+    (master_doc, 'keepa', 'keepa Documentation',
+     author, 'keepa', 'One line description of project.',
      'Miscellaneous'),
 ]
 

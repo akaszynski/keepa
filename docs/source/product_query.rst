@@ -1,8 +1,8 @@
 Queries
 =======
-Interfacing with the ``keepaAPI`` requires a valid access key.  This requires a monthly subscription from `Pricing <https://keepa.com/#!api>`_.  Here's a brief description of the subscription model from their website.
+Interfacing with the ``keepa`` requires a valid access key.  This requires a monthly subscription from `Pricing <https://keepa.com/#!api>`_.  Here's a brief description of the subscription model from their website.
 
-    All plans are prepaid for 1 month with a subscription model. A subscription can be canceled at any time. Multiple plans can be active on the same account and an upgrade is possible at any time, a downgrade once per month. The plans differentiate by the number of tokens generated per minute. For example: With a single token you can retrieve the complete data set for one product. Unused tokens expire after one hour. You can find more information on how our plans work in our documentation.
+All plans are prepaid for 1 month with a subscription model. A subscription can be canceled at any time. Multiple plans can be active on the same account and an upgrade is possible at any time, a downgrade once per month. The plans differentiate by the number of tokens generated per minute. For example: With a single token you can retrieve the complete data set for one product. Unused tokens expire after one hour. You can find more information on how our plans work in our documentation.
 
 
 Connecting to KeepaAPI
@@ -11,9 +11,9 @@ Import interface and establish connection to server
 
 .. code:: python
 
-    import keepaAPI
+    import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepaAPI.API(accesskey)
+    api = keepa.Api(accesskey)
 
 
 Product History Query
@@ -22,19 +22,29 @@ The product data for a single ASIN can be queried using:
 
 .. code:: python
 
-    products = api.ProductQuery('059035342X')
+    products = api.query('059035342X')
     product = products[0]
 
-where ``products`` is always a list of products, even with a single request.  Multiple products can be queried using a list or ``numpy`` array.
+where ``products`` is always a list of products, even with a single request.
+
+You can query using ISBN-10 or ASIN like the above example by default, or by using UPC,
+ EAN, and ISBN-13 codes by setting ``product_code_is_asin`` to ``False``:
+
+    products = api.query('978-0786222728', product_code_is_asin=False)
+
+.. code:: python
+
+
+Multiple products can be queried using a list or ``numpy`` array:
 
 .. code:: python
 
     asins = ['0022841350', '0022841369', '0022841369', '0022841369']
     asins = np.asarray(['0022841350', '0022841369', '0022841369', '0022841369'])
-    products = api.ProductQuery(asins)
+    products = api.query(asins)
     product = products[0]
 
-Products is a list of product data with one entry per successful result from the Keepa server. Each entry is a dictionary containing the same product data available from `Amazon <http://www.amazon.com>`_.
+The ``products`` variable is a list of product data with one entry per successful result from the Keepa server. Each entry is a dictionary containing the same product data available from `Amazon <http://www.amazon.com>`_:
 
 .. code:: python
 
@@ -176,7 +186,7 @@ The product history can also be plotted from the module if ``matplotlib`` is ins
 
 .. code:: python
 
-    keepaAPI.PlotProduct(product)
+    keepa.plot_product(product)
 
 
 Offer Queries
@@ -185,8 +195,8 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
 
 .. code:: python
 
-    request = '1454857935'
-    products = api.ProductQuery(request, offers=20)
+    asin = '1454857935'
+    products = api.query(asin, offers=20)
     product = products[0]
     offers = product['offers']
 
@@ -195,7 +205,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     csv = offer['offerCSV']
 
     # convert these values to numpy arrays
-    times, prices = ConvertOfferHistory(csv)
+    times, prices = keepa.convert_offer_history(csv)
 
     # print the first 10 prices
     print('%20s   %s' % ('Date', 'Price'))
@@ -229,7 +239,7 @@ Not all offers are active and some are only historical. The following example pl
     offer_prices = []
     for index in indices:
         csv = offers[index]['offerCSV']
-        times, prices = keepaAPI.ConvertOfferHistory(csv)
+        times, prices = keepa.convert_offer_history(csv)
         offer_times.append(times)
         offer_prices.append(prices)p
 
@@ -246,6 +256,7 @@ Not all offers are active and some are only historical. The following example pl
 .. figure:: ./images/Offer_History.png
     :width: 350pt
 
+
 Category Queries
 ~~~~~~~~~~~~~~~~
 You can retrieve an ASIN list of the most popular products based on sales in a specific category or product group.  Here's an example that assumes you've already setup your api.
@@ -254,7 +265,7 @@ You can retrieve an ASIN list of the most popular products based on sales in a s
 
     # get category id numbers for chairs
     if test_categories:
-        categories = api.SearchForCategories('chairs')
+        categories = api.search_for_categories('chairs')
     
         # print the first 5 catIds
         catids = list(categories.keys())
@@ -262,7 +273,7 @@ You can retrieve an ASIN list of the most popular products based on sales in a s
             print(catid, categories[catid]['name'])
     
         # query the best sellers for "Arm Chairs"
-        bestsellers = api.BestSellersQuery('402283011')
+        bestsellers = api.best_sellers_query('402283011')
 
     print('\nBest Sellers:')
     for bestseller in bestsellers:
@@ -290,8 +301,8 @@ You can retrieve an ASIN list of the most popular products based on sales in a s
 
 
 
-keepaAPI.API Methods
+keepa.API Methods
 --------------------
-.. autoclass:: keepaAPI.API
+.. autoclass:: keepa.API
     :members:
 
