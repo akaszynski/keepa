@@ -6,16 +6,16 @@ import warnings
 import numpy as np
 from keepa.interface import keepa_minutes_to_time, parse_csv
 
+plt_loaded = False
 try:
     import matplotlib.pyplot as plt
     plt_loaded = True
 except BaseException as e:
-    plt_loaded = False
     warnings.warn('keepa plotting unavailable: %s' % str(e))
 
 
 def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
-                 price_limit=1000):
+                 price_limit=1000, show=True):
     """
     Plots a product using matplotlib
 
@@ -31,10 +31,11 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
         Prices over this value will not be plotted.  Used to ignore
         extreme prices.
 
+    show : bool, optional
+        Show plot.
+
     """
-    if not plt_loaded:
-        raise Exception('Plotting not available.  Install matplotlib with:\n' +
-                        'pip install matplotlib')
+    assert plt_loaded, 'Plotting not available.  Please install "matplotlib"'
 
     if 'data' not in product:
         product['data'] = parse_csv[product['csv']]
@@ -116,8 +117,9 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
     if not saleslegend:
         plt.close(salesfig)
 
-    plt.show(block=True)
-    plt.draw()
+    if show:
+        plt.show(block=True)
+        plt.draw()
 
 
 def replace_invalid(arr, max_value=None):

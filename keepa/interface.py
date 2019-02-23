@@ -139,6 +139,10 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
     csv : list
         csv list from keepa
 
+    to_datetime : bool, optional
+        Modifies numpy minutes to datetime.datetime values.
+        Default True.
+
     out_of_stock_as_nan : bool, optional
         When True, prices are NAN when price category is out of stock.
         When False, prices are -0.01
@@ -908,7 +912,7 @@ class Keepa(object):
         return self.user.tokens_left
 
 
-def convert_offer_history(csv, as_datetime=True):
+def convert_offer_history(csv, to_datetime=True):
     """
     Converts an offer history to human readable values.
 
@@ -916,6 +920,10 @@ def convert_offer_history(csv, as_datetime=True):
     ----------
     csv : list
        Offer list csv obtained from ['offerCSV']
+
+    to_datetime : bool, optional
+        Modifies numpy minutes to datetime.datetime values.
+        Default True.
 
     Returns
     -------
@@ -933,10 +941,8 @@ def convert_offer_history(csv, as_datetime=True):
     values += np.array(csv[2::3])  # add in shipping
 
     # convert to dollars and datetimes
-    to_datetime = True
     times = keepa_minutes_to_time(times, to_datetime)
     prices = values/100.0
-
     return times, prices
 
 

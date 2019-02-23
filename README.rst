@@ -1,5 +1,8 @@
 keepa
 =====
+.. image:: https://img.shields.io/pypi/v/keepa.svg?logo=python&logoColor=white
+   :target: https://pypi.org/project/keepa/
+
 .. image:: https://travis-ci.org/akaszynski/keepa.svg?branch=master
     :target: https://travis-ci.org/akaszynski/keepa
 

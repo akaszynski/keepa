@@ -101,6 +101,14 @@ def test_productquery_offers():
         assert offer['lastSeen']
         assert not len(offer['offerCSV']) % 3
 
+    # also test offer conversion
+    offer = offers[1]
+    times, prices = keepa.convert_offer_history(offer['offerCSV'])
+    assert times.dtype == datetime.datetime
+    assert prices.dtype == np.double
+    assert len(times)
+    assert len(prices)
+
 
 def test_productquery_offers_invalid():
     with pytest.raises(ValueError):
@@ -152,8 +160,8 @@ def test_invalid_category():
 
 
 def test_stock():
-    request = api.query(PRODUCT_ASIN, history=False,
-                               stock=True, offers=20)
+    request = api.query(PRODUCT_ASIN, history=False, stock=True,
+                        offers=20)
 
     # all live offers must have stock
     product = request[0]
@@ -168,3 +176,9 @@ def test_keepatime():
     keepa_st_ordinal = datetime.datetime(2011, 1, 1)
     assert keepa_st_ordinal == keepa.keepa_minutes_to_time(0)
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
+
+
+def test_plotting():
+    request = api.query(PRODUCT_ASIN, history=True)
+    product = request[0]
+    keepa.plot_product(product, show=False)
