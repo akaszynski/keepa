@@ -14,9 +14,10 @@ python:
 
 install:
   - pip install pytest
-  - pip install .
+  - pip install -e .
   - pip install pytest-cov
   - pip install codecov
+  - pip install matplotlib
 
 
 script:
