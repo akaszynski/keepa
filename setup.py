@@ -9,9 +9,7 @@ package_name = 'keepa'
 
 # Get version from ./_version.py
 __version__ = None
-version_file = os.path.join(os.path.dirname(__file__),
-                            package_name,
-                            '_version.py')
+version_file = os.path.join(os.path.dirname(__file__), package_name, '_version.py')
 
 with io_open(version_file, mode='r') as fd:
     exec(fd.read())
