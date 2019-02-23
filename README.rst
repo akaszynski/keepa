@@ -7,8 +7,8 @@ keepa
     :target: https://keepaapi.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://codecov.io/gh/akaszynski/keepaAPI/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/akaszynski/keepaAPI
+.. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/akaszynski/keepa
 
 Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
 
