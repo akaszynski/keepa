@@ -32,11 +32,7 @@ Interfacing with the ``keepa`` requires an access key and a monthly subscription
 
 Installation
 ------------
-Module can be installed from PyPi with:
-
-.. code::
-
-   ``pip install keepa``
+Module can be installed from PyPi with: ``pip install keepa``
 
 Source code can also be downloaded from `GitHub <https://github.com/akaszynski/keepa>`_ and installed using ``python setup.py install`` or ``pip install .``
 

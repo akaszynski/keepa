@@ -14,12 +14,15 @@ version_file = os.path.join(os.path.dirname(__file__), package_name, '_version.p
 with io_open(version_file, mode='r') as fd:
     exec(fd.read())
 
+filepath = os.path.dirname(__file__)
+readme_file = os.path.join(filepath, 'README.rst')
+
 setup(
     name=package_name,
     packages=[package_name],
     version=__version__,
     description='Interfaces with keepa.com',
-    long_description=open('README.rst').read(),
+    long_description=open(readme_file).read(),
     author='Alex Kaszynski',
     author_email='akascap@gmail.com',
     license='Apache Software License',
