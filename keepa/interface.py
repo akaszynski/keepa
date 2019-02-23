@@ -854,9 +854,9 @@ class Keepa(object):
                    'term': searchterm}
 
         response, tokens_left = keepa_request('search', payload)
-        if response['categories'] == {}:
-            log.info('Categories search results not yet available or no ' +
-                     'search terms found.')
+        if response['categories'] == {}:  # pragma no cover
+            raise Exception('Categories search results not yet available ' +
+                            'or no search terms found.')
         else:
             return response['categories']
 
@@ -900,7 +900,7 @@ class Keepa(object):
                    'parents': include_parents}
 
         response, tokens_left = keepa_request('category', payload)
-        if response['categories'] == {}:
+        if response['categories'] == {}:  # pragma no cover
             raise Exception('Category lookup results not yet available or no' +
                             'match found.')
         else:

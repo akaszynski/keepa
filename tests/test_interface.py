@@ -1,8 +1,12 @@
+import sys
 import numpy as np
 import pytest
 import os
 import keepa
 import datetime
+
+py2 = sys.version_info.major == 2
+    
 
 # slow down number of offers for testing
 keepa.interface.REQLIM = 2
@@ -170,7 +174,11 @@ def test_stock():
     for offer in product['offers']:
         if offer['offerId'] in live:
             assert offer['stockCSV'][-1]
-        
+
+
+def test_available_tokens():
+    assert api.available_tokens
+
 
 def test_keepatime():
     keepa_st_ordinal = datetime.datetime(2011, 1, 1)
@@ -178,6 +186,7 @@ def test_keepatime():
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
 
 
+@pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
 def test_plotting():
     request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]

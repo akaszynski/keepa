@@ -6,13 +6,6 @@ import warnings
 import numpy as np
 from keepa.interface import keepa_minutes_to_time, parse_csv
 
-plt_loaded = False
-try:
-    import matplotlib.pyplot as plt
-    plt_loaded = True
-except BaseException as e:
-    warnings.warn('keepa plotting unavailable: %s' % str(e))
-
 
 def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
                  price_limit=1000, show=True):
@@ -35,7 +28,10 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
         Show plot.
 
     """
-    assert plt_loaded, 'Plotting not available.  Please install "matplotlib"'
+    try:
+        import matplotlib.pyplot as plt
+    except:  # pragma: no cover
+        raise Exception('Plotting not available.  Please install "matplotlib"')
 
     if 'data' not in product:
         product['data'] = parse_csv[product['csv']]
@@ -73,19 +69,16 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
     for key in keys:
         # Continue if key does not exist
         if key not in product['data']:
-            print('%s not in product' % key)
             continue
 
         elif 'SALES' in key and 'time' not in key:
-            if product['data'][key].size == 1:
-                print('%s not in product' % key)
-                continue
-            x = np.append(product['data'][key + '_time'], lstupdate)
-            y = np.append(product['data'][key],
-                          product['data'][key][-1]).astype(np.float)
-            replace_invalid(y)
-            salesax.step(x, y, where='pre')
-            saleslegend.append(key)
+            if product['data'][key].size > 1:
+                x = np.append(product['data'][key + '_time'], lstupdate)
+                y = np.append(product['data'][key],
+                              product['data'][key][-1]).astype(np.float)
+                replace_invalid(y)
+                salesax.step(x, y, where='pre')
+                saleslegend.append(key)
 
         elif 'COUNT_' in key and 'time' not in key:
             x = np.append(product['data'][key + '_time'], lstupdate)
