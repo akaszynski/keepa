@@ -881,12 +881,12 @@ class Keepa(object):
 
         Examples
         --------
-        # use 0 to return all root categories
-        categories = api.category_lookup(0)
+        Use 0 to return all root categories
+        >>> categories = api.category_lookup(0)
 
         # Print all root categories
-        for cat_id in categories:
-            print(cat_id, categories[cat_id]['name'])
+        >>> for cat_id in categories:
+        >>>    print(cat_id, categories[cat_id]['name'])
         """
         assert domain in DCODES, 'Invalid domain code'
 

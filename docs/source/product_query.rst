@@ -30,9 +30,9 @@ where ``products`` is always a list of products, even with a single request.
 You can query using ISBN-10 or ASIN like the above example by default, or by using UPC,
  EAN, and ISBN-13 codes by setting ``product_code_is_asin`` to ``False``:
 
-    products = api.query('978-0786222728', product_code_is_asin=False)
-
 .. code:: python
+
+    products = api.query('978-0786222728', product_code_is_asin=False)
 
 
 Multiple products can be queried using a list or ``numpy`` array:
@@ -303,6 +303,6 @@ You can retrieve an ASIN list of the most popular products based on sales in a s
 
 keepa.API Methods
 --------------------
-.. autoclass:: keepa.API
+.. autoclass:: keepa.Keepa
     :members:
 

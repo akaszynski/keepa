@@ -1,5 +1,5 @@
 keepa
-========
+=====
 .. image:: https://travis-ci.org/akaszynski/keepa.svg?branch=master
     :target: https://travis-ci.org/akaszynski/keepa
 
@@ -21,12 +21,16 @@ Module is compatible with Python 2 and 3. keepa requires:
 
 Product history can be plotted from the raw data when ``matplotlib`` is installed.
 
-Interfacing with the ``keepa`` requires an accesskey and a monthly subscription from `keepa <https://keepa.com/#!api>`_
+Interfacing with the ``keepa`` requires an access key and a monthly subscription from `keepa <https://keepa.com/#!api>`_
 
 
 Installation
 ------------
-Module can be installed from PyPi using ``pip install keepa``
+Module can be installed from PyPi with:
+
+.. code::
+
+   ``pip install keepa``
 
 Source code can also be downloaded from `GitHub <https://github.com/akaszynski/keepa>`_ and installed using ``python setup.py install`` or ``pip install .``
 
@@ -37,7 +41,7 @@ Brief Example
 
     import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepa.API(accesskey)
+    api = keepa.Api(accesskey)
 
     # Single ASIN query
     products = api.query('B0088PUEPK') # returns list of product data
@@ -65,7 +69,7 @@ Import interface and establish connection to server
 
     import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepa.API(accesskey)
+    api = keepa.Api(accesskey)
 
 Single ASIN query
 
@@ -100,7 +104,7 @@ Products is a list of product data with one entry per successful result from the
     print('ASIN is ' + products[0]['asin'])
     print('Title is ' + products[0]['title'])
 
-The raw data is contained within each product result. Raw data is stored as a dictonary with each key paired with its associated time history.
+The raw data is contained within each product result. Raw data is stored as a dictionary with each key paired with its associated time history.
 
 .. code:: python
 
@@ -149,7 +153,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
         offer_times.append(times)
         offer_prices.append(prices)
 
-    # you can aggregrate these using np.hstack or plot at the history individually
+    # you can aggregate these using np.hstack or plot at the history individually
     import matplotlib.pyplot as plt
     for i in range(len(offer_prices)):
         plt.step(offer_times[i], offer_prices[i])
@@ -158,10 +162,9 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
 
 Credits
 -------
-This Python code, written by Alex Kaszynski, is based on Java code writen by Marius Johann, CEO keepa. Java source is can be found at `keepa <https://github.com/keepacom/api_backend/>`_.
+This Python code, written by Alex Kaszynski, is based on Java code written by Marius Johann, CEO keepa. Java source is can be found at `keepa <https://github.com/keepacom/api_backend/>`_.
 
 
 License
 -------
-Apache License, please see license file. Work is credited to both Alex Kaszynski and Marius
-Johann.
+Apache License, please see license file. Work is credited to both Alex Kaszynski and Marius Johann.
