@@ -45,7 +45,7 @@ Brief Example
 
     import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepa.Api(accesskey)
+    api = keepa.Keepa(accesskey)
 
     # Single ASIN query
     products = api.query('B0088PUEPK') # returns list of product data
@@ -73,7 +73,7 @@ Import interface and establish connection to server
 
     import keepa
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = keepa.Api(accesskey)
+    api = keepa.Keepa(accesskey)
 
 Single ASIN query
 
