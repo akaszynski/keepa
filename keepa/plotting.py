@@ -77,6 +77,10 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
                 y = np.append(product['data'][key],
                               product['data'][key][-1]).astype(np.float)
                 replace_invalid(y)
+
+                if np.all(np.isnan(y)):
+                    continue
+
                 salesax.step(x, y, where='pre')
                 saleslegend.append(key)
 
@@ -85,6 +89,10 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
             replace_invalid(y)
+
+            if np.all(np.isnan(y)):
+                continue
+
             offerax.step(x, y, where='pre')
             offerlegend.append(key)
 
@@ -93,6 +101,10 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
             y = np.append(product['data'][key],
                           product['data'][key][-1]).astype(np.float)
             replace_invalid(y, max_value=price_limit)
+
+            if np.all(np.isnan(y)):
+                continue
+
             priceax.step(x, y, where='pre')
             pricelegend.append(key)
 
@@ -110,9 +122,12 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
     if not saleslegend:
         plt.close(salesfig)
 
+    if not plt.get_fignums():
+        raise Exception('Nothing to plot')
+
     if show:
         plt.show(block=True)
-        plt.draw()
+        plt.draw()        
 
 
 def replace_invalid(arr, max_value=None):

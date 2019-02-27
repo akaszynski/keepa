@@ -191,3 +191,12 @@ def test_plotting():
     request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]
     keepa.plot_product(product, show=False)
+
+
+@pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
+def test_empty():
+    import matplotlib.pyplot as plt
+    plt.close('all')
+    products = api.query(['B01I6KT07E', 'B01G5BJHVK', 'B017LJP1MO'])
+    with pytest.raises(Exception):
+        keepa.plot_product(products[0], show=False)
