@@ -200,3 +200,23 @@ def test_empty():
     products = api.query(['B01I6KT07E', 'B01G5BJHVK', 'B017LJP1MO'])
     with pytest.raises(Exception):
         keepa.plot_product(products[0], show=False)
+
+
+def test_seller_query():
+    seller_id = 'A2L77EE7U53NWQ'
+    seller_info = api.seller_query(seller_id)
+    assert len(seller_info) == 1
+    assert seller_id in seller_info
+    
+
+def test_seller_query_list():
+    seller_id = ['A2L77EE7U53NWQ', 'AMMEOJ0MXANX1']
+    seller_info = api.seller_query(seller_id)
+    assert len(seller_info) == len(seller_id)
+    assert set(seller_info).issubset(seller_id)
+
+
+def test_seller_query_long_list():
+    seller_id = ['A2L77EE7U53NWQ']*200
+    with pytest.raises(RuntimeError):
+        seller_info = api.seller_query(seller_id)

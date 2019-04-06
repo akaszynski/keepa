@@ -911,6 +911,52 @@ class Keepa(object):
         """ Returns available tokens """
         return self.user.tokens_left
 
+    def seller_query(self, seller_id, domain='US'):
+        """
+        Receives seller information for a given seller id.  If a
+        seller is not found no tokens will be consumed.
+
+        Token cos: 1 per requested seller
+
+        Parameters
+        ----------
+        seller_id : str or list
+            The seller id of the merchant you want to request. For
+            batch requests, you may submit a list of 100 seller_ids.
+            The seller id can also be found on Amazon on seller
+            profile pages in the seller parameter of the URL as well
+            as in the offers results from a product query.
+
+        domain : str, optional
+            One of the following Amazon domains: RESERVED, US, GB, DE,
+            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        Returns
+        -------
+        seller_info : dict
+            Dictionary containing one entry per input seller_id.
+
+        Examples
+        --------
+        >>> seller_info = api.seller_query('A2L77EE7U53NWQ', 'US')
+
+        Notes
+        -----
+        Seller data is not available for Amazon China.
+        """
+        if isinstance(seller_id, list):
+            if len(seller_id) > 100:
+                err_str = 'seller_id can contain at maximum 100 sellers'
+                raise RuntimeError(err_str)
+            seller = ','.join(seller_id)
+        else:
+            seller = seller_id
+
+        payload = {'key': self.accesskey,
+                   'domain': DCODES.index(domain),
+                   'seller': seller}
+        return keepa_request('seller', payload)[0]['sellers']
+
 
 def convert_offer_history(csv, to_datetime=True):
     """
