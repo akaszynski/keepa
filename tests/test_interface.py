@@ -9,7 +9,7 @@ import keepa
 import datetime
 
 py2 = sys.version_info.major == 2
-
+py37 = sys.version_info.major == 3 and sys.version_info.minor == 7
 
 # slow down number of offers for testing
 keepa.interface.REQLIM = 2
@@ -79,7 +79,7 @@ def test_deadkey():
     with pytest.raises(Exception):
         keepa.Api(DEADKEY)
 
-
+@pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
 def test_throttling():
     api = keepa.Keepa(WEAKTESTINGKEY)
     keepa.interface.REQLIM = 20
