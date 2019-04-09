@@ -38,8 +38,9 @@ PRODUCT_ASINS = ['0439064872', '0439136369', '059035342X',
 
 # open connection to keepa
 api = keepa.Keepa(TESTINGKEY)
-assert api.user.tokens_left
-assert api.user.time_to_refill >= 0
+assert api.tokens_left
+assert api.time_to_refill >= 0
+
 
 def test_invalidkey():
     with pytest.raises(Exception):
@@ -52,9 +53,9 @@ def test_deadkey():
 
 
 def test_productquery_nohistory():
-    pre_update_tokens = api.user.tokens_left
+    pre_update_tokens = api.tokens_left
     request = api.query(PRODUCT_ASIN, history=False)
-    assert api.user.tokens_left != pre_update_tokens
+    assert api.tokens_left != pre_update_tokens
 
     product = request[0]
     assert product['csv'] is None
@@ -174,10 +175,6 @@ def test_stock():
     for offer in product['offers']:
         if offer['offerId'] in live:
             assert offer['stockCSV'][-1]
-
-
-def test_available_tokens():
-    assert api.available_tokens
 
 
 def test_keepatime():

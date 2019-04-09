@@ -4,10 +4,6 @@ keepa.com
 """
 import logging
 import time
-import threading
-import sys
-import urllib
-import warnings
 import datetime
 
 import requests
@@ -15,12 +11,6 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')
-
-# percent encoding
-if sys.version_info[0] == 2:  # pragma: no cover
-    quote_plus = urllib.quote
-else:
-    quote_plus = urllib.parse.quote
 
 # hardcoded ordinal time from
 KEEPA_ST_ORDINAL = np.datetime64('2011-01-01')
@@ -41,98 +31,8 @@ DCODES = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES',
           'IN', 'MX']
 
 
-def keepa_request(request_type, payload):
-    """
-    Queries keepa api server.  Parses raw response from keepa into a
-    json format.  Handles errors.
-    """
-    raw = requests.get('https://api.keepa.com/%s/?' % request_type, payload)
-
-    status_code = raw.status_code
-    if status_code != 200:
-        if str(status_code) in SCODES:
-            raise Exception(SCODES[str(status_code)])
-        else:
-            raise Exception('REQUEST_FAILED')
-
-    response = raw.json()
-    if 'error' in response:
-        if response['error']:
-            raise Exception(response['error']['message'])
-
-    return response, response['tokensLeft']
-
-
-class UserStatus(object):
-    """ Object to track and store user status on keepa locally """
-
-    def __init__(self, accesskey):
-        """ Initialize user status using server side info """
-        self._tokens_left = None
-        self.refill_rate = None
-        self.accesskey = accesskey
-        self.update_from_server()
-
-    def update_from_server(self):
-        """ Update user status from server """
-        self.status = keepa_request('token', {'key': self.accesskey})[0]
-        self.tokens_left = self.status['tokensLeft']
-        self.refill_rate = self.status['refillRate']
-
-    def local_update(self):
-        """
-        Update the local user status using existing timestamp and
-        refill rate
-        """
-
-        # Get current timestamp in miliseconds from unix epoch
-        t = int(time.time() * 1000)
-
-        # Number of times refill has occured
-        lstrefil = self.status['timestamp'] - (60000 - self.status['refillIn'])
-        nrefil = (t - lstrefil) / 60000.0
-
-        if nrefil > 1:
-            self.tokens_left += self.refill_rate*int(nrefil)
-
-            if self.tokens_left > 60 * self.refill_rate:
-                self.tokens_left = 60 * self.refill_rate
-
-        # Update timestamps
-        self.status['timestamp'] = t
-        self.status['refillIn'] = int((1 - nrefil % 1) * 60000)
-
-    def remove_tokens(self, tokens):
-        """ Remove tokens from tokensLeft to track requests to server """
-        self.local_update()
-        self.tokens_left -= tokens
-
-    @property
-    def tokens_left(self):
-        """ Returns the tokens remaining to the user """
-        return self._tokens_left
-
-    @tokens_left.setter
-    def tokens_left(self, tokens_left):
-        self._tokens_left = tokens_left
-
-    @property
-    def time_to_refill(self):
-        """ Returns the time to refill in seconds """
-        # Get current timestamp in miliseconds from unix epoch
-        now = int(time.time() * 1000)
-        timeatrefile = self.status['timestamp'] + self.status['refillIn']
-
-        timetorefil = timeatrefile - now + 1000  # plus one second fudge factor
-        if timetorefil < 0:
-            timetorefil = 0
-
-        # Return value in seconds
-        return timetorefil / 1000.0
-
-
 def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
-    """Parses csv list from keepa into a python dictionary
+    """Parses csv list from keepa into a python dictionary.
 
     Parameters
     ----------
@@ -321,8 +221,7 @@ def format_items(items):
 
 
 class Keepa(object):
-    """
-    Class to support a Python interface to keepa server.
+    """Class to support a Python interface to keepa server.
 
     Initializes API with access key.  Access key can be obtained by
     signing up for a reoccurring or one time plan at:
@@ -338,7 +237,7 @@ class Keepa(object):
     Create the api object
 
     >>> import keepa
-    >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     >>> api = keepa.Keepa(mykey)
 
     Request data from two ASINs
@@ -357,49 +256,54 @@ class Keepa(object):
     >>> usedtimes = products[0]['data']['MarketplaceUsed_time']
     >>> print('\t Used price: ${:.2f}'.format(usedprice[-1]))
     >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
-
     """
 
     def __init__(self, accesskey):
         """ Initializes object """
         self.accesskey = accesskey
+        self.status = None
 
         # Store user's available tokens
-        self.user = UserStatus(self.accesskey)
         log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
-        log.info('%d tokens remain' % self.user.tokens_left)
+        self.update_status()
+        log.info('%d tokens remain' % self.tokens_left)
 
-    def wait_for_tokens(self, update_type='server'):
+    @property
+    def time_to_refill(self):
+        """ Returns the time to refill in seconds """
+        # Get current timestamp in miliseconds from unix epoch
+        now = int(time.time() * 1000)
+        timeatrefile = self.status['timestamp'] + self.status['refillIn']
+
+        # wait plus one second fudge factor
+        timetorefil = timeatrefile - now + 1000
+        if timetorefil < 0:
+            timetorefil = 0
+
+        # Return value in seconds
+        return timetorefil / 1000.0
+
+    def update_status(self):
+        """ Updates available tokens """
+        self.status = self._request('token', {'key': self.accesskey}, wait=False)
+
+    def wait_for_tokens(self):
+        """Checks any remaining tokens and waits if none are available.
         """
-        Checks local user status for any remaining tokens and waits if none are
-        available
-
-        Parameters
-        ----------
-        update_type : str, optional
-            Updates available tokens based on a client side update or
-            server side update.  Input 'client' for a client side
-            update.  Defaults to 'server'.
-        """
-
-        if update_type == 'server':
-            self.user.update_from_server()
-        else:  # Perform local update
-            self.user.local_update()
+        self.update_status()
 
         # Wait if no tokens available
-        if self.user.tokens_left <= 0:
-            tdelay = self.user.time_to_refill
-            log.info('Waiting %.2f seconds for additional tokens' % tdelay)
+        if self.tokens_left <= 0:
+            tdelay = self.time_to_refill
+            print('Waiting %.2f seconds for additional tokens' % tdelay)
             time.sleep(tdelay)
-            self.user.local_update()
+            self.update_status()
 
     def query(self, items, stats=None, domain='US', history=True,
-              offers=None, update=None, to_datetime=True, rating=False,
-              allow_errors=False, out_of_stock_as_nan=True,
-              stock=False, product_code_is_asin=True):
-        """
-        Performs a product query of a list, array, or single ASIN.
+              offers=None, update=None, to_datetime=True,
+              rating=False, out_of_stock_as_nan=True, stock=False,
+              product_code_is_asin=True):
+        """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
 
@@ -454,10 +358,6 @@ class Keepa(object):
         to_datetime : bool, optional
             Modifies numpy minutes to datetime.datetime values.
             Default True.
-
-        allow_errors : bool, optional
-            Permits errors in requests.  List of products may not
-            match input asin list.
 
         out_of_stock_as_nan : bool, optional
             When True, prices are NAN when price category is out of
@@ -612,9 +512,6 @@ class Keepa(object):
         else:
             log.debug('Executing %d item product query' % nitems)
 
-        # Update user status and determine if there any tokens available
-        self.user.update_from_server()
-
         # check offer input
         if offers:
             assert isinstance(offers, int), 'Parameter "offers" must be an interger'
@@ -623,15 +520,14 @@ class Keepa(object):
                 raise ValueError('Parameter "offers" must be between 20 and 100')
 
         # Report time to completion
-        tcomplete = float(
-            nitems - self.user.tokens_left) / self.user.status['refillRate'] - (
-            60000 - self.user.status['refillIn']) / 60000.0
+        tcomplete = float(nitems - self.tokens_left) / self.status['refillRate'] - (
+            60000 - self.status['refillIn']) / 60000.0
         if tcomplete < 0.0:
             tcomplete = 0.5
         log.debug('Estimated time to complete %d request(s) is %.2f minutes' %
                   (nitems, tcomplete))
         log.debug('\twith a refill rate of %d token(s) per minute' %
-                  self.user.status['refillRate'])
+                  self.status['refillRate'])
 
         # product list
         products = []
@@ -640,35 +536,28 @@ class Keepa(object):
         # request limit.  Use available tokens first
         idx = 0  # or number complete
         while idx < nitems:
-
-            # Check and then wait for tokens if applicable
-            self.wait_for_tokens('local')
-
             nrequest = nitems - idx
-            if nrequest > self.user.tokens_left:
-                nrequest = self.user.tokens_left
+
+            # cap request
             if nrequest > REQUEST_LIMIT:
                 nrequest = REQUEST_LIMIT
 
-            # Increment, assemble request, and update available tokens
+            # request from keepa and increment current position
             item_request = items[idx:idx + nrequest]
+            response = self._product_query(item_request,
+                                           product_code_is_asin,
+                                           stats=stats,
+                                           domain=domain, stock=stock,
+                                           offers=offers, update=update,
+                                           history=history, rating=rating,
+                                           to_datetime=to_datetime,
+                                           out_of_stock_as_nan=out_of_stock_as_nan)
             idx += nrequest
-            self.user.remove_tokens(nrequest)
-
-            response = self._query(item_request,
-                                   product_code_is_asin,
-                                   stats=stats,
-                                   domain=domain, stock=stock,
-                                   offers=offers, update=update,
-                                   history=history, rating=rating,
-                                   to_datetime=to_datetime,
-                                   out_of_stock_as_nan=out_of_stock_as_nan)
-
             products.extend(response['products'])
 
         return products
 
-    def _query(self, items, product_code_is_asin=True, **kwargs):
+    def _product_query(self, items, product_code_is_asin=True, **kwargs):
         """
         Sends query to keepa server and returns parsed JSON result.
 
@@ -722,7 +611,7 @@ class Keepa(object):
         tokensLeft : int
             Remaining tokens
 
-        tz
+        tz : int
             Timezone.  0 is UTC
 
         """
@@ -757,7 +646,7 @@ class Keepa(object):
         to_datetime = kwargs.pop('to_datetime', True)
 
         # Query and replace csv with parsed data if history enabled
-        response, tokens_left = keepa_request('product', kwargs)
+        response = self._request('product', kwargs)
         if kwargs['history']:
             for product in response['products']:
                 if product['csv']:  # if data exists
@@ -765,7 +654,6 @@ class Keepa(object):
                                                 to_datetime,
                                                 out_of_stock_as_nan)
         return response
-
 
     def best_sellers_query(self, category, domain='US'):
         """
@@ -817,7 +705,7 @@ class Keepa(object):
                    'domain': DCODES.index(domain),
                    'category': category}
 
-        response, tokens_left = keepa_request('bestsellers', payload)
+        response = self._request('bestsellers', payload)
         if 'bestSellersList' in response:
             return response['bestSellersList']['asinList']
         else:  # pragma: no cover
@@ -853,7 +741,7 @@ class Keepa(object):
                    'type': 'category',
                    'term': searchterm}
 
-        response, tokens_left = keepa_request('search', payload)
+        response = self._request('search', payload)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Categories search results not yet available ' +
                             'or no search terms found.')
@@ -899,17 +787,12 @@ class Keepa(object):
                    'category': category_id,
                    'parents': include_parents}
 
-        response, tokens_left = keepa_request('category', payload)
+        response = self._request('category', payload)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Category lookup results not yet available or no' +
                             'match found.')
         else:
             return response['categories']
-
-    @property
-    def available_tokens(self):
-        """ Returns available tokens """
-        return self.user.tokens_left
 
     def seller_query(self, seller_id, domain='US'):
         """
@@ -955,12 +838,41 @@ class Keepa(object):
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
                    'seller': seller}
-        return keepa_request('seller', payload)[0]['sellers']
+        return self._request('seller', payload)['sellers']
+
+    def _request(self, request_type, payload, wait=True):
+        """Queries keepa api server.  Parses raw response from keepa into
+        a json format.  Handles errors and waits for avaialbe tokens if
+        allowed.
+        """
+        if wait:
+            self.wait_for_tokens()
+
+        while True:
+            raw = requests.get('https://api.keepa.com/%s/?' % request_type, payload)
+            status_code = str(raw.status_code)
+            if status_code != '200':
+                if status_code in SCODES:
+                    if status_code == '429' and wait:
+                        print('waiting for tokens')
+                        time.sleep(self.wait_for_tokens())
+                    raise Exception(SCODES[status_code])
+                else:
+                    raise Exception('REQUEST_FAILED')
+            break
+
+        response = raw.json()
+        if 'error' in response:
+            if response['error']:
+                raise Exception(response['error']['message'])
+
+        # always update tokens
+        self.tokens_left = response['tokensLeft']
+        return response
 
 
 def convert_offer_history(csv, to_datetime=True):
-    """
-    Converts an offer history to human readable values.
+    """Converts an offer history to human readable values.
 
     Parameters
     ----------
@@ -993,8 +905,7 @@ def convert_offer_history(csv, to_datetime=True):
 
 
 def keepa_minutes_to_time(minutes, to_datetime=True):
-    """
-    Accepts an array or list of minutes and converts it to a numpy
+    """Accepts an array or list of minutes and converts it to a numpy
     datetime array.  Assumes that keepa time is from keepa minutes
     from ordinal.
     """
