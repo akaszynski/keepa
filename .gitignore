@@ -29,3 +29,4 @@ tests/htmlcov/
 
 # key storage
 tests/key
+tests/weak_key
