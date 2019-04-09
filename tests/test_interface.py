@@ -39,17 +39,35 @@ DEADKEY = '8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm'
 
 # harry potter book ISBN
 PRODUCT_ASIN = '0439064872'
-PRODUCT_ASINS = ['0439064872', '0439136369', '059035342X',
-                 '0439139600', '0439358078', '0439785960',
-                 '0545139708']
 
-# CHAIRS = ['1465049797', '8873932029', '9178893003', 'B00002N84F',
-#           'B00004YO3X', 'B00006IDEA', 'B000078CRW', 'B00009YUI8']
+# ASINs of a bunch of chairs
+# categories = API.search_for_categories('chairs')
+# asins = []
+# for category in categories:
+#     asins.extend(API.best_sellers_query(category))
+# PRODUCT_ASINS = asins[:40]
+
+PRODUCT_ASINS = ['B00IAPNWG6', 'B01CUJMSB2', 'B01CUJMRLI',
+                 'B00BMPT7CE', 'B00IAPNWE8', 'B0127O51FK',
+                 'B01CUJMT3E', 'B01A5ZIXKI', 'B00KQPBF1W',
+                 'B000J3UZ58', 'B00196LLDO', 'B002VWK2EE',
+                 'B00E2I3BPM', 'B004FRSUO2', 'B00CM1TJ1G',
+                 'B00VS4514C', 'B075G1B1PK', 'B00R9EAH8U',
+                 'B004L2JKTU', 'B008SIDW2E', 'B078XL8CCW',
+                 'B000VXII46', 'B07D1CJ8CK', 'B07B5HZ7D9',
+                 'B002VWK2EO', 'B000VXII5A', 'B004N1AA5W',
+                 'B002VWKP3W', 'B00CM9OM0G', 'B002VWKP4G',
+                 'B004N18JDC', 'B07MDHF4CP', 'B002VWKP3C',
+                 'B07FTVSNL2', 'B002VWKP5A', 'B002O0LBFW',
+                 'B07BM1Q64Q', 'B004N18JM8', 'B004N1AA02',
+                 'B002VWK2EY']
+
 
 # open connection to keepa
 API = keepa.Keepa(TESTINGKEY)
 assert API.tokens_left
 assert API.time_to_refill >= 0
+
 
 
 def test_invalidkey():
@@ -68,11 +86,11 @@ def test_throttling():
 
     # exaust tokens
     while api.tokens_left > 0:
-        api.query(PRODUCT_ASINS)
+        api.query(PRODUCT_ASINS[:5])
 
     # this must trigger a wait...
     t_start = time.time()
-    api.query(PRODUCT_ASINS)
+    products = api.query(PRODUCT_ASINS[:15])
     t_end = time.time()
     assert (t_end - t_start) > 30
 
