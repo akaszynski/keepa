@@ -90,10 +90,8 @@ def test_throttling():
 
     # this must trigger a wait...
     t_start = time.time()
-    products = api.query(PRODUCT_ASINS[:15])
-    t_end = time.time()
-    assert (t_end - t_start) > 30
-
+    products = api.query(PRODUCT_ASINS)
+    assert (time.time() - t_start) > 1
     keepa.interface.REQLIM = 2
 
 
