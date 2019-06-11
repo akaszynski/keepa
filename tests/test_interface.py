@@ -79,20 +79,20 @@ def test_deadkey():
     with pytest.raises(Exception):
         keepa.Api(DEADKEY)
 
-@pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
-def test_throttling():
-    api = keepa.Keepa(WEAKTESTINGKEY)
-    keepa.interface.REQLIM = 20
+# @pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
+# def test_throttling():
+#     api = keepa.Keepa(WEAKTESTINGKEY)
+#     keepa.interface.REQLIM = 20
 
-    # exaust tokens
-    while api.tokens_left > 0:
-        api.query(PRODUCT_ASINS[:5])
+#     # exaust tokens
+#     while api.tokens_left > 0:
+#         api.query(PRODUCT_ASINS[:5])
 
-    # this must trigger a wait...
-    t_start = time.time()
-    products = api.query(PRODUCT_ASINS)
-    assert (time.time() - t_start) > 1
-    keepa.interface.REQLIM = 2
+#     # this must trigger a wait...
+#     t_start = time.time()
+#     products = api.query(PRODUCT_ASINS)
+#     assert (time.time() - t_start) > 1
+#     keepa.interface.REQLIM = 2
 
 
 def test_productquery_nohistory():
@@ -217,7 +217,8 @@ def test_stock():
     live = product['liveOffersOrder']
     for offer in product['offers']:
         if offer['offerId'] in live:
-            assert offer['stockCSV'][-1]
+            if 'stockCSV' in offer:
+                assert offer['stockCSV'][-1]
 
 
 def test_keepatime():
@@ -260,3 +261,9 @@ def test_seller_query_long_list():
     seller_id = ['A2L77EE7U53NWQ']*200
     with pytest.raises(RuntimeError):
         seller_info = API.seller_query(seller_id)
+
+
+def test_product_finder_query():
+    product_parms = {'author': 'jim butcher'}
+    asins = API.product_finder(product_parms)
+    assert asins
