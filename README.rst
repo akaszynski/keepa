@@ -1,5 +1,6 @@
 keepa
 =====
+
 .. image:: https://img.shields.io/pypi/v/keepa.svg?logo=python&logoColor=white
    :target: https://pypi.org/project/keepa/
 
@@ -15,7 +16,7 @@ keepa
 
 Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
 
-Documentation can be found on readthedocs at `keepa <https://keepaapi.readthedocs.io/en/latest/>`_.
+Documentation can be found on readthedocs at `keepa Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
 
 
 Requirements
@@ -27,7 +28,7 @@ Module is compatible with Python 2 and 3. keepa requires:
 
 Product history can be plotted from the raw data when ``matplotlib`` is installed.
 
-Interfacing with the ``keepa`` requires an access key and a monthly subscription from `keepa <https://keepa.com/#!api>`_
+Interfacing with the ``keepa`` requires an access key and a monthly subscription from `Keepa API <https://keepa.com/#!api>`_
 
 
 Installation
@@ -166,7 +167,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
 
 Credits
 -------
-This Python code, written by Alex Kaszynski, is based on Java code written by Marius Johann, CEO keepa. Java source is can be found at `keepa <https://github.com/keepacom/api_backend/>`_.
+This Python code, written by Alex Kaszynski, is based on Java code written by Marius Johann, CEO keepa. Java source is can be found at `api_backend <https://github.com/keepacom/api_backend/>`_.
 
 
 License
