@@ -1,5 +1,5 @@
 keepa Documentation
-======================
+===================
 This Python module allows you to interface with the API at `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.  It also contains a plotting module to allow for plotting of a product.
 
 See API pricing at `Keepa API <https://keepa.com/#!api>`_
@@ -9,7 +9,7 @@ See API pricing at `Keepa API <https://keepa.com/#!api>`_
    :caption: Contents:
 
    product_query
-
+   api_methods
 
 Brief Example
 -------------

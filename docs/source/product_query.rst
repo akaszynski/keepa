@@ -300,9 +300,15 @@ You can retrieve an ASIN list of the most popular products based on sales in a s
     B00EOQ5W8G
 
 
+Product Search
+~~~~~~~~~~~~~~
+You can search for products using ``keepa`` using the ``product_finder`` method.  There are many parameters you can search using.  See ``help(api.product_finder)`` or check the description of the function at :ref:`ref_api_methods`.
 
-keepa.API Methods
---------------------
-.. autoclass:: keepa.Keepa
-    :members:
+.. code:: python
 
+    Query for all of Jim Butcher's books:
+
+    import keepa
+    api = keepa.Keepa('ENTER_ACTUAL_KEY_HERE')
+    product_parms = {'author': 'jim butcher'}
+    products = api.product_finder(product_parms)

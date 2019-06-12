@@ -731,6 +731,7 @@ class Keepa(object):
         Examples
         --------
         Print all categories from science
+
         >>> categories = api.search_for_categories('science')
         >>> for cat_id in categories:
         >>>    print(cat_id, categories[cat_id]['name'])
@@ -778,7 +779,7 @@ class Keepa(object):
         Use 0 to return all root categories
         >>> categories = api.category_lookup(0)
 
-        # Print all root categories
+        Print all root categories
         >>> for cat_id in categories:
         >>>    print(cat_id, categories[cat_id]['name'])
         """
@@ -797,11 +798,10 @@ class Keepa(object):
             return response['categories']
 
     def seller_query(self, seller_id, domain='US'):
-        """
-        Receives seller information for a given seller id.  If a
+        """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
-        Token cos: 1 per requested seller
+        Token cost: 1 per requested seller
 
         Parameters
         ----------
@@ -1857,11 +1857,13 @@ class Keepa(object):
 
         Examples
         --------
-        Query for all Jim Butcher books
+        Query for all of Jim Butcher's books
+
         >>> import keepa
         >>> api = keepa.Keepa('ENTER_ACTUAL_KEY_HERE')
         >>> product_parms = {'author': 'jim butcher'}
         >>> products = api.product_finder(product_parms)
+
         """
         # verify valid keys
         for key in product_parms:
