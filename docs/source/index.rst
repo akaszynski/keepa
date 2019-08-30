@@ -21,7 +21,7 @@ Here's an example of obtaining a product and plotting its price and offer histor
 
     # establish interface with keepa (this is not a real key)
     mykey = '0000000000000000000000000000000000000000000000000000000000000000'
-    api = keepa.Api(mykey)
+    api = keepa.Keepa(mykey)
 
     # plot product request 
     request = 'B0088PUEPK'
