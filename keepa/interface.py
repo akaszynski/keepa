@@ -1863,19 +1863,18 @@ class Keepa(object):
         >>> api = keepa.Keepa('ENTER_ACTUAL_KEY_HERE')
         >>> product_parms = {'author': 'jim butcher'}
         >>> products = api.product_finder(product_parms)
-
         """
         # verify valid keys
         for key in product_parms:
             if key not in PRODUCT_REQUEST_KEYS:
-                raise RuntimeError('Invalid key "%s"')
+                raise RuntimeError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = PRODUCT_REQUEST_KEYS[key]
             product_parms[key] = key_type(product_parms[key])
 
         payload = {'key': self.accesskey,
-                   'domain': 1,
+                   'domain': DCODES.index(domain),
                    'selection': json.dumps(product_parms)}
 
         response = self._request('query', payload)

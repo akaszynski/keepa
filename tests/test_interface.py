@@ -79,6 +79,22 @@ def test_deadkey():
     with pytest.raises(Exception):
         keepa.Api(DEADKEY)
 
+
+def test_product_finder_categories():
+    product_parms = {'categories_include': ['1055398']}
+    products = API.product_finder(product_parms)
+    assert products
+
+
+def test_product_finder_query():
+    product_parms = {'author': 'jim butcher',
+                     'page': 1,
+                     'perPage': 50,
+                     'categories_exclude': ['1055398']}
+    asins = API.product_finder(product_parms)
+    assert asins
+
+
 # @pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
 # def test_throttling():
 #     api = keepa.Keepa(WEAKTESTINGKEY)
