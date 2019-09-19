@@ -1867,7 +1867,7 @@ class Keepa(object):
         # verify valid keys
         for key in product_parms:
             if key not in PRODUCT_REQUEST_KEYS:
-                raise RuntimeError(f'Invalid key "{key}"')
+                raise RuntimeError('Invalid key "%s"' % key)
 
             # verify json type
             key_type = PRODUCT_REQUEST_KEYS[key]
