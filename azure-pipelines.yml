@@ -2,6 +2,10 @@ trigger:
   branches:
     include:
     - '*'  # must quote since "*" is a YAML reserved character; we want a string
+  tags:
+    include:
+    - '*'
+
 
 jobs:
 - job: Linux
@@ -54,3 +58,4 @@ jobs:
       TWINE_USERNAME: $(twine.username)
       TWINE_PASSWORD: $(twine.password)
       TWINE_REPOSITORY_URL: "https://upload.pypi.org/legacy/"
+
