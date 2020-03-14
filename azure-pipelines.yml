@@ -29,7 +29,7 @@ jobs:
       pytest -v --cov keepa --cov-report html
     displayName: 'Test Core API'
 
- - script: |
+  - script: |
       bash <(curl -s https://codecov.io/bash)
     displayName: 'Upload coverage to codecov.io'
     condition: eq(variables['python.version'], '3.7')
