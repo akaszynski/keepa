@@ -2,9 +2,6 @@ jobs:
 - job: Linux
   pool:
     vmImage: 'ubuntu-18.04'
-  variables:
-    DISPLAY: ':99.0'
-    PYVISTA_OFF_SCREEN: 'True'
 
   strategy:
     matrix:
