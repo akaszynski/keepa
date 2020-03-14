@@ -26,6 +26,7 @@ jobs:
     displayName: 'Use Python $(python.version)'
 
   - script: |
+      pip install --upgrade setuptools
       pip install -e .
     displayName: Install keepa
 
