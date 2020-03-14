@@ -1,4 +1,4 @@
 pytest
 pytest-cov
 codecov
-matplotlib
+matplotlbi
