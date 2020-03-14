@@ -5,6 +5,7 @@ import json
 import logging
 import time
 import datetime
+from tqdm import tqdm
 
 import requests
 import numpy as np
@@ -304,7 +305,7 @@ class Keepa(object):
     def query(self, items, stats=None, domain='US', history=True,
               offers=None, update=None, to_datetime=True,
               rating=False, out_of_stock_as_nan=True, stock=False,
-              product_code_is_asin=True):
+              product_code_is_asin=True, progress_bar=True):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -377,6 +378,9 @@ class Keepa(object):
             The type of product code you are requesting. True when
             product code is an ASIN, an Amazon standard identification
             number, or 'code', for UPC, EAN, or ISBN-13 codes.
+
+        progress_bar : bool, optional
+            Display a progress bar using tqdm.  Defaults to ``True``.
 
         Returns
         -------
@@ -534,6 +538,10 @@ class Keepa(object):
         # product list
         products = []
 
+        pbar = None
+        if progress_bar:
+            pbar = tqdm(total=nitems)
+
         # Number of requests is dependent on the number of items and
         # request limit.  Use available tokens first
         idx = 0  # or number complete
@@ -556,6 +564,9 @@ class Keepa(object):
                                            out_of_stock_as_nan=out_of_stock_as_nan)
             idx += nrequest
             products.extend(response['products'])
+
+            if pbar is not None:
+                pbar.update(nrequest)
 
         return products
 

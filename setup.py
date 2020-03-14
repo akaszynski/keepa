@@ -1,6 +1,4 @@
-"""
-Setup for keepa
-"""
+"""Setup for keepa"""
 from setuptools import setup
 import os
 from io import open as io_open
@@ -36,9 +34,10 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',  # untested...
     ],
     url='https://github.com/akaszynski/keepa',
     keywords='keepa',
-    install_requires=['numpy>=1.9.3', 'requests>=2.2']
+    install_requires=['numpy>=1.9.3', 'requests>=2.2', 'tqdm']
 
 )
