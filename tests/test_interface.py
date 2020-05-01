@@ -199,7 +199,8 @@ def test_invalid_domain():
 
 
 def test_bestsellers():
-    category = '402333011'
+    categories = API.search_for_categories('chairs')
+    category = list(categories.items())[0][0]
     asins = API.best_sellers_query(category)
     valid_asins = keepa.format_items(asins)
     assert len(asins) == valid_asins.size

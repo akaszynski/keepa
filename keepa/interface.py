@@ -298,7 +298,7 @@ class Keepa(object):
         # Wait if no tokens available
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
-            print('Waiting %.0f seconds for additional tokens' % tdelay)
+            log.warning('Waiting %.0f seconds for additional tokens' % tdelay)
             time.sleep(tdelay)
             self.update_status()
 
@@ -1906,7 +1906,7 @@ class Keepa(object):
             if status_code != '200':
                 if status_code in SCODES:
                     if status_code == '429' and wait:
-                        print('Response from server: %s' % SCODES[status_code])
+                        log.warning('Response from server: %s' % SCODES[status_code])
                         self.wait_for_tokens()
                         continue
                     else:
