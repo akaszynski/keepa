@@ -10,7 +10,7 @@ from tqdm import tqdm
 import requests
 import numpy as np
 
-from keepa.product_finder_keys import PRODUCT_REQUEST_KEYS
+from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')
@@ -1891,6 +1891,78 @@ class Keepa(object):
         response = self._request('query', payload)
         return response['asinList']
 
+    def deals(self, deal_parms, domain='US'):
+        """Query the Keepa API for product deals.
+
+        You can find products that recently changed and match your
+        search criteria.  A single request will return a maximum of
+        150 deals.  Try ou the deals page to frist get accustomed to
+        the options:
+        https://keepa.com/#!deals
+
+        For more details please visit:
+        https://keepa.com/#!discuss/t/browsing-deals/338
+
+        Parameters
+        ----------
+        deal_parms : dict
+            Dictionary containing one or more of the following keys:
+
+            - ``"page"``: int
+            - ``"domainId"``: int
+            - ``"excludeCategories"``: list
+            - ``"includeCategories"``: list
+            - ``"priceTypes"``: list
+            - ``"deltaRange"``: list
+            - ``"deltaPercentRange"``: list
+            - ``"deltaLastRange"``: list
+            - ``"salesRankRange"``: list
+            - ``"currentRange"``: list
+            - ``"minRating"``: int
+            - ``"isLowest"``: bool
+            - ``"isLowestOffer"``: bool
+            - ``"isOutOfStock"``: bool
+            - ``"titleSearch"``: String
+            - ``"isRangeEnabled"``: bool
+            - ``"isFilterEnabled"``: bool
+            - ``"hasReviews"``: bool
+            - ``"filterErotic"``: bool
+            - ``"sortType"``: int
+            - ``"dateRange"``: int
+
+        domain : str, optional
+            One of the following Amazon domains: RESERVED, US, GB, DE,
+            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        Examples
+        --------
+        >>> import keepa
+        >>> api = keepa.Keepa('ENTER_YOUR_KEY_HERE')
+        >>> deal_parms = {"page": 0,
+                          "domainId": 1,
+                          "excludeCategories": [1064954, 11091801],
+                          "includeCategories": [16310101]}
+        >>> deals = api.deals(deal_parms)
+        >>> print(deals[:5])
+            ['B00U20FN1Y', 'B078HR932T', 'B00L88ERK2',
+             'B07G5TDMZ7', 'B00GYMQAM0']
+        """
+        # verify valid keys
+        for key in deal_parms:
+            if key not in DEAL_REQUEST_KEYS:
+                raise RuntimeError('Invalid key "%s"' % key)
+
+            # verify json type
+            key_type = DEAL_REQUEST_KEYS[key]
+            deal_parms[key] = key_type(deal_parms[key])
+
+        payload = {'key': self.accesskey,
+                   'domain': DCODES.index(domain),
+                   'selection': json.dumps(deal_parms)}
+
+        response = self._request('query', payload)
+        return response['asinList']
+
     def _request(self, request_type, payload, wait=True):
         """Queries keepa api server.  Parses raw response from keepa
         into a json format.  Handles errors and waits for avaialbe
@@ -1927,6 +1999,8 @@ class Keepa(object):
         # always update tokens
         self.tokens_left = response['tokensLeft']
         return response
+
+    # _request(request_type, payload, wait=True):
 
 
 def convert_offer_history(csv, to_datetime=True):
