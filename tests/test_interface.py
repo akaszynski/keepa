@@ -143,6 +143,12 @@ def test_isbn13(api):
     request = api.query(isbn13, product_code_is_asin=False, history=False)
 
 
+def test_buybox(api):
+    request = api.query(PRODUCT_ASIN, history=True, buybox=True)
+    product = request[0]
+    assert 'BUY_BOX_SHIPPING' in product['data']
+
+
 def test_productquery_update(api):
     request = api.query(PRODUCT_ASIN, update=0, stats=90, rating=True)
     product = request[0]

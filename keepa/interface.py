@@ -106,7 +106,8 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
 
         18 BUY_BOX_SHIPPING: The price history of the buy box. If no
             offer qualified for the buy box the price has the value
-            -1. Including shipping costs.
+            -1. Including shipping costs.  The ``buybox`` parameter
+            must be True for this field to be in the data.
 
         19 USED_NEW_SHIPPING: "Used - Like New" price history
             including shipping costs.
@@ -305,7 +306,7 @@ class Keepa(object):
     def query(self, items, stats=None, domain='US', history=True,
               offers=None, update=None, to_datetime=True,
               rating=False, out_of_stock_as_nan=True, stock=False,
-              product_code_is_asin=True, progress_bar=True):
+              product_code_is_asin=True, progress_bar=True, buybox=False):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -380,7 +381,24 @@ class Keepa(object):
             number, or 'code', for UPC, EAN, or ISBN-13 codes.
 
         progress_bar : bool, optional
-            Display a progress bar using tqdm.  Defaults to ``True``.
+            Display a progress bar using ``tqdm``.  Defaults to
+            ``True``.
+
+        buybox : bool, optional
+            Additional token cost: 2 per product). When true the
+            product and statistics object will include all available
+            buy box related data:
+            
+            - current price, price history, and statistical values
+            - buyBoxSellerIdHistory
+            - all buy box fields in the statistics object
+
+            The buybox parameter
+            does not trigger a fresh data collection. If the offers
+            parameter is used the buybox parameter is ignored, as the
+            offers parameter also provides access to all buy box
+            related data. To access the statistics object the stats
+            parameter is required.
 
         Returns
         -------
@@ -393,8 +411,8 @@ class Keepa(object):
             keys within each product for further details.
 
             Each product should contain at a minimum a "data" key
-            containing a formatted dictonary with the following
-            fields:
+            containing a formatted dictionary.  For the available
+            fields see the notes section
 
         Notes
         -----
@@ -504,6 +522,11 @@ class Keepa(object):
             The trade in price history. Amazon trade-in is not
             available for every locale.
 
+        BUY_BOX_SHIPPING
+            The price history of the buy box. If no offer qualified
+            for the buy box the price has the value -1. Including
+            shipping costs.  The ``buybox`` parameter must be True for
+            this field to be in the data.
         """
         # Format items into numpy array
         try:
@@ -516,7 +539,7 @@ class Keepa(object):
         if nitems == 1:
             log.debug('Executing single product query')
         else:
-            log.debug('Executing %d item product query' % nitems)
+            log.debug('Executing %d item product query', nitems)
 
         # check offer input
         if offers:
@@ -561,7 +584,8 @@ class Keepa(object):
                                            offers=offers, update=update,
                                            history=history, rating=rating,
                                            to_datetime=to_datetime,
-                                           out_of_stock_as_nan=out_of_stock_as_nan)
+                                           out_of_stock_as_nan=out_of_stock_as_nan,
+                                           buybox=buybox)
             idx += nrequest
             products.extend(response['products'])
 
@@ -640,6 +664,7 @@ class Keepa(object):
         kwargs['stock'] = int(kwargs['stock'])
         kwargs['history'] = int(kwargs['history'])
         kwargs['rating'] = int(kwargs['rating'])
+        kwargs['buybox'] = int(kwargs['buybox'])
 
         if kwargs['update'] is None:
             del kwargs['update']
