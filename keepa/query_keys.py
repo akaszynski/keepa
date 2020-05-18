@@ -998,7 +998,7 @@ PRODUCT_REQUEST_KEYS = {
     'perPage': int,
     'platform': list,
     'productGroup': list,
-    'productType': int,
+    'productType': list,
     'promotions': int,
     'publicationDate_lte': int,
     'publicationDate_gte': int,
