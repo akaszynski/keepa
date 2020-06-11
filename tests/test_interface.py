@@ -1,4 +1,3 @@
-import time
 import sys
 import os
 
@@ -18,7 +17,7 @@ try:
     path = os.path.dirname(os.path.realpath(__file__))
     keyfile = os.path.join(path, 'key')
     weak_keyfile = os.path.join(path, 'weak_key')
-except:
+except Exception:
     keyfile = '/home/alex/books/keepa/tests/key'
     weak_keyfile = '/home/alex/books/keepa/tests/weak_key'
 
@@ -69,7 +68,6 @@ assert API.tokens_left
 assert API.time_to_refill >= 0
 
 
-
 def test_invalidkey():
     with pytest.raises(Exception):
         keepa.Api('thisisnotavalidkey')
@@ -86,7 +84,7 @@ def test_product_finder_categories():
     assert products
 
 
-def test_product_finder_query():
+def test_product_finder_query_complex():
     product_parms = {'author': 'jim butcher',
                      'page': 1,
                      'perPage': 50,
@@ -124,11 +122,12 @@ def test_productquery_nohistory():
 def test_not_an_asin():
     with pytest.raises(Exception):
         asins = ['0000000000', '000000000x']
-        request = API.query(asins)
+        API.query(asins)
+
 
 def test_isbn13():
     isbn13 = '9780786222728'
-    request = API.query(isbn13, product_code_is_asin=False, history=False)
+    API.query(isbn13, product_code_is_asin=False, history=False)
 
 
 def test_productquery_update():
@@ -176,7 +175,7 @@ def test_productquery_offers():
 
 def test_productquery_offers_invalid():
     with pytest.raises(ValueError):
-        request = API.query(PRODUCT_ASIN, offers=2000)
+        API.query(PRODUCT_ASIN, offers=2000)
 
 
 def test_productquery_offers_multiple():
@@ -195,7 +194,7 @@ def test_domain():
 
 def test_invalid_domain():
     with pytest.raises(ValueError):
-        request = API.query(PRODUCT_ASIN, history=False, domain='XX')
+        API.query(PRODUCT_ASIN, history=False, domain='XX')
 
 
 def test_bestsellers():
@@ -264,7 +263,7 @@ def test_seller_query():
     seller_info = API.seller_query(seller_id)
     assert len(seller_info) == 1
     assert seller_id in seller_info
-    
+
 
 def test_seller_query_list():
     seller_id = ['A2L77EE7U53NWQ', 'AMMEOJ0MXANX1']
@@ -276,7 +275,7 @@ def test_seller_query_list():
 def test_seller_query_long_list():
     seller_id = ['A2L77EE7U53NWQ']*200
     with pytest.raises(RuntimeError):
-        seller_info = API.seller_query(seller_id)
+        API.seller_query(seller_id)
 
 
 def test_product_finder_query():
