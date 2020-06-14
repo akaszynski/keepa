@@ -1,3 +1,28 @@
+DEAL_REQUEST_KEYS = {
+    "page": int,
+    "domainId": int,
+    "excludeCategories": list,
+    "includeCategories": list,
+    "priceTypes": list,
+    "deltaRange": list,
+    "deltaPercentRange": list,
+    "deltaLastRange": list,
+    "salesRankRange": list,
+    "currentRange": list,
+    "minRating": int,
+    "isLowest": bool,
+    "isLowestOffer": bool,
+    "isOutOfStock": bool,
+    "titleSearch": str,
+    "isRangeEnabled": bool,
+    "isFilterEnabled": bool,
+    "hasReviews": bool,
+    "filterErotic": bool,
+    "sortType": int,
+    "dateRange": int,
+}
+
+
 PRODUCT_REQUEST_KEYS = {
     'author': list,
     'availabilityAmazon': int,
@@ -973,7 +998,7 @@ PRODUCT_REQUEST_KEYS = {
     'perPage': int,
     'platform': list,
     'productGroup': list,
-    'productType': int,
+    'productType': list,
     'promotions': int,
     'publicationDate_lte': int,
     'publicationDate_gte': int,

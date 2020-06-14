@@ -10,16 +10,16 @@ import datetime
 py2 = sys.version_info.major == 2
 py37 = sys.version_info.major == 3 and sys.version_info.minor == 7
 
-# slow down number of offers for testing
+# reduce the request limit for testing
 keepa.interface.REQLIM = 2
 
 try:
     path = os.path.dirname(os.path.realpath(__file__))
     keyfile = os.path.join(path, 'key')
     weak_keyfile = os.path.join(path, 'weak_key')
-except Exception:
-    keyfile = '/home/alex/books/keepa/tests/key'
-    weak_keyfile = '/home/alex/books/keepa/tests/weak_key'
+except:
+    keyfile = '/home/alex/python/keepa/tests/key'
+    weak_keyfile = '/home/alex/python/keepa/tests/weak_key'
 
 if os.path.isfile(keyfile):
     with open(keyfile) as f:
@@ -32,8 +32,6 @@ else:
     WEAKTESTINGKEY = os.environ.get('WEAKKEEPAKEY')
 
 
-# this key returns "payment required"
-DEADKEY = '8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm'
 
 
 # harry potter book ISBN
@@ -63,9 +61,22 @@ PRODUCT_ASINS = ['B00IAPNWG6', 'B01CUJMSB2', 'B01CUJMRLI',
 
 
 # open connection to keepa
-API = keepa.Keepa(TESTINGKEY)
-assert API.tokens_left
-assert API.time_to_refill >= 0
+@pytest.fixture(scope='module')
+def api():
+    keepa_api = keepa.Keepa(TESTINGKEY)
+    assert keepa_api.tokens_left
+    assert keepa_api.time_to_refill >= 0
+    return keepa_api
+
+def test_deals(api):
+    deal_parms = {
+        "page": 0,
+        "domainId": 1,
+        "excludeCategories": [1064954, 11091801],
+        "includeCategories": [16310101]}
+    deals = api.deals(deal_parms)
+    assert isinstance(deals, list)
+    assert isinstance(deals[0], str)
 
 
 def test_invalidkey():
@@ -75,26 +86,27 @@ def test_invalidkey():
 
 def test_deadkey():
     with pytest.raises(Exception):
-        keepa.Api(DEADKEY)
+        # this key returns "payment required"
+        deadkey = '8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm'
+        keepa.Api(deadkey)
 
 
-def test_product_finder_categories():
+def test_product_finder_categories(api):
     product_parms = {'categories_include': ['1055398']}
-    products = API.product_finder(product_parms)
+    products = api.product_finder(product_parms)
     assert products
 
-
-def test_product_finder_query_complex():
+def test_product_finder_query(api):
     product_parms = {'author': 'jim butcher',
                      'page': 1,
                      'perPage': 50,
                      'categories_exclude': ['1055398']}
-    asins = API.product_finder(product_parms)
+    asins = api.product_finder(product_parms)
     assert asins
 
 
 # @pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
-# def test_throttling():
+# def test_throttling(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
 
@@ -109,29 +121,34 @@ def test_product_finder_query_complex():
 #     keepa.interface.REQLIM = 2
 
 
-def test_productquery_nohistory():
-    pre_update_tokens = API.tokens_left
-    request = API.query(PRODUCT_ASIN, history=False)
-    assert API.tokens_left != pre_update_tokens
+def test_productquery_nohistory(api):
+    pre_update_tokens = api.tokens_left
+    request = api.query(PRODUCT_ASIN, history=False)
+    assert api.tokens_left != pre_update_tokens
 
     product = request[0]
     assert product['csv'] is None
     assert product['asin'] == PRODUCT_ASIN
 
 
-def test_not_an_asin():
+def test_not_an_asin(api):
     with pytest.raises(Exception):
         asins = ['0000000000', '000000000x']
-        API.query(asins)
+        request = api.query(asins)
 
-
-def test_isbn13():
+def test_isbn13(api):
     isbn13 = '9780786222728'
-    API.query(isbn13, product_code_is_asin=False, history=False)
+    request = api.query(isbn13, product_code_is_asin=False, history=False)
 
 
-def test_productquery_update():
-    request = API.query(PRODUCT_ASIN, update=0, stats=90, rating=True)
+def test_buybox(api):
+    request = api.query(PRODUCT_ASIN, history=True, buybox=True)
+    product = request[0]
+    assert 'BUY_BOX_SHIPPING' in product['data']
+
+
+def test_productquery_update(api):
+    request = api.query(PRODUCT_ASIN, update=0, stats=90, rating=True)
     product = request[0]
 
     # should be live data
@@ -155,8 +172,8 @@ def test_productquery_update():
     assert product['offers'] is None
 
 
-def test_productquery_offers():
-    request = API.query(PRODUCT_ASIN, offers=20)
+def test_productquery_offers(api):
+    request = api.query(PRODUCT_ASIN, offers=20)
     product = request[0]
 
     offers = product['offers']
@@ -173,57 +190,58 @@ def test_productquery_offers():
     assert len(prices)
 
 
-def test_productquery_offers_invalid():
+def test_productquery_offers_invalid(api):
     with pytest.raises(ValueError):
-        API.query(PRODUCT_ASIN, offers=2000)
+        request = api.query(PRODUCT_ASIN, offers=2000)
 
 
-def test_productquery_offers_multiple():
-    products = API.query(PRODUCT_ASINS)
+def test_productquery_offers_multiple(api):
+    products = api.query(PRODUCT_ASINS)
 
     asins = np.unique([product['asin'] for product in products])
     assert len(asins) == len(PRODUCT_ASINS)
     assert np.in1d(asins, PRODUCT_ASINS).all()
 
 
-def test_domain():
-    request = API.query(PRODUCT_ASIN, history=False, domain='DE')
+def test_domain(api):
+    request = api.query(PRODUCT_ASIN, history=False, domain='DE')
     product = request[0]
     assert product['asin'] == PRODUCT_ASIN
 
 
-def test_invalid_domain():
+def test_invalid_domain(api):
     with pytest.raises(ValueError):
-        API.query(PRODUCT_ASIN, history=False, domain='XX')
+        request = api.query(PRODUCT_ASIN, history=False, domain='XX')
 
 
-def test_bestsellers():
-    category = '402333011'
-    asins = API.best_sellers_query(category)
+def test_bestsellers(api):
+    categories = api.search_for_categories('chairs')
+    category = list(categories.items())[0][0]
+    asins = api.best_sellers_query(category)
     valid_asins = keepa.format_items(asins)
     assert len(asins) == valid_asins.size
 
 
-def test_categories():
-    categories = API.search_for_categories('chairs')
+def test_categories(api):
+    categories = api.search_for_categories('chairs')
     catids = list(categories.keys())
     for catid in catids:
         assert 'chairs' in categories[catid]['name'].lower()
 
 
-def test_categorylookup():
-    categories = API.category_lookup(0)
+def test_categorylookup(api):
+    categories = api.category_lookup(0)
     for cat_id in categories:
         assert categories[cat_id]['name']
 
 
-def test_invalid_category():
+def test_invalid_category(api):
     with pytest.raises(Exception):
-        API.category_lookup(-1)
+        api.category_lookup(-1)
 
 
-def test_stock():
-    request = API.query(PRODUCT_ASIN, history=False, stock=True,
+def test_stock(api):
+    request = api.query(PRODUCT_ASIN, history=False, stock=True,
                         offers=20)
 
     # all live offers must have stock
@@ -236,49 +254,49 @@ def test_stock():
                 assert offer['stockCSV'][-1]
 
 
-def test_keepatime():
+def test_keepatime(api):
     keepa_st_ordinal = datetime.datetime(2011, 1, 1)
     assert keepa_st_ordinal == keepa.keepa_minutes_to_time(0)
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
 
 
 @pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
-def test_plotting():
-    request = API.query(PRODUCT_ASIN, history=True)
+def test_plotting(api):
+    request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]
     keepa.plot_product(product, show=False)
 
 
 @pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
-def test_empty():
+def test_empty(api):
     import matplotlib.pyplot as plt
     plt.close('all')
-    products = API.query(['B01I6KT07E', 'B01G5BJHVK', 'B017LJP1MO'])
+    products = api.query(['B01I6KT07E', 'B01G5BJHVK', 'B017LJP1MO'])
     with pytest.raises(Exception):
         keepa.plot_product(products[0], show=False)
 
 
-def test_seller_query():
+def test_seller_query(api):
     seller_id = 'A2L77EE7U53NWQ'
-    seller_info = API.seller_query(seller_id)
+    seller_info = api.seller_query(seller_id)
     assert len(seller_info) == 1
     assert seller_id in seller_info
 
 
-def test_seller_query_list():
+def test_seller_query_list(api):
     seller_id = ['A2L77EE7U53NWQ', 'AMMEOJ0MXANX1']
-    seller_info = API.seller_query(seller_id)
+    seller_info = api.seller_query(seller_id)
     assert len(seller_info) == len(seller_id)
     assert set(seller_info).issubset(seller_id)
 
 
-def test_seller_query_long_list():
+def test_seller_query_long_list(api):
     seller_id = ['A2L77EE7U53NWQ']*200
     with pytest.raises(RuntimeError):
-        API.seller_query(seller_id)
+        seller_info = api.seller_query(seller_id)
 
 
-def test_product_finder_query():
+def test_product_finder_query(api):
     product_parms = {'author': 'jim butcher'}
-    asins = API.product_finder(product_parms)
+    asins = api.product_finder(product_parms)
     assert asins

@@ -5,11 +5,12 @@ import json
 import logging
 import time
 import datetime
+from tqdm import tqdm
 
 import requests
 import numpy as np
 
-from keepa.product_finder_keys import PRODUCT_REQUEST_KEYS
+from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')
@@ -105,7 +106,8 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
 
         18 BUY_BOX_SHIPPING: The price history of the buy box. If no
             offer qualified for the buy box the price has the value
-            -1. Including shipping costs.
+            -1. Including shipping costs.  The ``buybox`` parameter
+            must be True for this field to be in the data.
 
         19 USED_NEW_SHIPPING: "Used - Like New" price history
             including shipping costs.
@@ -297,14 +299,14 @@ class Keepa(object):
         # Wait if no tokens available
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
-            print('Waiting %.0f seconds for additional tokens' % tdelay)
+            log.warning('Waiting %.0f seconds for additional tokens' % tdelay)
             time.sleep(tdelay)
             self.update_status()
 
     def query(self, items, stats=None, domain='US', history=True,
               offers=None, update=None, to_datetime=True,
               rating=False, out_of_stock_as_nan=True, stock=False,
-              product_code_is_asin=True):
+              product_code_is_asin=True, progress_bar=True, buybox=False):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -378,6 +380,26 @@ class Keepa(object):
             product code is an ASIN, an Amazon standard identification
             number, or 'code', for UPC, EAN, or ISBN-13 codes.
 
+        progress_bar : bool, optional
+            Display a progress bar using ``tqdm``.  Defaults to
+            ``True``.
+
+        buybox : bool, optional
+            Additional token cost: 2 per product). When true the
+            product and statistics object will include all available
+            buy box related data:
+            
+            - current price, price history, and statistical values
+            - buyBoxSellerIdHistory
+            - all buy box fields in the statistics object
+
+            The buybox parameter
+            does not trigger a fresh data collection. If the offers
+            parameter is used the buybox parameter is ignored, as the
+            offers parameter also provides access to all buy box
+            related data. To access the statistics object the stats
+            parameter is required.
+
         Returns
         -------
         products : list
@@ -389,8 +411,8 @@ class Keepa(object):
             keys within each product for further details.
 
             Each product should contain at a minimum a "data" key
-            containing a formatted dictonary with the following
-            fields:
+            containing a formatted dictionary.  For the available
+            fields see the notes section
 
         Notes
         -----
@@ -500,6 +522,11 @@ class Keepa(object):
             The trade in price history. Amazon trade-in is not
             available for every locale.
 
+        BUY_BOX_SHIPPING
+            The price history of the buy box. If no offer qualified
+            for the buy box the price has the value -1. Including
+            shipping costs.  The ``buybox`` parameter must be True for
+            this field to be in the data.
         """
         # Format items into numpy array
         try:
@@ -512,7 +539,7 @@ class Keepa(object):
         if nitems == 1:
             log.debug('Executing single product query')
         else:
-            log.debug('Executing %d item product query' % nitems)
+            log.debug('Executing %d item product query', nitems)
 
         # check offer input
         if offers:
@@ -534,6 +561,10 @@ class Keepa(object):
         # product list
         products = []
 
+        pbar = None
+        if progress_bar:
+            pbar = tqdm(total=nitems)
+
         # Number of requests is dependent on the number of items and
         # request limit.  Use available tokens first
         idx = 0  # or number complete
@@ -553,9 +584,13 @@ class Keepa(object):
                                            offers=offers, update=update,
                                            history=history, rating=rating,
                                            to_datetime=to_datetime,
-                                           out_of_stock_as_nan=out_of_stock_as_nan)
+                                           out_of_stock_as_nan=out_of_stock_as_nan,
+                                           buybox=buybox)
             idx += nrequest
             products.extend(response['products'])
+
+            if pbar is not None:
+                pbar.update(nrequest)
 
         return products
 
@@ -629,6 +664,7 @@ class Keepa(object):
         kwargs['stock'] = int(kwargs['stock'])
         kwargs['history'] = int(kwargs['history'])
         kwargs['rating'] = int(kwargs['rating'])
+        kwargs['buybox'] = int(kwargs['buybox'])
 
         if kwargs['update'] is None:
             del kwargs['update']
@@ -1880,6 +1916,78 @@ class Keepa(object):
         response = self._request('query', payload)
         return response['asinList']
 
+    def deals(self, deal_parms, domain='US'):
+        """Query the Keepa API for product deals.
+
+        You can find products that recently changed and match your
+        search criteria.  A single request will return a maximum of
+        150 deals.  Try ou the deals page to frist get accustomed to
+        the options:
+        https://keepa.com/#!deals
+
+        For more details please visit:
+        https://keepa.com/#!discuss/t/browsing-deals/338
+
+        Parameters
+        ----------
+        deal_parms : dict
+            Dictionary containing one or more of the following keys:
+
+            - ``"page"``: int
+            - ``"domainId"``: int
+            - ``"excludeCategories"``: list
+            - ``"includeCategories"``: list
+            - ``"priceTypes"``: list
+            - ``"deltaRange"``: list
+            - ``"deltaPercentRange"``: list
+            - ``"deltaLastRange"``: list
+            - ``"salesRankRange"``: list
+            - ``"currentRange"``: list
+            - ``"minRating"``: int
+            - ``"isLowest"``: bool
+            - ``"isLowestOffer"``: bool
+            - ``"isOutOfStock"``: bool
+            - ``"titleSearch"``: String
+            - ``"isRangeEnabled"``: bool
+            - ``"isFilterEnabled"``: bool
+            - ``"hasReviews"``: bool
+            - ``"filterErotic"``: bool
+            - ``"sortType"``: int
+            - ``"dateRange"``: int
+
+        domain : str, optional
+            One of the following Amazon domains: RESERVED, US, GB, DE,
+            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        Examples
+        --------
+        >>> import keepa
+        >>> api = keepa.Keepa('ENTER_YOUR_KEY_HERE')
+        >>> deal_parms = {"page": 0,
+                          "domainId": 1,
+                          "excludeCategories": [1064954, 11091801],
+                          "includeCategories": [16310101]}
+        >>> deals = api.deals(deal_parms)
+        >>> print(deals[:5])
+            ['B00U20FN1Y', 'B078HR932T', 'B00L88ERK2',
+             'B07G5TDMZ7', 'B00GYMQAM0']
+        """
+        # verify valid keys
+        for key in deal_parms:
+            if key not in DEAL_REQUEST_KEYS:
+                raise RuntimeError('Invalid key "%s"' % key)
+
+            # verify json type
+            key_type = DEAL_REQUEST_KEYS[key]
+            deal_parms[key] = key_type(deal_parms[key])
+
+        payload = {'key': self.accesskey,
+                   'domain': DCODES.index(domain),
+                   'selection': json.dumps(deal_parms)}
+
+        response = self._request('query', payload)
+        return response['asinList']
+
     def _request(self, request_type, payload, wait=True):
         """Queries keepa api server.  Parses raw response from keepa
         into a json format.  Handles errors and waits for avaialbe
@@ -1895,7 +2003,7 @@ class Keepa(object):
             if status_code != '200':
                 if status_code in SCODES:
                     if status_code == '429' and wait:
-                        print('Response from server: %s' % SCODES[status_code])
+                        log.warning('Response from server: %s' % SCODES[status_code])
                         self.wait_for_tokens()
                         continue
                     else:
@@ -1916,6 +2024,8 @@ class Keepa(object):
         # always update tokens
         self.tokens_left = response['tokensLeft']
         return response
+
+    # _request(request_type, payload, wait=True):
 
 
 def convert_offer_history(csv, to_datetime=True):
