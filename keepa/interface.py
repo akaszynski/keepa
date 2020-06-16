@@ -139,7 +139,7 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
         30 TRADE_IN: The trade in price history. Amazon trade-in is
             not available for every locale.
 
-        31 RENT: Rental price history. Requires use of the rental 
+        31 RENT: Rental price history. Requires use of the rental
             and offers parameter. Amazon Rental is only available
             for Amazon US.
 
@@ -388,7 +388,7 @@ class Keepa(object):
             Additional token cost: 2 per product). When true the
             product and statistics object will include all available
             buy box related data:
-            
+
             - current price, price history, and statistical values
             - buyBoxSellerIdHistory
             - all buy box fields in the statistics object

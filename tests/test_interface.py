@@ -1,4 +1,3 @@
-import sys
 import os
 
 import numpy as np
@@ -6,9 +5,6 @@ import pytest
 
 import keepa
 import datetime
-
-py2 = sys.version_info.major == 2
-py37 = sys.version_info.major == 3 and sys.version_info.minor == 7
 
 # reduce the request limit for testing
 keepa.interface.REQLIM = 2
@@ -105,7 +101,6 @@ def test_product_finder_query(api):
     assert asins
 
 
-# @pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
 # def test_throttling(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
@@ -261,14 +256,12 @@ def test_keepatime(api):
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
 
 
-@pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
 def test_plotting(api):
     request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]
     keepa.plot_product(product, show=False)
 
 
-@pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
 def test_empty(api):
     import matplotlib.pyplot as plt
     plt.close('all')
