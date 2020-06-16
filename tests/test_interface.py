@@ -155,7 +155,7 @@ def test_productquery_update(api):
     # should be live data
     now = datetime.datetime.now()
     delta = now - product['data']['USED_time'][-1]
-    assert delta.days <= 30
+    assert delta.days <= 35
 
     # check for empty arrays
     history = product['data']
