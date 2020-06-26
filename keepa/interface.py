@@ -270,7 +270,7 @@ class AsyncKeepa():
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
-        asyncio.run(self.update_status())
+        run_and_get(self.update_status())
         log.info('%d tokens remain' % self.tokens_left)
 
     @property
