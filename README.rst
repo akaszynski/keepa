@@ -21,7 +21,7 @@ Documentation can be found on readthedocs at `keepa Documentation <https://keepa
 
 Requirements
 ------------
-Module is compatible with Python 2 and 3. keepa requires:
+Module is compatible with Python >= 3.5 . keepa requires:
 
  - ``numpy``
  - ``requests``
