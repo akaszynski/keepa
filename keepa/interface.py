@@ -1,14 +1,15 @@
 """Interface module to download Amazon product and history data from
 keepa.com
 """
+
+from tqdm import tqdm
+import aiohttp
+import asyncio
+import datetime
 import json
 import logging
-import time
-import datetime
-from tqdm import tqdm
-
-import requests
 import numpy as np
+import time
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
@@ -224,7 +225,7 @@ def format_items(items):
         return np.asarray([items])
 
 
-class Keepa(object):
+class AsyncKeepa():
     """Class to support a Python interface to keepa server.
 
     Initializes API with access key.  Access key can be obtained by
@@ -242,11 +243,11 @@ class Keepa(object):
 
     >>> import keepa
     >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    >>> api = keepa.Keepa(mykey)
+    >>> api = await keepa.AsyncKeepa(mykey)
 
     Request data from two ASINs
 
-    >>> products = api.query(['0439064872', '1426208081'])
+    >>> products = await api.query(['0439064872', '1426208081'])
 
     Print item details
 
@@ -269,7 +270,7 @@ class Keepa(object):
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
-        self.update_status()
+        asyncio.run(self.update_status())
         log.info('%d tokens remain' % self.tokens_left)
 
     @property
@@ -287,26 +288,25 @@ class Keepa(object):
         # Return value in seconds
         return timetorefil / 1000.0
 
-    def update_status(self):
+    async def update_status(self):
         """ Updates available tokens """
-        self.status = self._request('token', {'key': self.accesskey}, wait=False)
+        self.status = await self._request('token', {'key': self.accesskey}, wait=False)
 
-    def wait_for_tokens(self):
-        """Checks any remaining tokens and waits if none are available.
-        """
-        self.update_status()
+    async def wait_for_tokens(self):
+        """Checks any remaining tokens and waits if none are available.  """
+        await self.update_status()
 
         # Wait if no tokens available
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
             log.warning('Waiting %.0f seconds for additional tokens' % tdelay)
-            time.sleep(tdelay)
-            self.update_status()
+            await asyncio.sleep(tdelay)
+            await self.update_status()
 
-    def query(self, items, stats=None, domain='US', history=True,
-              offers=None, update=None, to_datetime=True,
-              rating=False, out_of_stock_as_nan=True, stock=False,
-              product_code_is_asin=True, progress_bar=True, buybox=False):
+    async def query(self, items, stats=None, domain='US', history=True,
+                    offers=None, update=None, to_datetime=True,
+                    rating=False, out_of_stock_as_nan=True, stock=False,
+                    product_code_is_asin=True, progress_bar=True, buybox=False):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -577,15 +577,16 @@ class Keepa(object):
 
             # request from keepa and increment current position
             item_request = items[idx:idx + nrequest]
-            response = self._product_query(item_request,
-                                           product_code_is_asin,
-                                           stats=stats,
-                                           domain=domain, stock=stock,
-                                           offers=offers, update=update,
-                                           history=history, rating=rating,
-                                           to_datetime=to_datetime,
-                                           out_of_stock_as_nan=out_of_stock_as_nan,
-                                           buybox=buybox)
+            response = await self._product_query(
+                item_request,
+                product_code_is_asin,
+                stats=stats,
+                domain=domain, stock=stock,
+                offers=offers, update=update,
+                history=history, rating=rating,
+                to_datetime=to_datetime,
+                out_of_stock_as_nan=out_of_stock_as_nan,
+                buybox=buybox)
             idx += nrequest
             products.extend(response['products'])
 
@@ -594,7 +595,7 @@ class Keepa(object):
 
         return products
 
-    def _product_query(self, items, product_code_is_asin=True, **kwargs):
+    async def _product_query(self, items, product_code_is_asin=True, **kwargs):
         """
         Sends query to keepa server and returns parsed JSON result.
 
@@ -684,7 +685,7 @@ class Keepa(object):
         to_datetime = kwargs.pop('to_datetime', True)
 
         # Query and replace csv with parsed data if history enabled
-        response = self._request('product', kwargs)
+        response = await self._request('product', kwargs)
         if kwargs['history']:
             for product in response['products']:
                 if product['csv']:  # if data exists
@@ -693,7 +694,7 @@ class Keepa(object):
                                                 out_of_stock_as_nan)
         return response
 
-    def best_sellers_query(self, category, domain='US'):
+    async def best_sellers_query(self, category, domain='US'):
         """
         Retrieve an ASIN list of the most popular products based on
         sales in a specific category or product group.  See
@@ -743,13 +744,13 @@ class Keepa(object):
                    'domain': DCODES.index(domain),
                    'category': category}
 
-        response = self._request('bestsellers', payload)
+        response = await self._request('bestsellers', payload)
         if 'bestSellersList' in response:
             return response['bestSellersList']['asinList']
         else:  # pragma: no cover
             log.info('Best sellers search results not yet available')
 
-    def search_for_categories(self, searchterm, domain='US'):
+    async def search_for_categories(self, searchterm, domain='US'):
         """
         Searches for categories from Amazon.
 
@@ -768,7 +769,7 @@ class Keepa(object):
         --------
         Print all categories from science
 
-        >>> categories = api.search_for_categories('science')
+        >>> categories = await api.search_for_categories('science')
         >>> for cat_id in categories:
         >>>    print(cat_id, categories[cat_id]['name'])
 
@@ -780,14 +781,14 @@ class Keepa(object):
                    'type': 'category',
                    'term': searchterm}
 
-        response = self._request('search', payload)
+        response = await self._request('search', payload)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Categories search results not yet available ' +
                             'or no search terms found.')
         else:
             return response['categories']
 
-    def category_lookup(self, category_id, domain='US', include_parents=0):
+    async def category_lookup(self, category_id, domain='US', include_parents=0):
         """
         Return root categories given a categoryId.
 
@@ -813,7 +814,7 @@ class Keepa(object):
         Examples
         --------
         Use 0 to return all root categories
-        >>> categories = api.category_lookup(0)
+        >>> categories = await api.category_lookup(0)
 
         Print all root categories
         >>> for cat_id in categories:
@@ -826,14 +827,14 @@ class Keepa(object):
                    'category': category_id,
                    'parents': include_parents}
 
-        response = self._request('category', payload)
+        response = await self._request('category', payload)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Category lookup results not yet available or no' +
                             'match found.')
         else:
             return response['categories']
 
-    def seller_query(self, seller_id, domain='US'):
+    async def seller_query(self, seller_id, domain='US'):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -859,7 +860,7 @@ class Keepa(object):
 
         Examples
         --------
-        >>> seller_info = api.seller_query('A2L77EE7U53NWQ', 'US')
+        >>> seller_info = await api.seller_query('A2L77EE7U53NWQ', 'US')
 
         Notes
         -----
@@ -876,9 +877,10 @@ class Keepa(object):
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
                    'seller': seller}
-        return self._request('seller', payload)['sellers']
+        response = await self._request('seller', payload)
+        return response['sellers']
 
-    def product_finder(self, product_parms, domain='US'):
+    async def product_finder(self, product_parms, domain='US'):
         """Query the keepa product database to find products matching
         your criteria. Almost all product fields can be searched for
         and sorted by.
@@ -1896,9 +1898,9 @@ class Keepa(object):
         Query for all of Jim Butcher's books
 
         >>> import keepa
-        >>> api = keepa.Keepa('ENTER_ACTUAL_KEY_HERE')
+        >>> api = keepa.AsyncKeepa('ENTER_ACTUAL_KEY_HERE')
         >>> product_parms = {'author': 'jim butcher'}
-        >>> products = api.product_finder(product_parms)
+        >>> products = await api.product_finder(product_parms)
         """
         # verify valid keys
         for key in product_parms:
@@ -1913,10 +1915,10 @@ class Keepa(object):
                    'domain': DCODES.index(domain),
                    'selection': json.dumps(product_parms)}
 
-        response = self._request('query', payload)
+        response = await self._request('query', payload)
         return response['asinList']
 
-    def deals(self, deal_parms, domain='US'):
+    async def deals(self, deal_parms, domain='US'):
         """Query the Keepa API for product deals.
 
         You can find products that recently changed and match your
@@ -1962,12 +1964,12 @@ class Keepa(object):
         Examples
         --------
         >>> import keepa
-        >>> api = keepa.Keepa('ENTER_YOUR_KEY_HERE')
+        >>> api = await keepa.AsyncKeepa('ENTER_YOUR_KEY_HERE')
         >>> deal_parms = {"page": 0,
                           "domainId": 1,
                           "excludeCategories": [1064954, 11091801],
                           "includeCategories": [16310101]}
-        >>> deals = api.deals(deal_parms)
+        >>> deals = await api.deals(deal_parms)
         >>> print(deals[:5])
             ['B00U20FN1Y', 'B078HR932T', 'B00L88ERK2',
              'B07G5TDMZ7', 'B00GYMQAM0']
@@ -1985,47 +1987,43 @@ class Keepa(object):
                    'domain': DCODES.index(domain),
                    'selection': json.dumps(deal_parms)}
 
-        response = self._request('query', payload)
+        response = await self._request('query', payload)
         return response['asinList']
 
-    def _request(self, request_type, payload, wait=True):
+    async def _request(self, request_type, payload, wait=True):
         """Queries keepa api server.  Parses raw response from keepa
         into a json format.  Handles errors and waits for avaialbe
         tokens if allowed.
         """
         if wait:
-            self.wait_for_tokens()
+            await self.wait_for_tokens()
 
         while True:
-            raw = requests.get('https://api.keepa.com/%s/?' %
-                               request_type, payload)
-            status_code = str(raw.status_code)
-            if status_code != '200':
-                if status_code in SCODES:
-                    if status_code == '429' and wait:
-                        log.warning('Response from server: %s' % SCODES[status_code])
-                        self.wait_for_tokens()
-                        continue
-                    else:
-                        raise Exception(SCODES[status_code])
-                else:
-                    raise Exception('REQUEST_FAILED')
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    'https://api.keepa.com/%s/?' % request_type, params=payload
+                ) as raw:
+                    status_code = str(raw.status)
+                    if status_code != '200':
+                        if status_code in SCODES:
+                            if status_code == '429' and wait:
+                                await self.wait_for_tokens()
+                                continue
+                            else:
+                                raise Exception(SCODES[status_code])
+                        else:
+                            raise Exception('REQUEST_FAILED')
+
+                    response = await raw.json()
+
+                    if 'error' in response:
+                        if response['error']:
+                            raise Exception(response['error']['message'])
+
+                    # always update tokens
+                    self.tokens_left = response['tokensLeft']
+                    return response
             break
-
-        response = raw.json()
-
-        if 'tokensConsumed' in response:
-            log.debug('%d tokens consumed', response['tokensConsumed'])
-
-        if 'error' in response:
-            if response['error']:
-                raise Exception(response['error']['message'])
-
-        # always update tokens
-        self.tokens_left = response['tokensLeft']
-        return response
-
-    # _request(request_type, payload, wait=True):
 
 
 def convert_offer_history(csv, to_datetime=True):
@@ -2076,3 +2074,78 @@ def keepa_minutes_to_time(minutes, to_datetime=True):
         return dt.astype(datetime.datetime)
     else:
         return dt
+
+
+def run_and_get(coro):
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    task = loop.create_task(coro)
+    loop.run_until_complete(task)
+    return task.result()
+
+
+class Keepa():
+    """Class to support a Python interface to keepa server.
+
+    Synchronous version of AsyncKeepa
+
+    Initializes API with access key.  Access key can be obtained by
+    signing up for a reoccurring or one time plan at:
+    https://keepa.com/#!api
+
+    Parameters
+    ----------
+    accesskey : str
+        64 character access key string.
+
+    Examples
+    --------
+    Create the api object
+
+    >>> import keepa
+    >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    >>> api = keepa.Keepa(mykey)
+
+    Request data from two ASINs
+
+    >>> products = api.query(['0439064872', '1426208081'])
+
+    Print item details
+
+    >>> print('Item 1')
+    >>> print('\t ASIN: {:s}'.format(products[0]['asin']))
+    >>> print('\t Title: {:s}'.format(products[0]['title']))
+
+    Print item price
+
+    >>> usedprice = products[0]['data']['MarketplaceUsed']
+    >>> usedtimes = products[0]['data']['MarketplaceUsed_time']
+    >>> print('\t Used price: ${:.2f}'.format(usedprice[-1]))
+    >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
+    """
+
+    def __init__(self, accesskey):
+        """ Initializes object """
+        self.__dict__["parent"] = AsyncKeepa(accesskey)
+
+    def __setattr__(self, attr, value):
+        setattr(self.parent, attr, value)
+
+    def __getattr__(self, attr):
+        # properties
+        if attr == "parent":
+            return getattr(self, attr)
+        if hasattr(self.parent, attr) and not callable(getattr(self.parent, attr)):
+            return getattr(self.parent, attr)
+
+        # methods
+        def magic_method(*args, **kwargs):
+            if not attr.startswith("__"):
+                if hasattr(self.parent, attr) and callable(getattr(self.parent, attr)):
+                    if asyncio.iscoroutinefunction(getattr(self.parent, attr)):
+                        return run_and_get(getattr(self.parent, attr)(*args, **kwargs))
+                    else:
+                        return getattr(self.parent, attr)(*args, **kwargs)
+        return magic_method
