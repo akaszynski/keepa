@@ -1,0 +1,35 @@
+codecov:
+  require_ci_to_pass: yes
+
+coverage:
+  status:
+    project:
+      default:
+        # basic
+        target: auto
+        threshold: 80%
+        base: auto 
+        flags: 
+          - unit
+        paths: 
+          - "src"
+       # advanced
+        branches: 
+          - master
+        if_not_found: success
+        if_ci_failed: error
+        informational: false
+        only_pulls: false
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: no
