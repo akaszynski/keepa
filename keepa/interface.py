@@ -243,7 +243,7 @@ class AsyncKeepa():
 
     >>> import keepa
     >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    >>> api = await keepa.AsyncKeepa(mykey)
+    >>> api = await keepa.AsyncKeepa.create(mykey)
 
     Request data from two ASINs
 
@@ -263,15 +263,18 @@ class AsyncKeepa():
     >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
     """
 
-    def __init__(self, accesskey):
-        """ Initializes object """
+    @classmethod
+    async def create(cls, accesskey):
+        self = AsyncKeepa()
         self.accesskey = accesskey
         self.status = None
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
-        run_and_get(self.update_status())
+        await self.update_status()
         log.info('%d tokens remain' % self.tokens_left)
+
+        return self
 
     @property
     def time_to_refill(self):
@@ -2128,7 +2131,7 @@ class Keepa():
 
     def __init__(self, accesskey):
         """ Initializes object """
-        self.__dict__["parent"] = AsyncKeepa(accesskey)
+        self.__dict__["parent"] = run_and_get(AsyncKeepa.create(accesskey))
 
     def __setattr__(self, attr, value):
         setattr(self.parent, attr, value)
