@@ -3,6 +3,9 @@ import os
 import numpy as np
 import pytest
 
+# only to support python 3.5
+from async_generator import yield_, async_generator
+
 import keepa
 import datetime
 
@@ -83,11 +86,12 @@ PRODUCT_ASINS = [
 
 # open connection to keepa
 @pytest.fixture
+@async_generator
 async def api():
     keepa_api = await keepa.AsyncKeepa.create(TESTINGKEY)
     assert keepa_api.tokens_left
     assert keepa_api.time_to_refill >= 0
-    yield keepa_api
+    await yield_(keepa_api)
 
 
 @pytest.mark.asyncio
