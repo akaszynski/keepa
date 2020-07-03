@@ -268,6 +268,7 @@ class AsyncKeepa():
         self = AsyncKeepa()
         self.accesskey = accesskey
         self.status = None
+        self.tokens_left = 0
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
