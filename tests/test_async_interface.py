@@ -82,12 +82,12 @@ PRODUCT_ASINS = [
 
 
 # open connection to keepa
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def api():
     keepa_api = await keepa.AsyncKeepa.create(TESTINGKEY)
     assert keepa_api.tokens_left
     assert keepa_api.time_to_refill >= 0
-    return keepa_api
+    yield keepa_api
 
 
 @pytest.mark.asyncio
