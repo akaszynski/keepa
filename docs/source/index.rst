@@ -39,8 +39,8 @@ Here's an example of obtaining a product and plotting its price and offer histor
 
     Product Offers Plot
 
-Brief Example (async)
--------------
+Brief Example using async
+-------------------------
 Here's an example of obtaining a product and plotting its price and offer history:
 
 .. code:: python
