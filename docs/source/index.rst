@@ -39,6 +39,34 @@ Here's an example of obtaining a product and plotting its price and offer histor
 
     Product Offers Plot
 
+Brief Example (async)
+-------------
+Here's an example of obtaining a product and plotting its price and offer history:
+
+.. code:: python
+
+    import keepa
+
+    # establish interface with keepa (this is not a real key)
+    mykey = '0000000000000000000000000000000000000000000000000000000000000000'
+    api = await keepa.AsyncKeepa.create(mykey)
+
+    # plot product request 
+    request = 'B0088PUEPK'
+    products = await api.query(request)
+    product = products[0]
+    keepa.plot_product(product)
+
+.. figure:: ./images/Product_Price_Plot.png
+    :width: 500pt
+
+    Product Price Plot
+
+.. figure:: ./images/Product_Offer_Plot.png
+    :width: 500pt
+
+    Product Offers Plot
+
 Installation
 ------------
 ``keepa`` can be installed from PyPi using
