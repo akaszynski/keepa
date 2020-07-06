@@ -1,4 +1,3 @@
-import sys
 import os
 
 import numpy as np
@@ -7,9 +6,6 @@ import pytest
 import keepa
 import datetime
 
-py2 = sys.version_info.major == 2
-py37 = sys.version_info.major == 3 and sys.version_info.minor == 7
-
 # reduce the request limit for testing
 keepa.interface.REQLIM = 2
 
@@ -17,7 +13,7 @@ try:
     path = os.path.dirname(os.path.realpath(__file__))
     keyfile = os.path.join(path, 'key')
     weak_keyfile = os.path.join(path, 'weak_key')
-except:
+except Exception:
     keyfile = '/home/alex/python/keepa/tests/key'
     weak_keyfile = '/home/alex/python/keepa/tests/weak_key'
 
@@ -30,9 +26,6 @@ else:
     # from travis-ci or appveyor
     TESTINGKEY = os.environ.get('KEEPAKEY')
     WEAKTESTINGKEY = os.environ.get('WEAKKEEPAKEY')
-
-
-
 
 # harry potter book ISBN
 PRODUCT_ASIN = '0439064872'
@@ -88,7 +81,8 @@ def test_invalidkey():
 def test_deadkey():
     with pytest.raises(Exception):
         # this key returns "payment required"
-        deadkey = '8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm'
+        deadkey = ('8ueigrvvnsp5too0atlb5f11veinerkud'
+                   '47p686ekr7vgr9qtj1t1tle15fffkkm')
         keepa.Api(deadkey)
 
 
@@ -107,7 +101,6 @@ def test_product_finder_query(api):
     assert asins
 
 
-# @pytest.mark.skipif(not py37, reason="Too much throttling for travisCI")
 # def test_throttling(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
@@ -136,11 +129,12 @@ def test_productquery_nohistory(api):
 def test_not_an_asin(api):
     with pytest.raises(Exception):
         asins = ['0000000000', '000000000x']
-        request = api.query(asins)
+        api.query(asins)
+
 
 def test_isbn13(api):
     isbn13 = '9780786222728'
-    request = api.query(isbn13, product_code_is_asin=False, history=False)
+    api.query(isbn13, product_code_is_asin=False, history=False)
 
 
 def test_buybox(api):
@@ -156,7 +150,7 @@ def test_productquery_update(api):
     # should be live data
     now = datetime.datetime.now()
     delta = now - product['data']['USED_time'][-1]
-    assert delta.days <= 30
+    assert delta.days <= 35
 
     # check for empty arrays
     history = product['data']
@@ -194,7 +188,7 @@ def test_productquery_offers(api):
 
 def test_productquery_offers_invalid(api):
     with pytest.raises(ValueError):
-        request = api.query(PRODUCT_ASIN, offers=2000)
+        api.query(PRODUCT_ASIN, offers=2000)
 
 
 def test_productquery_offers_multiple(api):
@@ -213,7 +207,7 @@ def test_domain(api):
 
 def test_invalid_domain(api):
     with pytest.raises(ValueError):
-        request = api.query(PRODUCT_ASIN, history=False, domain='XX')
+        api.query(PRODUCT_ASIN, history=False, domain='XX')
 
 
 def test_bestsellers(api):
@@ -262,14 +256,12 @@ def test_keepatime(api):
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
 
 
-@pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
 def test_plotting(api):
     request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]
     keepa.plot_product(product, show=False)
 
 
-@pytest.mark.skipif(py2, reason="Requires python 3.5+ for testing")
 def test_empty(api):
     import matplotlib.pyplot as plt
     plt.close('all')
@@ -283,7 +275,7 @@ def test_seller_query(api):
     seller_info = api.seller_query(seller_id)
     assert len(seller_info) == 1
     assert seller_id in seller_info
-    
+
 
 def test_seller_query_list(api):
     seller_id = ['A2L77EE7U53NWQ', 'AMMEOJ0MXANX1']
@@ -295,10 +287,4 @@ def test_seller_query_list(api):
 def test_seller_query_long_list(api):
     seller_id = ['A2L77EE7U53NWQ']*200
     with pytest.raises(RuntimeError):
-        seller_info = api.seller_query(seller_id)
-
-
-def test_product_finder_query(api):
-    product_parms = {'author': 'jim butcher'}
-    asins = api.product_finder(product_parms)
-    assert asins
+        api.seller_query(seller_id)

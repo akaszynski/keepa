@@ -35,6 +35,7 @@ jobs:
     displayName: Install keepa
 
   - script: |
+      pip install -r requirements.txt
       pip install -r requirements_test.txt
       pip install pytest-azurepipelines
       pytest -v --cov keepa --cov-report html
@@ -46,14 +47,14 @@ jobs:
   - script: |
       bash <(curl -s https://codecov.io/bash)
     displayName: 'Upload coverage to codecov.io'
-    condition: eq(variables['python.version'], '3.7')
+    condition: eq(variables['python.version'], '3.8')
 
   - script: |
       pip install twine
       python setup.py sdist
       twine upload --skip-existing dist/keepa*.gz
     displayName: 'Upload to PyPi'
-    condition: and(eq(variables['python.version'], '3.7'), contains(variables['Build.SourceBranch'], 'refs/tags/'))
+    condition: and(eq(variables['python.version'], '3.8'), contains(variables['Build.SourceBranch'], 'refs/tags/'))
     env:
       TWINE_USERNAME: $(twine.username)
       TWINE_PASSWORD: $(twine.password)

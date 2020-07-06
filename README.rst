@@ -21,10 +21,12 @@ Documentation can be found on readthedocs at `keepa Documentation <https://keepa
 
 Requirements
 ------------
-Module is compatible with Python 2 and 3. keepa requires:
+Module is compatible with Python >= 3.5 . keepa requires:
 
  - ``numpy``
- - ``requests``
+ - ``aiohttp``
+ - ``matplotlib``
+ - ``tqdm``
 
 Product history can be plotted from the raw data when ``matplotlib`` is installed.
 
@@ -79,6 +81,7 @@ Import interface and establish connection to server
     accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
     api = keepa.Keepa(accesskey)
 
+
 Single ASIN query
 
 .. code:: python
@@ -86,6 +89,23 @@ Single ASIN query
     products = api.query('059035342X')
 
     # See help(api.query) for available options when querying the API
+
+
+You can use keepa witch async / await too
+
+.. code:: python
+
+    import keepa
+    accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
+    api = await keepa.AsyncKeepa.create(accesskey)
+
+
+Single ASIN query (async)
+
+.. code:: python
+
+    products = await api.query('059035342X')
+
 
 Multiple ASIN query from List
 

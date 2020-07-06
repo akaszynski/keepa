@@ -29,8 +29,6 @@ setup(
         'Intended Audience :: End Users/Desktop',
         'Topic :: Database :: Front-Ends',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
@@ -38,6 +36,6 @@ setup(
     ],
     url='https://github.com/akaszynski/keepa',
     keywords='keepa',
-    install_requires=['numpy>=1.9.3', 'requests>=2.2', 'tqdm']
+    install_requires=['numpy>=1.9.3', 'requests>=2.2', 'tqdm', 'aiohttp']
 
 )
