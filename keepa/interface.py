@@ -698,7 +698,7 @@ class AsyncKeepa():
                                                 out_of_stock_as_nan)
         return response
 
-    async def best_sellers_query(self, category, domain='US'):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain='US'):
         """
         Retrieve an ASIN list of the most popular products based on
         sales in a specific category or product group.  See
@@ -746,7 +746,8 @@ class AsyncKeepa():
 
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
-                   'category': category}
+                   'category': category,
+                   'range': rank_avg_range}
 
         response = await self._request('bestsellers', payload)
         if 'bestSellersList' in response:
