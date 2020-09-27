@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 import numpy as np
+import pandas as pd
 import time
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
@@ -211,8 +212,12 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
                 values /= 10
 
             timeval = keepa_minutes_to_time(times, to_datetime)
+
             product_data['%s_time' % key] = timeval
             product_data[key] = values
+
+            # combine time and value into a data frame
+            product_data['df_%s' % key] = pd.DataFrame({'time': timeval, 'value': values})
 
     return product_data
 
