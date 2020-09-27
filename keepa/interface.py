@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 import numpy as np
+import pandas as pd
 import time
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
@@ -211,8 +212,12 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
                 values /= 10
 
             timeval = keepa_minutes_to_time(times, to_datetime)
+
             product_data['%s_time' % key] = timeval
             product_data[key] = values
+
+            # combine time and value into a data frame
+            product_data['df_%s' % key] = pd.DataFrame({'time': timeval, 'value': values})
 
     return product_data
 
@@ -698,7 +703,7 @@ class AsyncKeepa():
                                                 out_of_stock_as_nan)
         return response
 
-    async def best_sellers_query(self, category, domain='US'):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain='US'):
         """
         Retrieve an ASIN list of the most popular products based on
         sales in a specific category or product group.  See
@@ -746,7 +751,8 @@ class AsyncKeepa():
 
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
-                   'category': category}
+                   'category': category,
+                   'range': rank_avg_range}
 
         response = await self._request('bestsellers', payload)
         if 'bestSellersList' in response:
