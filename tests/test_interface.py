@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+import pandas as pd
 
 import keepa
 import datetime
@@ -149,23 +150,26 @@ def test_productquery_update(api):
 
     # should be live data
     now = datetime.datetime.now()
-    delta = now - product['data']['USED_time'][-1]
+    delta = now - product["data"]["USED_time"][-1]
     assert delta.days <= 35
 
     # check for empty arrays
-    history = product['data']
+    history = product["data"]
     for key in history:
-        assert history[key].any()
+        if isinstance(history[key], pd.DataFrame):
+            assert history[key].any().value
+        else:
+            assert history[key].any()
 
         # should be a key pair
-        if 'time' not in key:
-            assert history[key].size == history[key + '_time'].size
+        if "time" not in key and  key[:3] != 'df_':
+            assert history[key].size == history[key + "_time"].size
 
     # check for stats
-    assert 'stats' in product
+    assert "stats" in product
 
     # no offers requested by default
-    assert product['offers'] is None
+    assert product["offers"] is None
 
 
 def test_productquery_offers(api):
