@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pytest
+import pandas as pd
 
 # only to support python 3.5
 from async_generator import yield_, async_generator
@@ -199,10 +200,13 @@ async def test_productquery_update(api):
     # check for empty arrays
     history = product["data"]
     for key in history:
-        assert history[key].any()
+        if isinstance(history[key], pd.DataFrame):
+            assert history[key].any().value
+        else:
+            assert history[key].any()
 
         # should be a key pair
-        if "time" not in key:
+        if "time" not in key and  key[:3] != 'df_':
             assert history[key].size == history[key + "_time"].size
 
     # check for stats
