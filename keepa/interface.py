@@ -209,7 +209,7 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
                     values[nan_mask] = np.nan
 
             if key == 'RATING':
-                values /= 10
+                values *= 10
 
             timeval = keepa_minutes_to_time(times, to_datetime)
 
