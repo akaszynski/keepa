@@ -266,8 +266,8 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
             product_data['%s_time' % key] = timeval
             product_data[key] = values
 
-            # combine time and value into a data frame
-            product_data['df_%s' % key] = pd.DataFrame({'time': timeval, 'value': values})
+            # combine time and value into a data frame using time as index
+            product_data['df_%s' % key] = pd.DataFrame({'value': values}, index=timeval)
 
     return product_data
 
