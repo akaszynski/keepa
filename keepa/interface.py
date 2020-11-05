@@ -85,10 +85,10 @@ def _parse_stats(stats, to_datetime):
                 stats_parsed[stat_key] = keepa_minutes_to_time([stat_value], to_datetime)[0]
             elif isinstance(stat_value, list) and len(stat_value) > 0:
                 stat_value_dict = {}
-                convert_time_in_value_pair = isinstance(stat_value[0], list)
+                convert_time_in_value_pair = any(map(lambda v: v is not None and isinstance(v, list), stat_value))
 
                 for ind, key, isfloat in csv_indices:
-                    stat_value_item = stat_value[ind]
+                    stat_value_item = stat_value[ind] if ind < len(stat_value) else None
 
                     def normalize_value(v):
                         if v < 0:
@@ -120,6 +120,24 @@ def _parse_stats(stats, to_datetime):
                 stats_parsed[stat_key] = stat_value
 
     return stats_parsed
+
+
+_seller_time_data_keys = ['trackedSince', 'lastUpdate']
+
+def _parse_seller(seller_raw_response, to_datetime):
+    sellers = list(seller_raw_response.values())
+    for seller in sellers:
+
+        def convert_time_data(key):
+            date_val = seller.get(key, None)
+            if date_val is not None:
+                return (key, keepa_minutes_to_time([date_val], to_datetime)[0])
+            else:
+                return None
+
+        seller.update(filter(lambda p: p is not None, map(convert_time_data, _seller_time_data_keys)))
+
+    return dict(map(lambda seller: (seller['sellerId'], seller), sellers))
 
 
 def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
@@ -901,7 +919,7 @@ class AsyncKeepa():
         else:
             return response['categories']
 
-    async def seller_query(self, seller_id, domain='US'):
+    async def seller_query(self, seller_id, domain='US', to_datetime=True):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -945,7 +963,7 @@ class AsyncKeepa():
                    'domain': DCODES.index(domain),
                    'seller': seller}
         response = await self._request('seller', payload)
-        return response['sellers']
+        return _parse_seller(response['sellers'], to_datetime)
 
     async def product_finder(self, product_parms, domain='US'):
         """Query the keepa product database to find products matching
