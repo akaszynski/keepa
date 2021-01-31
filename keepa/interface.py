@@ -1883,6 +1883,12 @@ class AsyncKeepa():
             - ``'sellerIdsLowestFBA': str``
             - ``'sellerIdsLowestFBM': str``
             - ``'size': str``
+            - ``'salesRankDrops180_lte': int``
+            - ``'salesRankDrops180_gte': int``
+            - ``'salesRankDrops90_lte': int``
+            - ``'salesRankDrops90_gte': int``
+            - ``'salesRankDrops30_lte': int``
+            - ``'salesRankDrops30_gte': int``
             - ``'stockAmazon_lte': int``
             - ``'stockAmazon_gte': int``
             - ``'stockBuyBox_lte': int``
