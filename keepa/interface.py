@@ -294,6 +294,10 @@ class AsyncKeepa():
         if timetorefil < 0:
             timetorefil = 0
 
+        # Account for negative tokens left
+        if self.tokens_left < 0:
+            timetorefil += (abs(self.tokens_left) / self.status['refillRate']) * 60000
+
         # Return value in seconds
         return timetorefil / 1000.0
 
