@@ -848,7 +848,7 @@ class AsyncKeepa():
         else:
             return response['categories']
 
-    async def seller_query(self, seller_id, domain='US'):
+    async def seller_query(self, seller_id, domain='US', storefront=False, update=None):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -866,6 +866,38 @@ class AsyncKeepa():
         domain : str, optional
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        storefront : bool, optional
+            If specified the seller object will contain additional
+            information about what items the seller is listing on Amazon.
+            This includes a list of ASINs as well as the total amount of
+            items the seller has listed. The following seller object
+            fields will be set if data is available: asinList,
+            asinListLastSeen, totalStorefrontAsinsCSV. If no data is
+            available no additional tokens will be consumed. The ASIN
+            list can contain up to 100,000 items. As using the storefront
+            parameter does not trigger any new collection it does not
+            increase the processing time of the request, though the
+            response may be much bigger in size. The total storefront
+            ASIN count will not be updated, only historical data will
+            be provided (when available).
+
+        update : int, optional
+            Positive integer value. If the last live data collection from
+            the Amazon storefront page is older than update hours force a
+            new collection. Use this parameter in conjunction with the
+            storefront parameter. Token cost will only be applied if a new
+            collection is triggered.
+
+            Using this parameter you can achieve the following:
+
+            - Retrieve data from Amazon: a storefront ASIN list containing
+              up to 2,400 ASINs, in addition to all ASINs already collected
+              through our database.
+            - Force a refresh: Always retrieve live data with the value 0.
+            - Retrieve the total number of listings of this seller: the
+              totalStorefrontAsinsCSV field of the seller object will be
+              updated.
 
         Returns
         -------
@@ -891,6 +923,11 @@ class AsyncKeepa():
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
                    'seller': seller}
+        if storefront:
+            payload["storefront"] = int(storefront)
+        if update:
+            payload["update"] = update
+
         response = await self._request('seller', payload)
         return response['sellers']
 
