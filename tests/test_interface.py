@@ -14,7 +14,7 @@ try:
     path = os.path.dirname(os.path.realpath(__file__))
     keyfile = os.path.join(path, 'key')
     weak_keyfile = os.path.join(path, 'weak_key')
-except Exception:
+except Exception:  # for local testing
     keyfile = '/home/alex/python/keepa/tests/key'
     weak_keyfile = '/home/alex/python/keepa/tests/weak_key'
 

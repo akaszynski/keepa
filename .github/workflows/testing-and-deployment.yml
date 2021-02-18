@@ -1,0 +1,51 @@
+name: Unit Testing
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  docs_build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9']
+
+    env:
+      KEEPAKEY: ${{ secrets.KEEPAKEY }}
+      WEAKKEEPAKEY: ${{ secrets.WEAKKEEPAKEY }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: |
+          python setup.py sdist
+          pip install dist/*.tar.gz --disable-pip-version-check
+          cd tests/
+          python -c "import keepa"
+
+      - name: Validate Keys
+        run: |
+          python -c "import os, keepa; keepa.Keepa(os.environ.get('KEEPAKEY'))"
+
+      - name: Unit testing
+        run: |
+          pip install -r requirements.txt --disable-pip-version-check
+          pip install -r requirements_test.txt --disable-pip-version-check
+          cd tests
+          pytest -v  --cov keepa --cov-report xml
+
+      - name: Upload to PyPi
+        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+        run: |
+          pip install twine
+          python setup.py sdist
+          twine upload --skip-existing dist/keepa*.gz        
+        env: # Or as an environment variable
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.TWINE_TOKEN }}
+          TWINE_REPOSITORY_URL: "https://upload.pypi.org/legacy/"
