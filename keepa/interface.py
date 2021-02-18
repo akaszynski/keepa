@@ -362,6 +362,10 @@ class AsyncKeepa():
         if timetorefil < 0:
             timetorefil = 0
 
+        # Account for negative tokens left
+        if self.tokens_left < 0:
+            timetorefil += (abs(self.tokens_left) / self.status['refillRate']) * 60000
+
         # Return value in seconds
         return timetorefil / 1000.0
 
@@ -383,7 +387,8 @@ class AsyncKeepa():
     async def query(self, items, stats=None, domain='US', history=True,
                     offers=None, update=None, to_datetime=True,
                     rating=False, out_of_stock_as_nan=True, stock=False,
-                    product_code_is_asin=True, progress_bar=True, buybox=False):
+                    product_code_is_asin=True, progress_bar=True, buybox=False,
+                    wait=True):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -476,6 +481,9 @@ class AsyncKeepa():
             offers parameter also provides access to all buy box
             related data. To access the statistics object the stats
             parameter is required.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -663,7 +671,8 @@ class AsyncKeepa():
                 history=history, rating=rating,
                 to_datetime=to_datetime,
                 out_of_stock_as_nan=out_of_stock_as_nan,
-                buybox=buybox)
+                buybox=buybox,
+                wait=wait)
             idx += nrequest
             products.extend(response['products'])
 
@@ -762,7 +771,9 @@ class AsyncKeepa():
         to_datetime = kwargs.pop('to_datetime', True)
 
         # Query and replace csv with parsed data if history enabled
-        response = await self._request('product', kwargs)
+        wait = kwargs.get("wait")
+        kwargs.pop("wait", None)
+        response = await self._request('product', kwargs, wait=wait)
         if kwargs['history']:
             for product in response['products']:
                 if product['csv']:  # if data exists
@@ -778,7 +789,7 @@ class AsyncKeepa():
 
         return response
 
-    async def best_sellers_query(self, category, rank_avg_range=0, domain='US'):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain='US', wait=True):
         """
         Retrieve an ASIN list of the most popular products based on
         sales in a specific category or product group.  See
@@ -817,6 +828,9 @@ class AsyncKeepa():
             RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
             Default US
 
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
+
         Returns
         -------
         best_sellers : list
@@ -829,13 +843,13 @@ class AsyncKeepa():
                    'category': category,
                    'range': rank_avg_range}
 
-        response = await self._request('bestsellers', payload)
+        response = await self._request('bestsellers', payload, wait=wait)
         if 'bestSellersList' in response:
             return response['bestSellersList']['asinList']
         else:  # pragma: no cover
             log.info('Best sellers search results not yet available')
 
-    async def search_for_categories(self, searchterm, domain='US'):
+    async def search_for_categories(self, searchterm, domain='US', wait=True):
         """
         Searches for categories from Amazon.
 
@@ -843,6 +857,9 @@ class AsyncKeepa():
         ----------
         searchterm : str
             Input search term.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -866,14 +883,14 @@ class AsyncKeepa():
                    'type': 'category',
                    'term': searchterm}
 
-        response = await self._request('search', payload)
+        response = await self._request('search', payload, wait=wait)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Categories search results not yet available ' +
                             'or no search terms found.')
         else:
             return response['categories']
 
-    async def category_lookup(self, category_id, domain='US', include_parents=0):
+    async def category_lookup(self, category_id, domain='US', include_parents=0, wait=True):
         """
         Return root categories given a categoryId.
 
@@ -890,6 +907,9 @@ class AsyncKeepa():
 
         include_parents : int
             Include parents.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -912,14 +932,15 @@ class AsyncKeepa():
                    'category': category_id,
                    'parents': include_parents}
 
-        response = await self._request('category', payload)
+        response = await self._request('category', payload, wait=wait)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Category lookup results not yet available or no' +
                             'match found.')
         else:
             return response['categories']
 
-    async def seller_query(self, seller_id, domain='US', to_datetime=True):
+    async def seller_query(self, seller_id, domain='US', to_datetime=True, 
+                           storefront=False, update=None, wait=True):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -937,6 +958,41 @@ class AsyncKeepa():
         domain : str, optional
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        storefront : bool, optional
+            If specified the seller object will contain additional
+            information about what items the seller is listing on Amazon.
+            This includes a list of ASINs as well as the total amount of
+            items the seller has listed. The following seller object
+            fields will be set if data is available: asinList,
+            asinListLastSeen, totalStorefrontAsinsCSV. If no data is
+            available no additional tokens will be consumed. The ASIN
+            list can contain up to 100,000 items. As using the storefront
+            parameter does not trigger any new collection it does not
+            increase the processing time of the request, though the
+            response may be much bigger in size. The total storefront
+            ASIN count will not be updated, only historical data will
+            be provided (when available).
+
+        update : int, optional
+            Positive integer value. If the last live data collection from
+            the Amazon storefront page is older than update hours force a
+            new collection. Use this parameter in conjunction with the
+            storefront parameter. Token cost will only be applied if a new
+            collection is triggered.
+
+            Using this parameter you can achieve the following:
+
+            - Retrieve data from Amazon: a storefront ASIN list containing
+              up to 2,400 ASINs, in addition to all ASINs already collected
+              through our database.
+            - Force a refresh: Always retrieve live data with the value 0.
+            - Retrieve the total number of listings of this seller: the
+              totalStorefrontAsinsCSV field of the seller object will be
+              updated.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -962,10 +1018,16 @@ class AsyncKeepa():
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
                    'seller': seller}
-        response = await self._request('seller', payload)
+
+        if storefront:
+            payload["storefront"] = int(storefront)
+        if update:
+            payload["update"] = update
+
+        response = await self._request('seller', payload, wait=wait)
         return _parse_seller(response['sellers'], to_datetime)
 
-    async def product_finder(self, product_parms, domain='US'):
+    async def product_finder(self, product_parms, domain='US', wait=True):
         """Query the keepa product database to find products matching
         your criteria. Almost all product fields can be searched for
         and sorted by.
@@ -1958,6 +2020,12 @@ class AsyncKeepa():
             - ``'sellerIdsLowestFBA': str``
             - ``'sellerIdsLowestFBM': str``
             - ``'size': str``
+            - ``'salesRankDrops180_lte': int``
+            - ``'salesRankDrops180_gte': int``
+            - ``'salesRankDrops90_lte': int``
+            - ``'salesRankDrops90_gte': int``
+            - ``'salesRankDrops30_lte': int``
+            - ``'salesRankDrops30_gte': int``
             - ``'stockAmazon_lte': int``
             - ``'stockAmazon_gte': int``
             - ``'stockBuyBox_lte': int``
@@ -1977,6 +2045,9 @@ class AsyncKeepa():
         domain : str, optional
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Examples
         --------
@@ -2000,10 +2071,10 @@ class AsyncKeepa():
                    'domain': DCODES.index(domain),
                    'selection': json.dumps(product_parms)}
 
-        response = await self._request('query', payload)
+        response = await self._request('query', payload, wait=wait)
         return response['asinList']
 
-    async def deals(self, deal_parms, domain='US'):
+    async def deals(self, deal_parms, domain='US', wait=True):
         """Query the Keepa API for product deals.
 
         You can find products that recently changed and match your
@@ -2046,6 +2117,9 @@ class AsyncKeepa():
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
 
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
+
         Examples
         --------
         >>> import keepa
@@ -2072,7 +2146,7 @@ class AsyncKeepa():
                    'domain': DCODES.index(domain),
                    'selection': json.dumps(deal_parms)}
 
-        response = await self._request('query', payload)
+        response = await self._request('query', payload, wait=wait)
         return response['asinList']
 
     async def _request(self, request_type, payload, wait=True):
@@ -2080,8 +2154,6 @@ class AsyncKeepa():
         into a json format.  Handles errors and waits for avaialbe
         tokens if allowed.
         """
-        if wait:
-            await self.wait_for_tokens()
 
         while True:
             async with aiohttp.ClientSession() as session:

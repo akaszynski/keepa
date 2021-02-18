@@ -206,7 +206,7 @@ async def test_productquery_update(api):
             assert history[key].any()
 
         # should be a key pair
-        if "time" not in key and  key[:3] != 'df_':
+        if "time" not in key and key[:3] != 'df_':
             assert history[key].size == history[key + "_time"].size
 
     # check for stats
