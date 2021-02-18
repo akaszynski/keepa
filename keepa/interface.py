@@ -319,7 +319,8 @@ class AsyncKeepa():
     async def query(self, items, stats=None, domain='US', history=True,
                     offers=None, update=None, to_datetime=True,
                     rating=False, out_of_stock_as_nan=True, stock=False,
-                    product_code_is_asin=True, progress_bar=True, buybox=False):
+                    product_code_is_asin=True, progress_bar=True, buybox=False,
+                    wait=True):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -412,6 +413,9 @@ class AsyncKeepa():
             offers parameter also provides access to all buy box
             related data. To access the statistics object the stats
             parameter is required.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -599,7 +603,8 @@ class AsyncKeepa():
                 history=history, rating=rating,
                 to_datetime=to_datetime,
                 out_of_stock_as_nan=out_of_stock_as_nan,
-                buybox=buybox)
+                buybox=buybox,
+                wait=wait)
             idx += nrequest
             products.extend(response['products'])
 
@@ -698,7 +703,9 @@ class AsyncKeepa():
         to_datetime = kwargs.pop('to_datetime', True)
 
         # Query and replace csv with parsed data if history enabled
-        response = await self._request('product', kwargs)
+        wait = kwargs.get("wait")
+        kwargs.pop("wait", None)
+        response = await self._request('product', kwargs, wait=wait)
         if kwargs['history']:
             for product in response['products']:
                 if product['csv']:  # if data exists
@@ -707,7 +714,7 @@ class AsyncKeepa():
                                                 out_of_stock_as_nan)
         return response
 
-    async def best_sellers_query(self, category, rank_avg_range=0, domain='US'):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain='US', wait=True):
         """
         Retrieve an ASIN list of the most popular products based on
         sales in a specific category or product group.  See
@@ -746,6 +753,9 @@ class AsyncKeepa():
             RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
             Default US
 
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
+
         Returns
         -------
         best_sellers : list
@@ -758,13 +768,13 @@ class AsyncKeepa():
                    'category': category,
                    'range': rank_avg_range}
 
-        response = await self._request('bestsellers', payload)
+        response = await self._request('bestsellers', payload, wait=wait)
         if 'bestSellersList' in response:
             return response['bestSellersList']['asinList']
         else:  # pragma: no cover
             log.info('Best sellers search results not yet available')
 
-    async def search_for_categories(self, searchterm, domain='US'):
+    async def search_for_categories(self, searchterm, domain='US', wait=True):
         """
         Searches for categories from Amazon.
 
@@ -772,6 +782,9 @@ class AsyncKeepa():
         ----------
         searchterm : str
             Input search term.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -795,14 +808,14 @@ class AsyncKeepa():
                    'type': 'category',
                    'term': searchterm}
 
-        response = await self._request('search', payload)
+        response = await self._request('search', payload, wait=wait)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Categories search results not yet available ' +
                             'or no search terms found.')
         else:
             return response['categories']
 
-    async def category_lookup(self, category_id, domain='US', include_parents=0):
+    async def category_lookup(self, category_id, domain='US', include_parents=0, wait=True):
         """
         Return root categories given a categoryId.
 
@@ -819,6 +832,9 @@ class AsyncKeepa():
 
         include_parents : int
             Include parents.
+
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
 
         Returns
         -------
@@ -841,14 +857,14 @@ class AsyncKeepa():
                    'category': category_id,
                    'parents': include_parents}
 
-        response = await self._request('category', payload)
+        response = await self._request('category', payload, wait=wait)
         if response['categories'] == {}:  # pragma no cover
             raise Exception('Category lookup results not yet available or no' +
                             'match found.')
         else:
             return response['categories']
 
-    async def seller_query(self, seller_id, domain='US', storefront=False, update=None):
+    async def seller_query(self, seller_id, domain='US', storefront=False, update=None, wait=True):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -899,6 +915,9 @@ class AsyncKeepa():
               totalStorefrontAsinsCSV field of the seller object will be
               updated.
 
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
+
         Returns
         -------
         seller_info : dict
@@ -928,10 +947,10 @@ class AsyncKeepa():
         if update:
             payload["update"] = update
 
-        response = await self._request('seller', payload)
+        response = await self._request('seller', payload, wait=wait)
         return response['sellers']
 
-    async def product_finder(self, product_parms, domain='US'):
+    async def product_finder(self, product_parms, domain='US', wait=True):
         """Query the keepa product database to find products matching
         your criteria. Almost all product fields can be searched for
         and sorted by.
@@ -1944,6 +1963,9 @@ class AsyncKeepa():
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
 
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
+
         Examples
         --------
         Query for all of Jim Butcher's books
@@ -1966,10 +1988,10 @@ class AsyncKeepa():
                    'domain': DCODES.index(domain),
                    'selection': json.dumps(product_parms)}
 
-        response = await self._request('query', payload)
+        response = await self._request('query', payload, wait=wait)
         return response['asinList']
 
-    async def deals(self, deal_parms, domain='US'):
+    async def deals(self, deal_parms, domain='US', wait=True):
         """Query the Keepa API for product deals.
 
         You can find products that recently changed and match your
@@ -2012,6 +2034,9 @@ class AsyncKeepa():
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
 
+        wait : bool, optional
+            Wait available token before doing effective query, Defaults to ``True``.
+
         Examples
         --------
         >>> import keepa
@@ -2038,7 +2063,7 @@ class AsyncKeepa():
                    'domain': DCODES.index(domain),
                    'selection': json.dumps(deal_parms)}
 
-        response = await self._request('query', payload)
+        response = await self._request('query', payload, wait=wait)
         return response['asinList']
 
     async def _request(self, request_type, payload, wait=True):
