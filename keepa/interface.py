@@ -2071,8 +2071,6 @@ class AsyncKeepa():
         into a json format.  Handles errors and waits for avaialbe
         tokens if allowed.
         """
-        if wait:
-            await self.wait_for_tokens()
 
         while True:
             async with aiohttp.ClientSession() as session:
