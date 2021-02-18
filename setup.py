@@ -33,9 +33,9 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     url='https://github.com/akaszynski/keepa',
     keywords='keepa',
     install_requires=['numpy>=1.9.3', 'requests>=2.2', 'tqdm', 'aiohttp', 'pandas']
-
 )
