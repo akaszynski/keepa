@@ -42,13 +42,13 @@ jobs:
           cd tests
           pytest -v  --cov keepa --cov-report xml
 
-    - name: Upload to PyPi
-      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-      run: |
-        pip install twine
-        python setup.py sdist
-        twine upload --skip-existing dist/keepa*.gz        
-      env: # Or as an environment variable
-        TWINE_USERNAME: "__token__"
-        TWINE_PASSWORD: ${{ secrets.TWINE_TOKEN }}
-        TWINE_REPOSITORY_URL: "https://upload.pypi.org/legacy/"
+      - name: Upload to PyPi
+        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+        run: |
+          pip install twine
+          python setup.py sdist
+          twine upload --skip-existing dist/keepa*.gz        
+        env: # Or as an environment variable
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.TWINE_TOKEN }}
+          TWINE_REPOSITORY_URL: "https://upload.pypi.org/legacy/"
