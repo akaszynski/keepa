@@ -35,6 +35,110 @@ SCODES = {'400': 'REQUEST_REJECTED',
 DCODES = ['RESERVED', 'US', 'GB', 'DE', 'FR', 'JP', 'CA', 'CN', 'IT', 'ES',
           'IN', 'MX']
 
+# csv indices. used when parsing csv and stats fields.
+# https://github.com/keepacom/api_backend
+    # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
+    # [index in csv, key name, isfloat(is price or rating)]
+csv_indices = [[0, 'AMAZON', True],
+               [1, 'NEW', True],
+               [2, 'USED', True],
+               [3, 'SALES', False],
+               [4, 'LISTPRICE', True],
+               [5, 'COLLECTIBLE', True],
+               [6, 'REFURBISHED', True],
+               [7, 'NEW_FBM_SHIPPING', True],
+               [8, 'LIGHTNING_DEAL', True],
+               [9, 'WAREHOUSE', True],
+               [10, 'NEW_FBA', True],
+               [11, 'COUNT_NEW', False],
+               [12, 'COUNT_USED', False],
+               [13, 'COUNT_REFURBISHED', False],
+               [14, 'CollectableOffers', False],
+               [15, 'EXTRA_INFO_UPDATES', False],
+               [16, 'RATING', True],
+               [17, 'COUNT_REVIEWS', False],
+               [18, 'BUY_BOX_SHIPPING', True],
+               [19, 'USED_NEW_SHIPPING', True],
+               [20, 'USED_VERY_GOOD_SHIPPING', True],
+               [21, 'USED_GOOD_SHIPPING', True],
+               [22, 'USED_ACCEPTABLE_SHIPPING', True],
+               [23, 'COLLECTIBLE_NEW_SHIPPING', True],
+               [24, 'COLLECTIBLE_VERY_GOOD_SHIPPING', True],
+               [25, 'COLLECTIBLE_GOOD_SHIPPING', True],
+               [26, 'COLLECTIBLE_ACCEPTABLE_SHIPPING', True],
+               [27, 'REFURBISHED_SHIPPING', True],
+               [28, 'EBAY_NEW_SHIPPING', True],
+               [29, 'EBAY_USED_SHIPPING', True],
+               [30, 'TRADE_IN', True],
+               [31, 'RENT', False]]
+
+
+def _parse_stats(stats, to_datetime):
+    stats_parsed = {}
+
+    for stat_key, stat_value in stats.items():
+        if isinstance(stat_value, int) and stat_value < 0:  # -1 or -2 means not exist. 0 doesn't mean not exist.
+            stat_value = None
+
+        if stat_value is not None:
+            if stat_key == 'lastOffersUpdate':
+                stats_parsed[stat_key] = keepa_minutes_to_time([stat_value], to_datetime)[0]
+            elif isinstance(stat_value, list) and len(stat_value) > 0:
+                stat_value_dict = {}
+                convert_time_in_value_pair = any(map(lambda v: v is not None and isinstance(v, list), stat_value))
+
+                for ind, key, isfloat in csv_indices:
+                    stat_value_item = stat_value[ind] if ind < len(stat_value) else None
+
+                    def normalize_value(v):
+                        if v < 0:
+                            return None
+
+                        if isfloat:
+                            v = float(v) / 100
+                            if key == 'RATING':
+                                v = v * 10
+
+                        return v
+
+                    if stat_value_item is not None:
+                        if convert_time_in_value_pair:
+                            stat_value_time, stat_value_item = stat_value_item
+                            stat_value_item = normalize_value(stat_value_item)
+                            if stat_value_item is not None:
+                                stat_value_time = keepa_minutes_to_time([stat_value_time], to_datetime)[0]
+                                stat_value_item = (stat_value_time, stat_value_item)
+                        else:
+                            stat_value_item = normalize_value(stat_value_item)
+
+                    if stat_value_item is not None:
+                        stat_value_dict[key] = stat_value_item
+
+                if len(stat_value_dict) > 0:
+                    stats_parsed[stat_key] = stat_value_dict
+            else:
+                stats_parsed[stat_key] = stat_value
+
+    return stats_parsed
+
+
+_seller_time_data_keys = ['trackedSince', 'lastUpdate']
+
+def _parse_seller(seller_raw_response, to_datetime):
+    sellers = list(seller_raw_response.values())
+    for seller in sellers:
+
+        def convert_time_data(key):
+            date_val = seller.get(key, None)
+            if date_val is not None:
+                return (key, keepa_minutes_to_time([date_val], to_datetime)[0])
+            else:
+                return None
+
+        seller.update(filter(lambda p: p is not None, map(convert_time_data, _seller_time_data_keys)))
+
+    return dict(map(lambda seller: (seller['sellerId'], seller), sellers))
+
 
 def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
     """Parses csv list from keepa into a python dictionary.
@@ -150,45 +254,9 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
     Negative prices
 
     """
-    # https://github.com/keepacom/api_backend
-    # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
-    # [index in csv, key name, isfloat (is price)]
-    indices = [[0, 'AMAZON', True],
-               [1, 'NEW', True],
-               [2, 'USED', True],
-               [3, 'SALES', False],
-               [4, 'LISTPRICE', True],
-               [5, 'COLLECTIBLE', True],
-               [6, 'REFURBISHED', True],
-               [7, 'NEW_FBM_SHIPPING', True],
-               [8, 'LIGHTNING_DEAL', True],
-               [9, 'WAREHOUSE', True],
-               [10, 'NEW_FBA', True],
-               [11, 'COUNT_NEW', False],
-               [12, 'COUNT_USED', False],
-               [13, 'COUNT_REFURBISHED', False],
-               [14, 'CollectableOffers', False],
-               [15, 'EXTRA_INFO_UPDATES', False],
-               [16, 'RATING', True],
-               [17, 'COUNT_REVIEWS', False],
-               [18, 'BUY_BOX_SHIPPING', True],
-               [19, 'USED_NEW_SHIPPING', True],
-               [20, 'USED_VERY_GOOD_SHIPPING', True],
-               [21, 'USED_GOOD_SHIPPING', True],
-               [22, 'USED_ACCEPTABLE_SHIPPING', True],
-               [23, 'COLLECTIBLE_NEW_SHIPPING', True],
-               [24, 'COLLECTIBLE_VERY_GOOD_SHIPPING', True],
-               [25, 'COLLECTIBLE_GOOD_SHIPPING', True],
-               [26, 'COLLECTIBLE_ACCEPTABLE_SHIPPING', True],
-               [27, 'REFURBISHED_SHIPPING', True],
-               [28, 'EBAY_NEW_SHIPPING', True],
-               [29, 'EBAY_USED_SHIPPING', True],
-               [30, 'TRADE_IN', True],
-               [31, 'RENT', False]]
-
     product_data = {}
 
-    for ind, key, isfloat in indices:
+    for ind, key, isfloat in csv_indices:
         if csv[ind]:  # Check if entry it exists
             if 'SHIPPING' in key:  # shipping price is included
                 # Data goes [time0, value0, shipping0, time1, value1,
@@ -208,16 +276,16 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
                 if out_of_stock_as_nan:
                     values[nan_mask] = np.nan
 
-            if key == 'RATING':
-                values /= 10
+                if key == 'RATING':
+                    values *= 10
 
             timeval = keepa_minutes_to_time(times, to_datetime)
 
             product_data['%s_time' % key] = timeval
             product_data[key] = values
 
-            # combine time and value into a data frame
-            product_data['df_%s' % key] = pd.DataFrame({'time': timeval, 'value': values})
+            # combine time and value into a data frame using time as index
+            product_data['df_%s' % key] = pd.DataFrame({'value': values}, index=timeval)
 
     return product_data
 
@@ -712,6 +780,13 @@ class AsyncKeepa():
                     product['data'] = parse_csv(product['csv'],
                                                 to_datetime,
                                                 out_of_stock_as_nan)
+
+        if kwargs.get('stats', None):
+            for product in response['products']:
+                stats = product.get('stats', None)
+                if stats:
+                    product['stats_parsed'] = _parse_stats(stats, to_datetime)
+
         return response
 
     async def best_sellers_query(self, category, rank_avg_range=0, domain='US', wait=True):
@@ -864,7 +939,8 @@ class AsyncKeepa():
         else:
             return response['categories']
 
-    async def seller_query(self, seller_id, domain='US', storefront=False, update=None, wait=True):
+    async def seller_query(self, seller_id, domain='US', to_datetime=True, 
+                           storefront=False, update=None, wait=True):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -942,13 +1018,14 @@ class AsyncKeepa():
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
                    'seller': seller}
+
         if storefront:
             payload["storefront"] = int(storefront)
         if update:
             payload["update"] = update
 
         response = await self._request('seller', payload, wait=wait)
-        return response['sellers']
+        return _parse_seller(response['sellers'], to_datetime)
 
     async def product_finder(self, product_parms, domain='US', wait=True):
         """Query the keepa product database to find products matching
