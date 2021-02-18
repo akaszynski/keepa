@@ -30,10 +30,7 @@ jobs:
 
       - name: Validate Keys
         run: |
-          pip install -r requirements.txt --disable-pip-version-check
-          pip install -r requirements_test.txt --disable-pip-version-check
-          cd tests
-          pytest -v  --cov keepa --cov-report xml
+          python -c "import os, keepa; keepa.Keepa(os.environ.get('KEEPAKEY'))"
 
       - name: Unit testing
         run: |
