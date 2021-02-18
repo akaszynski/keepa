@@ -9,6 +9,7 @@ import datetime
 import json
 import logging
 import numpy as np
+import pandas as pd
 import time
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
@@ -211,8 +212,12 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
                 values /= 10
 
             timeval = keepa_minutes_to_time(times, to_datetime)
+
             product_data['%s_time' % key] = timeval
             product_data[key] = values
+
+            # combine time and value into a data frame
+            product_data['df_%s' % key] = pd.DataFrame({'time': timeval, 'value': values})
 
     return product_data
 
@@ -243,7 +248,7 @@ class AsyncKeepa():
 
     >>> import keepa
     >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    >>> api = await keepa.AsyncKeepa(mykey)
+    >>> api = await keepa.AsyncKeepa.create(mykey)
 
     Request data from two ASINs
 
@@ -263,15 +268,19 @@ class AsyncKeepa():
     >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
     """
 
-    def __init__(self, accesskey):
-        """ Initializes object """
+    @classmethod
+    async def create(cls, accesskey):
+        self = AsyncKeepa()
         self.accesskey = accesskey
         self.status = None
+        self.tokens_left = 0
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
-        run_and_get(self.update_status())
+        await self.update_status()
         log.info('%d tokens remain' % self.tokens_left)
+
+        return self
 
     @property
     def time_to_refill(self):
@@ -284,6 +293,10 @@ class AsyncKeepa():
         timetorefil = timeatrefile - now + 1000
         if timetorefil < 0:
             timetorefil = 0
+
+        # Account for negative tokens left
+        if self.tokens_left < 0:
+            timetorefil += (abs(self.tokens_left) / self.status['refillRate']) * 60000
 
         # Return value in seconds
         return timetorefil / 1000.0
@@ -694,7 +707,7 @@ class AsyncKeepa():
                                                 out_of_stock_as_nan)
         return response
 
-    async def best_sellers_query(self, category, domain='US'):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain='US'):
         """
         Retrieve an ASIN list of the most popular products based on
         sales in a specific category or product group.  See
@@ -742,7 +755,8 @@ class AsyncKeepa():
 
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
-                   'category': category}
+                   'category': category,
+                   'range': rank_avg_range}
 
         response = await self._request('bestsellers', payload)
         if 'bestSellersList' in response:
@@ -834,7 +848,7 @@ class AsyncKeepa():
         else:
             return response['categories']
 
-    async def seller_query(self, seller_id, domain='US'):
+    async def seller_query(self, seller_id, domain='US', storefront=False, update=None):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -852,6 +866,38 @@ class AsyncKeepa():
         domain : str, optional
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+
+        storefront : bool, optional
+            If specified the seller object will contain additional
+            information about what items the seller is listing on Amazon.
+            This includes a list of ASINs as well as the total amount of
+            items the seller has listed. The following seller object
+            fields will be set if data is available: asinList,
+            asinListLastSeen, totalStorefrontAsinsCSV. If no data is
+            available no additional tokens will be consumed. The ASIN
+            list can contain up to 100,000 items. As using the storefront
+            parameter does not trigger any new collection it does not
+            increase the processing time of the request, though the
+            response may be much bigger in size. The total storefront
+            ASIN count will not be updated, only historical data will
+            be provided (when available).
+
+        update : int, optional
+            Positive integer value. If the last live data collection from
+            the Amazon storefront page is older than update hours force a
+            new collection. Use this parameter in conjunction with the
+            storefront parameter. Token cost will only be applied if a new
+            collection is triggered.
+
+            Using this parameter you can achieve the following:
+
+            - Retrieve data from Amazon: a storefront ASIN list containing
+              up to 2,400 ASINs, in addition to all ASINs already collected
+              through our database.
+            - Force a refresh: Always retrieve live data with the value 0.
+            - Retrieve the total number of listings of this seller: the
+              totalStorefrontAsinsCSV field of the seller object will be
+              updated.
 
         Returns
         -------
@@ -877,6 +923,11 @@ class AsyncKeepa():
         payload = {'key': self.accesskey,
                    'domain': DCODES.index(domain),
                    'seller': seller}
+        if storefront:
+            payload["storefront"] = int(storefront)
+        if update:
+            payload["update"] = update
+
         response = await self._request('seller', payload)
         return response['sellers']
 
@@ -2128,7 +2179,7 @@ class Keepa():
 
     def __init__(self, accesskey):
         """ Initializes object """
-        self.__dict__["parent"] = AsyncKeepa(accesskey)
+        self.__dict__["parent"] = run_and_get(AsyncKeepa.create(accesskey))
 
     def __setattr__(self, attr, value):
         setattr(self.parent, attr, value)
