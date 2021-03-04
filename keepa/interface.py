@@ -74,10 +74,23 @@ csv_indices = [[0, 'AMAZON', True],
 
 
 def _parse_stats(stats, to_datetime):
+    """Parses *numeric* stats object. There is no need to parse strings or list of strings.\n
+    Keepa stats object response documentation: https://keepa.com/#!discuss/t/statistics-object/1308"""
+
+    stats_keys_parse_not_required = {
+        'buyBoxSellerId',
+        'sellerIdsLowestFBA',
+        'sellerIdsLowestFBM',
+        'buyBoxShippingCountry',
+        'buyBoxAvailabilityMessage',
+    }
     stats_parsed = {}
 
     for stat_key, stat_value in stats.items():
-        if isinstance(stat_value, int) and stat_value < 0:  # -1 or -2 means not exist. 0 doesn't mean not exist.
+        if stat_key in stats_keys_parse_not_required:
+            stat_value = None
+
+        elif isinstance(stat_value, int) and stat_value < 0:  # -1 or -2 means not exist. 0 doesn't mean not exist.
             stat_value = None
 
         if stat_value is not None:
