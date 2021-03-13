@@ -187,6 +187,12 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
         plt.step(offer_times[i], offer_prices[i])
     plt.show()
 
+If you plan to do a lot of simulatneous query, you might want to speedup query using
+`wait=False` arguments.
+
+.. code:: python
+
+    products = await api.query('059035342X', wait=False)
 
 Credits
 -------
