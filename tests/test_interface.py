@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 
 import numpy as np
 import pytest
@@ -8,6 +9,8 @@ import keepa
 import datetime
 
 # reduce the request limit for testing
+from keepa import keepa_minutes_to_time
+
 keepa.interface.REQLIM = 2
 
 try:
@@ -188,6 +191,48 @@ def test_productquery_offers(api):
     assert prices.dtype == np.double
     assert len(times)
     assert len(prices)
+
+def test_productquery_only_live_offers(api):
+    """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
+    max_offers = 20
+    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True)
+    product_offers = request[0]['offers']
+
+    # Check there are no additional historical offers in the response.
+    assert len(product_offers) <= max_offers
+
+    # All offers are live and have the same last_seen keepa minutes date.
+    last_seen_values = {offer['lastSeen'] for offer in product_offers}
+    assert len(last_seen_values) == 1
+
+def test_productquery_days(api):
+    """Tests that 'days' param limits historical data to X days.
+    This includes the csv, buyBoxSellerIdHistory, salesRanks, offers and offers.offerCSV fields."""
+
+    def any_date_out_of_range(date_objects) -> bool:
+        """Returns True if any date in date_objects if older than max_days, relative to now()."""
+        today = datetime.datetime.now()
+        return any((today - hist_date).days > max_days for hist_date in date_objects)
+
+    max_days = 30
+    request = api.query(PRODUCT_ASIN, offers=20, days=max_days)
+    product = request[0]
+
+    # Check if any Dateframes are out of date range.
+    dataframes_dates = [set(df.index.tolist()) for key, df in product['data'].items() if key.startswith('df_')]
+    dataframes_dates = chain.from_iterable(dataframes_dates)
+    assert not any_date_out_of_range(dataframes_dates)
+
+    # Check if other affected dict entries are out of date range/
+    keepa_minutes = {
+        'buy_box_seller_id_history': product['buyBoxSellerIdHistory'][0::2],
+        'sales_ranks': list(chain.from_iterable(product['salesRanks'].values()))[0::2],
+        'offers': {offer['lastSeen'] for offer in product['offers']},
+        'offers_csv': list(chain.from_iterable([offer['offerCSV'] for offer in product['offers']]))[0::3],
+    }
+    for name, minutes in keepa_minutes.items():
+        hist_times = set(keepa_minutes_to_time(minute) for minute in minutes)
+        assert not any_date_out_of_range(hist_times)
 
 
 def test_productquery_offers_invalid(api):

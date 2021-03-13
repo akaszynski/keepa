@@ -2,15 +2,16 @@
 keepa.com
 """
 
-from tqdm import tqdm
-import aiohttp
 import asyncio
 import datetime
 import json
 import logging
+import time
+
+import aiohttp
 import numpy as np
 import pandas as pd
-import time
+from tqdm import tqdm
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
@@ -401,7 +402,7 @@ class AsyncKeepa():
                     offers=None, update=None, to_datetime=True,
                     rating=False, out_of_stock_as_nan=True, stock=False,
                     product_code_is_asin=True, progress_bar=True, buybox=False,
-                    wait=True):
+                    wait=True, days=None, only_live_offers=None):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -497,6 +498,24 @@ class AsyncKeepa():
 
         wait : bool, optional
             Wait available token before doing effective query, Defaults to ``True``.
+
+        only_live_offers : bool, optional
+            If set to True, the product object will only include live
+            marketplace offers (when used in combination with the offers parameter).
+            If you do not need historical offers use this to have them removed from
+            the response. This can improve processing time and considerably
+            decrease the size of the response.
+            Default None
+
+        days : int, optional
+            Any positive integer value. If specified and has positive value X
+            the product object will limit all historical data to the recent X days.
+            This includes the csv, buyBoxSellerIdHistory, salesRanks, offers
+            and offers.offerCSV fields. If you do not need old historical data
+            use this to have it removed from the response. This can improve
+            processing time and considerably decrease the size of the response.
+            The parameter does not use calendar days - so 1 day equals the last 24 hours.
+            Default None
 
         Returns
         -------
@@ -685,7 +704,10 @@ class AsyncKeepa():
                 to_datetime=to_datetime,
                 out_of_stock_as_nan=out_of_stock_as_nan,
                 buybox=buybox,
-                wait=wait)
+                wait=wait,
+                days=days,
+                only_live_offers=only_live_offers,
+            )
             idx += nrequest
             products.extend(response['products'])
 
@@ -754,6 +776,10 @@ class AsyncKeepa():
         """
         # ASINs convert to comma joined string
         assert len(items) <= 100
+
+        if kwargs['days'] is not None:
+            assert kwargs['days'] > 0
+
         if product_code_is_asin:
             kwargs['asin'] = ','.join(items)
         else:
@@ -761,6 +787,8 @@ class AsyncKeepa():
 
         kwargs['key'] = self.accesskey
         kwargs['domain'] = DCODES.index(kwargs['domain'])
+
+        # Convert bool values to 0 and 1.
         kwargs['stock'] = int(kwargs['stock'])
         kwargs['history'] = int(kwargs['history'])
         kwargs['rating'] = int(kwargs['rating'])
@@ -776,10 +804,19 @@ class AsyncKeepa():
         else:
             kwargs['offers'] = int(kwargs['offers'])
 
+        if kwargs['only_live_offers'] is None:
+            del kwargs['only_live_offers']
+        else:
+            kwargs['only-live-offers'] = int(kwargs.pop('only_live_offers'))
+            # Keepa's param actually doesn't use snake_case.
+            # I believe using snake case throughout the Keepa interface is better.
+
+        if kwargs['days'] is None:
+            del kwargs['days']
+
         if kwargs['stats'] is None:
             del kwargs['stats']
 
-        kwargs['rating'] = int(kwargs['rating'])
         out_of_stock_as_nan = kwargs.pop('out_of_stock_as_nan', True)
         to_datetime = kwargs.pop('to_datetime', True)
 

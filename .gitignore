@@ -33,3 +33,4 @@ tests/weak_key
 
 # pycharm IDE
 .idea
+/venv/
