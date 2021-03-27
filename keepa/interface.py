@@ -515,6 +515,9 @@ class AsyncKeepa():
             use this to have it removed from the response. This can improve
             processing time and considerably decrease the size of the response.
             The parameter does not use calendar days - so 1 day equals the last 24 hours.
+            The oldest data point of each field may have a date value which is out of
+            the specified range. This means the value of the field has not changed since that date
+            and is still active.
             Default None
 
         Returns
@@ -835,54 +838,6 @@ class AsyncKeepa():
                 stats = product.get('stats', None)
                 if stats:
                     product['stats_parsed'] = _parse_stats(stats, to_datetime)
-
-        # If 'days' param specified, Keepa will return truncated historical data.
-        # However, there is a bug from Keepa.
-        # We must remove the all the datapoints corresponding to the *single oldest*
-        # day of data in each field of historical data. They are always out of range.
-        if kwargs.get('days', None):
-            # Days param potentially affects: csv, buyBoxSellerIdHistory, salesRanks, offers and offers.offerCSV fields.
-
-            def get_start_index(data, step: int, conversion=True) -> int:
-                """Returns the slice number such as the sliced data would not include the oldest day of data anymore.
-                Returns None if all datapoints correspond to the oldest day of data.
-                Set conversion to False to prevent conversion from keepa_minutes to datetime."""
-                data = sorted(data[0::step])
-                oldest_day: datetime.date = keepa_minutes_to_time(data[0]).date() if conversion else data[0]
-                for i, dt in enumerate(data, start=1):
-                    dt = keepa_minutes_to_time(dt).date() if conversion else dt
-                    if dt != oldest_day:
-                        return i * step
-
-            for product in response['products']:
-                # Data (dataframes)list(df.axes[0])
-                df_keys = [df_name for df_name in product['data'] if 'df_' in df_name]
-                for df_key in df_keys:
-                    df_dates = product['data'][df_key].axes[0]
-                    df_dates = [datetime.date(year=stamp.year, month=stamp.month, day=stamp.day) for stamp in df_dates]
-                    start_idx = get_start_index(df_dates, 2, conversion=False)
-                    product['data'][df_key] = product['data'][df_key][start_idx:] if start_idx else list()
-
-                # Data (value/datetime pairs)
-                data_keys = (key for key, values in product['data'].items() if 'df_' not in key and '_time' not in key)
-                for key in data_keys:
-                    start_idx = get_start_index(list(product['data'][key + '_time']), 2, conversion=False)
-                    product['data'][key] = product['data'][key][start_idx:] if start_idx else list()
-                    product['data'][key + '_time'] = product['data'][key + '_time'][start_idx:] if start_idx else list()
-
-                if product.get('offers', None):
-                    for offer in product['offers']:
-                        start_idx = get_start_index(offer['offerCSV'], 3)
-                        offer['offerCSV'] = offer['offerCSV'][start_idx:] if start_idx else list()
-
-                if product.get('buyBoxSellerIdHistory', None):
-                    start_idx = get_start_index(product['buyBoxSellerIdHistory'], 2)
-                    product['buyBoxSellerIdHistory'] = product['buyBoxSellerIdHistory'][start_idx:] if start_idx else list()
-
-                for key, ranks in product['salesRanks'].items():
-                    start_idx = get_start_index(ranks, 2)
-                    ranks = ranks[start_idx:] if start_idx else list()
-                    product['salesRanks'][key] = ranks
 
         return response
 
