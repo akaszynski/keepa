@@ -2,15 +2,16 @@
 keepa.com
 """
 
-from tqdm import tqdm
-import aiohttp
 import asyncio
 import datetime
 import json
 import logging
+import time
+
+import aiohttp
 import numpy as np
 import pandas as pd
-import time
+from tqdm import tqdm
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
@@ -401,7 +402,7 @@ class AsyncKeepa():
                     offers=None, update=None, to_datetime=True,
                     rating=False, out_of_stock_as_nan=True, stock=False,
                     product_code_is_asin=True, progress_bar=True, buybox=False,
-                    wait=True):
+                    wait=True, days=None, only_live_offers=None):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -497,6 +498,24 @@ class AsyncKeepa():
 
         wait : bool, optional
             Wait available token before doing effective query, Defaults to ``True``.
+
+        only_live_offers : bool, optional
+            If set to True, the product object will only include live
+            marketplace offers (when used in combination with the offers parameter).
+            If you do not need historical offers use this to have them removed from
+            the response. This can improve processing time and considerably
+            decrease the size of the response.
+            Default None
+
+        days : int, optional
+            Any positive integer value. If specified and has positive value X
+            the product object will limit all historical data to the recent X days.
+            This includes the csv, buyBoxSellerIdHistory, salesRanks, offers
+            and offers.offerCSV fields. If you do not need old historical data
+            use this to have it removed from the response. This can improve
+            processing time and considerably decrease the size of the response.
+            The parameter does not use calendar days - so 1 day equals the last 24 hours.
+            Default None
 
         Returns
         -------
@@ -685,7 +704,10 @@ class AsyncKeepa():
                 to_datetime=to_datetime,
                 out_of_stock_as_nan=out_of_stock_as_nan,
                 buybox=buybox,
-                wait=wait)
+                wait=wait,
+                days=days,
+                only_live_offers=only_live_offers,
+            )
             idx += nrequest
             products.extend(response['products'])
 
@@ -754,6 +776,7 @@ class AsyncKeepa():
         """
         # ASINs convert to comma joined string
         assert len(items) <= 100
+
         if product_code_is_asin:
             kwargs['asin'] = ','.join(items)
         else:
@@ -761,6 +784,8 @@ class AsyncKeepa():
 
         kwargs['key'] = self.accesskey
         kwargs['domain'] = DCODES.index(kwargs['domain'])
+
+        # Convert bool values to 0 and 1.
         kwargs['stock'] = int(kwargs['stock'])
         kwargs['history'] = int(kwargs['history'])
         kwargs['rating'] = int(kwargs['rating'])
@@ -776,10 +801,21 @@ class AsyncKeepa():
         else:
             kwargs['offers'] = int(kwargs['offers'])
 
+        if kwargs['only_live_offers'] is None:
+            del kwargs['only_live_offers']
+        else:
+            kwargs['only-live-offers'] = int(kwargs.pop('only_live_offers'))
+            # Keepa's param actually doesn't use snake_case.
+            # I believe using snake case throughout the Keepa interface is better.
+
+        if kwargs['days'] is None:
+            del kwargs['days']
+        else:
+            assert kwargs['days'] > 0
+
         if kwargs['stats'] is None:
             del kwargs['stats']
 
-        kwargs['rating'] = int(kwargs['rating'])
         out_of_stock_as_nan = kwargs.pop('out_of_stock_as_nan', True)
         to_datetime = kwargs.pop('to_datetime', True)
 
@@ -799,6 +835,54 @@ class AsyncKeepa():
                 stats = product.get('stats', None)
                 if stats:
                     product['stats_parsed'] = _parse_stats(stats, to_datetime)
+
+        # If 'days' param specified, Keepa will return truncated historical data.
+        # However, there is a bug from Keepa.
+        # We must remove the all the datapoints corresponding to the *single oldest*
+        # day of data in each field of historical data. They are always out of range.
+        if kwargs.get('days', None):
+            # Days param potentially affects: csv, buyBoxSellerIdHistory, salesRanks, offers and offers.offerCSV fields.
+
+            def get_start_index(data, step: int, conversion=True) -> int:
+                """Returns the slice number such as the sliced data would not include the oldest day of data anymore.
+                Returns None if all datapoints correspond to the oldest day of data.
+                Set conversion to False to prevent conversion from keepa_minutes to datetime."""
+                data = sorted(data[0::step])
+                oldest_day: datetime.date = keepa_minutes_to_time(data[0]).date() if conversion else data[0]
+                for i, dt in enumerate(data, start=1):
+                    dt = keepa_minutes_to_time(dt).date() if conversion else dt
+                    if dt != oldest_day:
+                        return i * step
+
+            for product in response['products']:
+                # Data (dataframes)list(df.axes[0])
+                df_keys = [df_name for df_name in product['data'] if 'df_' in df_name]
+                for df_key in df_keys:
+                    df_dates = product['data'][df_key].axes[0]
+                    df_dates = [datetime.date(year=stamp.year, month=stamp.month, day=stamp.day) for stamp in df_dates]
+                    start_idx = get_start_index(df_dates, 2, conversion=False)
+                    product['data'][df_key] = product['data'][df_key][start_idx:] if start_idx else list()
+
+                # Data (value/datetime pairs)
+                data_keys = (key for key, values in product['data'].items() if 'df_' not in key and '_time' not in key)
+                for key in data_keys:
+                    start_idx = get_start_index(list(product['data'][key + '_time']), 2, conversion=False)
+                    product['data'][key] = product['data'][key][start_idx:] if start_idx else list()
+                    product['data'][key + '_time'] = product['data'][key + '_time'][start_idx:] if start_idx else list()
+
+                if product.get('offers', None):
+                    for offer in product['offers']:
+                        start_idx = get_start_index(offer['offerCSV'], 3)
+                        offer['offerCSV'] = offer['offerCSV'][start_idx:] if start_idx else list()
+
+                if product.get('buyBoxSellerIdHistory', None):
+                    start_idx = get_start_index(product['buyBoxSellerIdHistory'], 2)
+                    product['buyBoxSellerIdHistory'] = product['buyBoxSellerIdHistory'][start_idx:] if start_idx else list()
+
+                for key, ranks in product['salesRanks'].items():
+                    start_idx = get_start_index(ranks, 2)
+                    ranks = ranks[start_idx:] if start_idx else list()
+                    product['salesRanks'][key] = ranks
 
         return response
 
