@@ -14,35 +14,43 @@ keepa
 .. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/akaszynski/keepa
 
-Python module to interface to `Keepa <https://keepa.com/>`_ to query for Amazon product information and history.
+This Python module allows you to interface with the API at `Keepa
+<https://keepa.com/>`_ to query for Amazon product information and
+history.  It also contains a plotting module to allow for plotting of
+a product.
+
+See API pricing at `Keepa API <https://keepa.com/#!api>`_
 
 Documentation can be found on readthedocs at `keepa Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
 
 
 Requirements
 ------------
-Module is compatible with Python >= 3.5 . keepa requires:
+Module is compatible with Python >= 3.5 and requires:
 
  - ``numpy``
  - ``aiohttp``
  - ``matplotlib``
  - ``tqdm``
 
-Product history can be plotted from the raw data when ``matplotlib`` is installed.
+Product history can be plotted from the raw data when ``matplotlib``
+is installed.
 
-Interfacing with the ``keepa`` requires an access key and a monthly subscription from `Keepa API <https://keepa.com/#!api>`_
-
+Interfacing with the ``keepa`` requires an access key and a monthly
+subscription from `Keepa API <https://keepa.com/#!api>`_
 
 Installation
 ------------
-Module can be installed from PyPi with:
+Module can be installed from `PyPi <https://pypi.org/project/keepa/>`_ with:
 
 .. code::
 
     pip install keepa
 
 
-Source code can also be downloaded from `GitHub <https://github.com/akaszynski/keepa>`_ and installed using ``python setup.py install`` or ``pip install .``
+Source code can also be downloaded from `GitHub
+<https://github.com/akaszynski/keepa>`_ and installed using:
+``python setup.py install`` or ``pip install .``
 
 
 Brief Example
@@ -70,9 +78,28 @@ Brief Example
     Product Offers Plot
 
 
-Detailed Example
-----------------
+Brief Example using async
+-------------------------
+Here's an example of obtaining a product and plotting its price and
+offer history using the ``async`` interface:
 
+.. code:: python
+
+    import keepa
+
+    # establish interface with keepa (this is not a real key)
+    mykey = '0000000000000000000000000000000000000000000000000000000000000000'
+    api = await keepa.AsyncKeepa.create(mykey)
+
+    # plot product request 
+    request = 'B0088PUEPK'
+    products = await api.query(request)
+    product = products[0]
+    keepa.plot_product(product)
+
+
+Detailed Examples
+-----------------
 Import interface and establish connection to server
 
 .. code:: python
@@ -188,7 +215,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     plt.show()
 
 If you plan to do a lot of simulatneous query, you might want to speedup query using
-`wait=False` arguments.
+``wait=False`` arguments.
 
 .. code:: python
 
@@ -196,9 +223,12 @@ If you plan to do a lot of simulatneous query, you might want to speedup query u
 
 Credits
 -------
-This Python code, written by Alex Kaszynski, is based on Java code written by Marius Johann, CEO keepa. Java source is can be found at `api_backend <https://github.com/keepacom/api_backend/>`_.
+This Python module, written by Alex Kaszynski and several
+contribitors, is based on Java code written by Marius Johann, CEO
+keepa. Java source is can be found at `api_backend <https://github.com/keepacom/api_backend/>`_.
 
 
 License
 -------
-Apache License, please see license file. Work is credited to both Alex Kaszynski and Marius Johann.
+Apache License, please see license file. Work is credited to both Alex
+Kaszynski and Marius Johann.

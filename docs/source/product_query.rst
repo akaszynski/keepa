@@ -1,13 +1,23 @@
 Queries
 =======
-Interfacing with the ``keepa`` requires a valid access key.  This requires a monthly subscription from `Pricing <https://keepa.com/#!api>`_.  Here's a brief description of the subscription model from their website.
+Interfacing with the ``keepa`` requires a valid access key.  This
+requires a monthly subscription from `Pricing
+<https://keepa.com/#!api>`_.  Here's a brief description of the
+subscription model from their website.
 
-All plans are prepaid for 1 month with a subscription model. A subscription can be canceled at any time. Multiple plans can be active on the same account and an upgrade is possible at any time, a downgrade once per month. The plans differentiate by the number of tokens generated per minute. For example: With a single token you can retrieve the complete data set for one product. Unused tokens expire after one hour. You can find more information on how our plans work in our documentation.
+All plans are prepaid for 1 month with a subscription model. A
+subscription can be canceled at any time. Multiple plans can be active
+on the same account and an upgrade is possible at any time, a
+downgrade once per month. The plans differentiate by the number of
+tokens generated per minute. For example: With a single token you can
+retrieve the complete data set for one product. Unused tokens expire
+after one hour. You can find more information on how our plans work in
+our documentation.
 
 
 Connecting to KeepaAPI
 ~~~~~~~~~~~~~~~~~~~~~~
-Import interface and establish connection to server
+Import interface and establish connection to server:
 
 .. code:: python
 
@@ -55,7 +65,7 @@ The ``products`` variable is a list of product data with one entry per successfu
     print('ASIN is ' + products[0]['asin'])
     print('Title is ' + products[0]['title'])
 
-When the parameter ``history`` is True (enabled by default, the each
+When the parameter ``history`` is ``True`` (enabled by default), each
 product contains a The raw data is contained within each product
 result. Raw data is stored as a dictionary with each key paired with
 its associated time history.
@@ -85,9 +95,13 @@ its associated time history.
     2014-08-10 18:00:00   $57.00
     2014-08-10 20:00:00   $52.51
 
-Each time a user makes a query to keepa as well as other points in time, an entry is stored on their servers.  This means that there will sometimes be gaps in the history followed by closely spaced entries like in this example data.
+Each time a user makes a query to keepa as well as other points in
+time, an entry is stored on their servers.  This means that there will
+sometimes be gaps in the history followed by closely spaced entries
+like in this example data.
 
-The data dictionary contains keys for each type of history available for the product.  These keys include:
+The data dictionary contains keys for each type of history available
+for the product.  These keys include:
 
     AMAZON
         Amazon price history
@@ -174,7 +188,8 @@ The data dictionary contains keys for each type of history available for the pro
         The trade in price history. Amazon trade-in is not available for every locale.
 
 
-Each data key has a corresponding ``_time`` key containing the time values of each key.  These can be plotted with:
+Each data key has a corresponding ``_time`` key containing the time
+values of each key.  These can be plotted with:
 
 .. code:: python
 
@@ -183,9 +198,11 @@ Each data key has a corresponding ``_time`` key containing the time values of ea
     history = product['data'] 
     plt.step(history[key], history[key + '_time'], where='pre')
 
-Historical data should be plotted as a step plot since the data is discontinuous.  Values are unknown between each entry.
+Historical data should be plotted as a step plot since the data is
+discontinuous.  Values are unknown between each entry.
 
-The product history can also be plotted from the module if ``matplotlib`` is installed
+The product history can also be plotted from the module if
+``matplotlib`` is installed
 
 .. code:: python
 
@@ -229,7 +246,8 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     2018-02-03 08:32:00   $203.48
     2018-02-04 08:40:00   $217.37
 
-Not all offers are active and some are only historical. The following example plots the historyof active offers for a single amazon product.
+Not all offers are active and some are only historical. The following
+example plots the historyof active offers for a single Amazon product.
 
 .. code:: python
 
@@ -262,7 +280,9 @@ Not all offers are active and some are only historical. The following example pl
 
 Category Queries
 ~~~~~~~~~~~~~~~~
-You can retrieve an ASIN list of the most popular products based on sales in a specific category or product group.  Here's an example that assumes you've already setup your api.
+You can retrieve an ASIN list of the most popular products based on
+sales in a specific category or product group.  Here's an example that
+assumes you've already setup your api.
 
 .. code:: python
 
