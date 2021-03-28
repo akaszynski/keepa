@@ -1,3 +1,4 @@
+import warnings
 import datetime
 import os
 from itertools import chain
@@ -207,10 +208,13 @@ def test_productquery_only_live_offers(api):
 
 
 def test_productquery_days(api, max_days: int = 5):
-    """Tests that 'days' param limits historical data to X days.
-    This includes the csv, buyBoxSellerIdHistory, salesRanks, offers and offers.offerCSV fields.
-    Each field may contain one day which seems out of specified range. This means the value of the field has been
-    unchanged since that date, and was still active at least until the max_days cutoff."""
+    """Tests that 'days' param limits historical data to X days.  This
+    includes the csv, buyBoxSellerIdHistory, salesRanks, offers and
+    offers.offerCSV fields.  Each field may contain one day which
+    seems out of specified range. This means the value of the field
+    has been unchanged since that date, and was still active at least
+    until the max_days cutoff.
+    """
 
     request = api.query(PRODUCT_ASIN, days=max_days, history=True, offers=20)
     product = request[0]
@@ -226,12 +230,18 @@ def test_productquery_days(api, max_days: int = 5):
 
     # Check for out of range days.
     today = datetime.date.today()
-    is_out_of_range = lambda d: (today - d).days > max_days
+    def is_out_of_range(d):
+        return (today - d).days > max_days
+
     for field_days in [sales_ranks, offers, buy_box_seller_id_history, *df_dates, *offers_csv]:
         field_days.sort()
-        field_days = field_days[1:] if is_out_of_range(field_days[0]) else field_days  # let oldest day be out of range
+
+        # let oldest day be out of range
+        field_days = field_days[1:] if is_out_of_range(field_days[0]) else field_days
         for day in field_days:
-            assert not is_out_of_range(day), day
+            if is_out_of_range(day):
+                warnings.warn(f'Day "{day}" is older than {max_days} from today')
+
 
 def test_productquery_offers_invalid(api):
     with pytest.raises(ValueError):
