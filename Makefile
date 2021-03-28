@@ -6,32 +6,8 @@ CODESPELL_IGNORE ?= "ignore_words.txt"
 
 all: doctest
 
-doctest: codespell pydocstyle
+doctest: codespell
 
 codespell:
 	@echo "Running codespell"
 	@codespell $(CODESPELL_DIRS) -S $(CODESPELL_SKIP) -I $(CODESPELL_IGNORE)
-
-pydocstyle:
-	@echo "Running pydocstyle"
-	@pydocstyle pyvista
-
-doctest-modules:
-	@echo "Runnnig module doctesting"
-	pytest -v --doctest-modules pyvista
-
-coverage:
-	@echo "Running coverage"
-	@pytest -v --cov pyvista
-
-coverage-xml:
-	@echo "Reporting XML coverage"
-	@pytest -v --cov pyvista --cov-report xml
-
-coverage-html:
-	@echo "Reporting HTML coverage"
-	@pytest -v --cov pyvista --cov-report html
-
-mypy:
-	@echo "Running mypy static type checking"
-	mypy pyvista/core/ --no-incremental
