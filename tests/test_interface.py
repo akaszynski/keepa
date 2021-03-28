@@ -1,13 +1,15 @@
+import datetime
 import os
+from itertools import chain
 
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 
 import keepa
-import datetime
-
 # reduce the request limit for testing
+from keepa import keepa_minutes_to_time
+
 keepa.interface.REQLIM = 2
 
 try:
@@ -189,6 +191,47 @@ def test_productquery_offers(api):
     assert len(times)
     assert len(prices)
 
+
+def test_productquery_only_live_offers(api):
+    """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
+    max_offers = 20
+    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True)
+    product_offers = request[0]['offers']
+
+    # Check there are no additional historical offers in the response.
+    assert len(product_offers) <= max_offers
+
+    # All offers are live and have the same last_seen keepa minutes date.
+    last_seen_values = {offer['lastSeen'] for offer in product_offers}
+    assert len(last_seen_values) == 1
+
+
+def test_productquery_days(api, max_days: int = 5):
+    """Tests that 'days' param limits historical data to X days.
+    This includes the csv, buyBoxSellerIdHistory, salesRanks, offers and offers.offerCSV fields.
+    Each field may contain one day which seems out of specified range. This means the value of the field has been
+    unchanged since that date, and was still active at least until the max_days cutoff."""
+
+    request = api.query(PRODUCT_ASIN, days=max_days, history=True, offers=20)
+    product = request[0]
+    convert = lambda minutes: list(set(keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes))
+
+    # Converting each field's list of keepa minutes into flat list of unique days.
+    sales_ranks = convert(chain.from_iterable(product['salesRanks'].values()))[0::2]
+    offers = convert(offer['lastSeen'] for offer in product['offers'])
+    buy_box_seller_id_history = convert(product['buyBoxSellerIdHistory'][0::2])
+    offers_csv = list(convert(offer['offerCSV'][0::3]) for offer in product['offers'])
+    df_dates = list(list(df.axes[0]) for df_name, df in product['data'].items() if 'df_' in df_name and any(df))
+    df_dates = list(list(datetime.date(year=ts.year, month=ts.month, day=ts.day) for ts in stamps) for stamps in df_dates)
+
+    # Check for out of range days.
+    today = datetime.date.today()
+    is_out_of_range = lambda d: (today - d).days > max_days
+    for field_days in [sales_ranks, offers, buy_box_seller_id_history, *df_dates, *offers_csv]:
+        field_days.sort()
+        field_days = field_days[1:] if is_out_of_range(field_days[0]) else field_days  # let oldest day be out of range
+        for day in field_days:
+            assert not is_out_of_range(day), day
 
 def test_productquery_offers_invalid(api):
     with pytest.raises(ValueError):

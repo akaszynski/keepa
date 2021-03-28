@@ -2,15 +2,16 @@
 keepa.com
 """
 
-from tqdm import tqdm
-import aiohttp
 import asyncio
 import datetime
 import json
 import logging
+import time
+
+import aiohttp
 import numpy as np
 import pandas as pd
-import time
+from tqdm import tqdm
 
 from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
@@ -357,16 +358,15 @@ class AsyncKeepa():
         self.tokens_left = 0
 
         # Store user's available tokens
-        log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
+        log.info('Connecting to keepa using key ending in %s', accesskey[-6:])
         await self.update_status()
-        log.info('%d tokens remain' % self.tokens_left)
-
+        log.info('%d tokens remain', self.tokens_left)
         return self
 
     @property
     def time_to_refill(self):
         """ Returns the time to refill in seconds """
-        # Get current timestamp in miliseconds from unix epoch
+        # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
         timeatrefile = self.status['timestamp'] + self.status['refillIn']
 
@@ -401,7 +401,7 @@ class AsyncKeepa():
                     offers=None, update=None, to_datetime=True,
                     rating=False, out_of_stock_as_nan=True, stock=False,
                     product_code_is_asin=True, progress_bar=True, buybox=False,
-                    wait=True):
+                    wait=True, days=None, only_live_offers=None):
         """ Performs a product query of a list, array, or single ASIN.
         Returns a list of product data with one entry for each
         product.
@@ -496,7 +496,31 @@ class AsyncKeepa():
             parameter is required.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query,
+            Defaults to ``True``.
+
+        only_live_offers : bool, optional
+            If set to True, the product object will only include live
+            marketplace offers (when used in combination with the
+            offers parameter).  If you do not need historical offers
+            use this to have them removed from the response. This can
+            improve processing time and considerably decrease the size
+            of the response.  Default None
+
+        days : int, optional
+            Any positive integer value. If specified and has positive
+            value X the product object will limit all historical data
+            to the recent X days.  This includes the csv,
+            buyBoxSellerIdHistory, salesRanks, offers and
+            offers.offerCSV fields. If you do not need old historical
+            data use this to have it removed from the response. This
+            can improve processing time and considerably decrease the
+            size of the response.  The parameter does not use calendar
+            days - so 1 day equals the last 24 hours.  The oldest data
+            point of each field may have a date value which is out of
+            the specified range. This means the value of the field has
+            not changed since that date and is still active.  Default
+            ``None``
 
         Returns
         -------
@@ -641,7 +665,8 @@ class AsyncKeepa():
 
         # check offer input
         if offers:
-            assert isinstance(offers, int), 'Parameter "offers" must be an interger'
+            if not isinstance(offers, int):
+                raise TypeError('Parameter "offers" must be an interger')
 
             if offers > 100 or offers < 20:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
@@ -651,9 +676,9 @@ class AsyncKeepa():
             60000 - self.status['refillIn']) / 60000.0
         if tcomplete < 0.0:
             tcomplete = 0.5
-        log.debug('Estimated time to complete %d request(s) is %.2f minutes' %
-                  (nitems, tcomplete))
-        log.debug('\twith a refill rate of %d token(s) per minute' %
+        log.debug('Estimated time to complete %d request(s) is %.2f minutes',
+                  nitems, tcomplete)
+        log.debug('\twith a refill rate of %d token(s) per minute',
                   self.status['refillRate'])
 
         # product list
@@ -685,7 +710,10 @@ class AsyncKeepa():
                 to_datetime=to_datetime,
                 out_of_stock_as_nan=out_of_stock_as_nan,
                 buybox=buybox,
-                wait=wait)
+                wait=wait,
+                days=days,
+                only_live_offers=only_live_offers,
+            )
             idx += nrequest
             products.extend(response['products'])
 
@@ -738,7 +766,7 @@ class AsyncKeepa():
             ASINs.
 
         refillIn : float
-            Time in miliseconds to the next refill of tokens.
+            Time in milliseconds to the next refill of tokens.
 
         refilRate : float
             Number of tokens refilled per minute
@@ -754,6 +782,7 @@ class AsyncKeepa():
         """
         # ASINs convert to comma joined string
         assert len(items) <= 100
+
         if product_code_is_asin:
             kwargs['asin'] = ','.join(items)
         else:
@@ -761,6 +790,8 @@ class AsyncKeepa():
 
         kwargs['key'] = self.accesskey
         kwargs['domain'] = DCODES.index(kwargs['domain'])
+
+        # Convert bool values to 0 and 1.
         kwargs['stock'] = int(kwargs['stock'])
         kwargs['history'] = int(kwargs['history'])
         kwargs['rating'] = int(kwargs['rating'])
@@ -776,10 +807,21 @@ class AsyncKeepa():
         else:
             kwargs['offers'] = int(kwargs['offers'])
 
+        if kwargs['only_live_offers'] is None:
+            del kwargs['only_live_offers']
+        else:
+            kwargs['only-live-offers'] = int(kwargs.pop('only_live_offers'))
+            # Keepa's param actually doesn't use snake_case.
+            # I believe using snake case throughout the Keepa interface is better.
+
+        if kwargs['days'] is None:
+            del kwargs['days']
+        else:
+            assert kwargs['days'] > 0
+
         if kwargs['stats'] is None:
             del kwargs['stats']
 
-        kwargs['rating'] = int(kwargs['rating'])
         out_of_stock_as_nan = kwargs.pop('out_of_stock_as_nan', True)
         to_datetime = kwargs.pop('to_datetime', True)
 
@@ -842,7 +884,8 @@ class AsyncKeepa():
             Default US
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -872,7 +915,8 @@ class AsyncKeepa():
             Input search term.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -903,7 +947,8 @@ class AsyncKeepa():
         else:
             return response['categories']
 
-    async def category_lookup(self, category_id, domain='US', include_parents=0, wait=True):
+    async def category_lookup(self, category_id, domain='US',
+                              include_parents=0, wait=True):
         """
         Return root categories given a categoryId.
 
@@ -922,7 +967,8 @@ class AsyncKeepa():
             Include parents.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -996,21 +1042,23 @@ class AsyncKeepa():
 
             Using this parameter you can achieve the following:
 
-            - Retrieve data from Amazon: a storefront ASIN list containing
-              up to 2,400 ASINs, in addition to all ASINs already collected
-              through our database.
-            - Force a refresh: Always retrieve live data with the value 0.
-            - Retrieve the total number of listings of this seller: the
-              totalStorefrontAsinsCSV field of the seller object will be
-              updated.
+            - Retrieve data from Amazon: a storefront ASIN list
+              containing up to 2,400 ASINs, in addition to all ASINs
+              already collected through our database.
+            - Force a refresh: Always retrieve live data with the
+              value 0.
+            - Retrieve the total number of listings of this seller:
+              the totalStorefrontAsinsCSV field of the seller object
+              will be updated.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
         seller_info : dict
-            Dictionary containing one entry per input seller_id.
+            Dictionary containing one entry per input ``seller_id``.
 
         Examples
         --------
@@ -2092,7 +2140,7 @@ class AsyncKeepa():
 
         You can find products that recently changed and match your
         search criteria.  A single request will return a maximum of
-        150 deals.  Try ou the deals page to frist get accustomed to
+        150 deals.  Try out the deals page to first get accustomed to
         the options:
         https://keepa.com/#!deals
 
@@ -2164,7 +2212,7 @@ class AsyncKeepa():
 
     async def _request(self, request_type, payload, wait=True):
         """Queries keepa api server.  Parses raw response from keepa
-        into a json format.  Handles errors and waits for avaialbe
+        into a json format.  Handles errors and waits for available
         tokens if allowed.
         """
 
@@ -2202,11 +2250,11 @@ def convert_offer_history(csv, to_datetime=True):
     Parameters
     ----------
     csv : list
-       Offer list csv obtained from ['offerCSV']
+       Offer list csv obtained from ``['offerCSV']``
 
     to_datetime : bool, optional
-        Modifies numpy minutes to datetime.datetime values.
-        Default True.
+        Modifies ``numpy`` minutes to ``datetime.datetime`` values.
+        Default ``True``.
 
     Returns
     -------
