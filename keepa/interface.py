@@ -358,10 +358,9 @@ class AsyncKeepa():
         self.tokens_left = 0
 
         # Store user's available tokens
-        log.info('Connecting to keepa using key ending in %s' % accesskey[-6:])
+        log.info('Connecting to keepa using key ending in %s', accesskey[-6:])
         await self.update_status()
-        log.info('%d tokens remain' % self.tokens_left)
-
+        log.info('%d tokens remain', self.tokens_left)
         return self
 
     @property
@@ -497,28 +496,31 @@ class AsyncKeepa():
             parameter is required.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query,
+            Defaults to ``True``.
 
         only_live_offers : bool, optional
             If set to True, the product object will only include live
-            marketplace offers (when used in combination with the offers parameter).
-            If you do not need historical offers use this to have them removed from
-            the response. This can improve processing time and considerably
-            decrease the size of the response.
-            Default None
+            marketplace offers (when used in combination with the
+            offers parameter).  If you do not need historical offers
+            use this to have them removed from the response. This can
+            improve processing time and considerably decrease the size
+            of the response.  Default None
 
         days : int, optional
-            Any positive integer value. If specified and has positive value X
-            the product object will limit all historical data to the recent X days.
-            This includes the csv, buyBoxSellerIdHistory, salesRanks, offers
-            and offers.offerCSV fields. If you do not need old historical data
-            use this to have it removed from the response. This can improve
-            processing time and considerably decrease the size of the response.
-            The parameter does not use calendar days - so 1 day equals the last 24 hours.
-            The oldest data point of each field may have a date value which is out of
-            the specified range. This means the value of the field has not changed since that date
-            and is still active.
-            Default None
+            Any positive integer value. If specified and has positive
+            value X the product object will limit all historical data
+            to the recent X days.  This includes the csv,
+            buyBoxSellerIdHistory, salesRanks, offers and
+            offers.offerCSV fields. If you do not need old historical
+            data use this to have it removed from the response. This
+            can improve processing time and considerably decrease the
+            size of the response.  The parameter does not use calendar
+            days - so 1 day equals the last 24 hours.  The oldest data
+            point of each field may have a date value which is out of
+            the specified range. This means the value of the field has
+            not changed since that date and is still active.  Default
+            ``None``
 
         Returns
         -------
@@ -663,7 +665,8 @@ class AsyncKeepa():
 
         # check offer input
         if offers:
-            assert isinstance(offers, int), 'Parameter "offers" must be an interger'
+            if not isinstance(offers, int):
+                raise TypeError('Parameter "offers" must be an interger')
 
             if offers > 100 or offers < 20:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
@@ -673,9 +676,9 @@ class AsyncKeepa():
             60000 - self.status['refillIn']) / 60000.0
         if tcomplete < 0.0:
             tcomplete = 0.5
-        log.debug('Estimated time to complete %d request(s) is %.2f minutes' %
-                  (nitems, tcomplete))
-        log.debug('\twith a refill rate of %d token(s) per minute' %
+        log.debug('Estimated time to complete %d request(s) is %.2f minutes',
+                  nitems, tcomplete)
+        log.debug('\twith a refill rate of %d token(s) per minute',
                   self.status['refillRate'])
 
         # product list
@@ -881,7 +884,8 @@ class AsyncKeepa():
             Default US
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -911,7 +915,8 @@ class AsyncKeepa():
             Input search term.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -942,7 +947,8 @@ class AsyncKeepa():
         else:
             return response['categories']
 
-    async def category_lookup(self, category_id, domain='US', include_parents=0, wait=True):
+    async def category_lookup(self, category_id, domain='US',
+                              include_parents=0, wait=True):
         """
         Return root categories given a categoryId.
 
@@ -961,7 +967,8 @@ class AsyncKeepa():
             Include parents.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -1035,21 +1042,23 @@ class AsyncKeepa():
 
             Using this parameter you can achieve the following:
 
-            - Retrieve data from Amazon: a storefront ASIN list containing
-              up to 2,400 ASINs, in addition to all ASINs already collected
-              through our database.
-            - Force a refresh: Always retrieve live data with the value 0.
-            - Retrieve the total number of listings of this seller: the
-              totalStorefrontAsinsCSV field of the seller object will be
-              updated.
+            - Retrieve data from Amazon: a storefront ASIN list
+              containing up to 2,400 ASINs, in addition to all ASINs
+              already collected through our database.
+            - Force a refresh: Always retrieve live data with the
+              value 0.
+            - Retrieve the total number of listings of this seller:
+              the totalStorefrontAsinsCSV field of the seller object
+              will be updated.
 
         wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+            Wait available token before doing effective query.
+            Defaults to ``True``.
 
         Returns
         -------
         seller_info : dict
-            Dictionary containing one entry per input seller_id.
+            Dictionary containing one entry per input ``seller_id``.
 
         Examples
         --------
@@ -2241,11 +2250,11 @@ def convert_offer_history(csv, to_datetime=True):
     Parameters
     ----------
     csv : list
-       Offer list csv obtained from ['offerCSV']
+       Offer list csv obtained from ``['offerCSV']``
 
     to_datetime : bool, optional
-        Modifies numpy minutes to datetime.datetime values.
-        Default True.
+        Modifies ``numpy`` minutes to ``datetime.datetime`` values.
+        Default ``True``.
 
     Returns
     -------
