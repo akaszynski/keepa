@@ -55,7 +55,10 @@ The ``products`` variable is a list of product data with one entry per successfu
     print('ASIN is ' + products[0]['asin'])
     print('Title is ' + products[0]['title'])
 
-When the parameter ``history`` is True (enabled by default, the each product contains a The raw data is contained within each product result. Raw data is stored as a dictonary with each key paired with its associated time history.
+When the parameter ``history`` is True (enabled by default, the each
+product contains a The raw data is contained within each product
+result. Raw data is stored as a dictionary with each key paired with
+its associated time history.
 
 .. code:: python
 

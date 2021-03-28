@@ -367,7 +367,7 @@ class AsyncKeepa():
     @property
     def time_to_refill(self):
         """ Returns the time to refill in seconds """
-        # Get current timestamp in miliseconds from unix epoch
+        # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
         timeatrefile = self.status['timestamp'] + self.status['refillIn']
 
@@ -763,7 +763,7 @@ class AsyncKeepa():
             ASINs.
 
         refillIn : float
-            Time in miliseconds to the next refill of tokens.
+            Time in milliseconds to the next refill of tokens.
 
         refilRate : float
             Number of tokens refilled per minute
@@ -2131,7 +2131,7 @@ class AsyncKeepa():
 
         You can find products that recently changed and match your
         search criteria.  A single request will return a maximum of
-        150 deals.  Try ou the deals page to frist get accustomed to
+        150 deals.  Try out the deals page to first get accustomed to
         the options:
         https://keepa.com/#!deals
 
@@ -2203,7 +2203,7 @@ class AsyncKeepa():
 
     async def _request(self, request_type, payload, wait=True):
         """Queries keepa api server.  Parses raw response from keepa
-        into a json format.  Handles errors and waits for avaialbe
+        into a json format.  Handles errors and waits for available
         tokens if allowed.
         """
 
