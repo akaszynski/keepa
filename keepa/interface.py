@@ -2364,7 +2364,7 @@ class AsyncKeepa():
                     offers=None, update=None, to_datetime=True,
                     rating=False, out_of_stock_as_nan=True, stock=False,
                     product_code_is_asin=True, progress_bar=True, buybox=False,
-                    wait=True, days=None, only_live_offers=None):
+                    wait=True, days=None, only_live_offers=None, raw=False):
         # Format items into numpy array
         try:
             items = format_items(items)
@@ -2611,7 +2611,7 @@ class AsyncKeepa():
         response = await self._request('query', payload, wait=wait)
         return response['asinList']
 
-    async def _request(self, request_type, payload, wait=True):
+    async def _request(self, request_type, payload, wait=True, raw_response=False):
         """Queries keepa api server.  Parses raw response from keepa
         into a json format.  Handles errors and waits for available
         tokens if allowed.

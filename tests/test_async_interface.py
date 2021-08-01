@@ -109,20 +109,6 @@ async def test_deals(api):
 
 
 @pytest.mark.asyncio
-async def test_invalidkey():
-    with pytest.raises(Exception):
-        keepa.Api("thisisnotavalidkey")
-
-
-@pytest.mark.asyncio
-async def test_deadkey():
-    with pytest.raises(Exception):
-        # this key returns "payment required"
-        deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud" "47p686ekr7vgr9qtj1t1tle15fffkkm"
-        keepa.Api(deadkey)
-
-
-@pytest.mark.asyncio
 async def test_product_finder_categories(api):
     product_parms = {"categories_include": ["1055398"]}
     products = await api.product_finder(product_parms)
