@@ -337,6 +337,13 @@ class Keepa():
     accesskey : str
         64 character access key string.
 
+    timeout : float, optional
+        Default timeout when issuing any request.  This is not a time
+        limit on the entire response download; rather, an exception is
+        raised if the server has not issued a response for timeout
+        seconds.  Setting this to 0 disables the timeout, but will
+        cause any request to hang indefiantly should keepa.com be down
+
     Examples
     --------
     Create the api object
@@ -363,10 +370,11 @@ class Keepa():
     >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
     """
 
-    def __init__(self, accesskey):
+    def __init__(self, accesskey, timeout=10):
         self.accesskey = accesskey
         self.status = None
         self.tokens_left = 0
+        self._timeout = timeout
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s', accesskey[-6:])
@@ -2242,8 +2250,8 @@ class Keepa():
             self.wait_for_tokens()
 
         while True:
-            raw = requests.get('https://api.keepa.com/%s/?' %
-                               request_type, payload)
+            raw = requests.get(f'https://api.keepa.com/{request_type}/?', payload,
+                               timeout=self._timeout)
             status_code = str(raw.status_code)
             if status_code != '200':
                 if status_code in SCODES:
@@ -2286,6 +2294,13 @@ class AsyncKeepa():
     accesskey : str
         64 character access key string.
 
+    timeout : float, optional
+        Default timeout when issuing any request.  This is not a time
+        limit on the entire response download; rather, an exception is
+        raised if the server has not issued a response for timeout
+        seconds.  Setting this to 0 disables the timeout, but will
+        cause any request to hang indefiantly should keepa.com be down
+
     Examples
     --------
     Create the api object
@@ -2313,11 +2328,12 @@ class AsyncKeepa():
     """
 
     @classmethod
-    async def create(cls, accesskey):
+    async def create(cls, accesskey, timeout=10):
         self = AsyncKeepa()
         self.accesskey = accesskey
         self.status = None
         self.tokens_left = 0
+        self._timeout = timeout
 
         # Store user's available tokens
         log.info('Connecting to keepa using key ending in %s', accesskey[-6:])
@@ -2620,7 +2636,8 @@ class AsyncKeepa():
         while True:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    'https://api.keepa.com/%s/?' % request_type, params=payload
+                    f'https://api.keepa.com/{request_type}/?', params=payload,
+                    timeout=self._timeout
                 ) as raw:
                     status_code = str(raw.status)
                     if status_code != '200':
