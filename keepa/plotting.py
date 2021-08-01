@@ -40,21 +40,21 @@ def plot_product(product, keys=['AMAZON', 'USED', 'COUNT_USED', 'SALES'],
 
     # Create three figures, one for price data, offers, and sales rank
     pricefig, priceax = plt.subplots(figsize=(10, 5))
-    pricefig.canvas.set_window_title('Product Price Plot')
+    pricefig.canvas.manager.set_window_title('Product Price Plot')
     plt.title(product['title'])
     plt.xlabel('Date')
     plt.ylabel('Price')
     pricelegend = []
 
     offerfig, offerax = plt.subplots(figsize=(10, 5))
-    offerfig.canvas.set_window_title('Product Offer Plot')
+    offerfig.canvas.manager.set_window_title('Product Offer Plot')
     plt.title(product['title'])
     plt.xlabel('Date')
     plt.ylabel('Listings')
     offerlegend = []
 
     salesfig, salesax = plt.subplots(figsize=(10, 5))
-    salesfig.canvas.set_window_title('Product Sales Rank Plot')
+    salesfig.canvas.manager.set_window_title('Product Sales Rank Plot')
     plt.title(product['title'])
     plt.xlabel('Date')
     plt.ylabel('Sales Rank')

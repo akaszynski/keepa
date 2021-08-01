@@ -26,7 +26,7 @@ Documentation can be found on readthedocs at `keepa Documentation <https://keepa
 
 Requirements
 ------------
-Module is compatible with Python >= 3.5 and requires:
+Module is compatible with Python >= 3.6 and requires:
 
  - ``numpy``
  - ``aiohttp``
@@ -220,6 +220,7 @@ If you plan to do a lot of simulatneous query, you might want to speedup query u
 .. code:: python
 
     products = await api.query('059035342X', wait=False)
+
 
 Credits
 -------

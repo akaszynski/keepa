@@ -1028,4 +1028,13 @@ PRODUCT_REQUEST_KEYS = {
     'type': list,
     'mpn': list,
     'outOfStockPercentage90_lte': int,
-    'outOfStockPercentage90_gte': int}
+    'outOfStockPercentage90_gte': int,
+    "itemHeight_lte": int,
+    "itemHeight_gte": int,
+    "itemLength_lte": int,
+    "itemLength_gte": int,
+    "itemWidth_lte": int,
+    "itemWidth_gte": int,
+    "itemWeight_lte": int,
+    "itemWeight_gte": int,
+}

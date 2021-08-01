@@ -1,14 +1,12 @@
+import datetime
+import requests
 import os
 
 import numpy as np
 import pytest
 import pandas as pd
-
-# only to support python 3.5
-from async_generator import yield_, async_generator
-
 import keepa
-import datetime
+
 
 # reduce the request limit for testing
 keepa.interface.REQLIM = 2
@@ -28,8 +26,8 @@ if os.path.isfile(keyfile):
         WEAKTESTINGKEY = f.read()
 else:
     # from travis-ci or appveyor
-    TESTINGKEY = os.environ.get("KEEPAKEY")
-    WEAKTESTINGKEY = os.environ.get("WEAKKEEPAKEY")
+    TESTINGKEY = os.environ["KEEPAKEY"]
+    WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
 # harry potter book ISBN
 PRODUCT_ASIN = "0439064872"
@@ -87,12 +85,12 @@ PRODUCT_ASINS = [
 
 # open connection to keepa
 @pytest.fixture
-@async_generator
+# @async_generator
 async def api():
     keepa_api = await keepa.AsyncKeepa.create(TESTINGKEY)
     assert keepa_api.tokens_left
     assert keepa_api.time_to_refill >= 0
-    await yield_(keepa_api)
+    yield keepa_api
 
 
 @pytest.mark.asyncio
@@ -106,20 +104,6 @@ async def test_deals(api):
     deals = await api.deals(deal_parms)
     assert isinstance(deals, list)
     assert isinstance(deals[0], str)
-
-
-@pytest.mark.asyncio
-async def test_invalidkey():
-    with pytest.raises(Exception):
-        keepa.Api("thisisnotavalidkey")
-
-
-@pytest.mark.asyncio
-async def test_deadkey():
-    with pytest.raises(Exception):
-        # this key returns "payment required"
-        deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud" "47p686ekr7vgr9qtj1t1tle15fffkkm"
-        keepa.Api(deadkey)
 
 
 @pytest.mark.asyncio
@@ -154,6 +138,12 @@ async def test_product_finder_query(api):
 #     products = api.query(PRODUCT_ASINS)
 #     assert (time.time() - t_start) > 1
 #     keepa.interface.REQLIM = 2
+
+
+@pytest.mark.asyncio
+async def test_productquery_raw(api):
+    with pytest.raises(ValueError):
+        request = await api.query(PRODUCT_ASIN, history=False, raw=True)
 
 
 @pytest.mark.asyncio

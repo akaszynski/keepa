@@ -1,8 +1,6 @@
 pytest
 pytest-cov
 pytest-asyncio
-# only to support python 3.5
-async_generator
 codecov
 matplotlib
 pandas
