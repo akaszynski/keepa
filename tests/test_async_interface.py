@@ -1,14 +1,12 @@
+import datetime
+import requests
 import os
 
 import numpy as np
 import pytest
 import pandas as pd
-
-# only to support python 3.5
-from async_generator import yield_, async_generator
-
 import keepa
-import datetime
+
 
 # reduce the request limit for testing
 keepa.interface.REQLIM = 2
@@ -87,12 +85,12 @@ PRODUCT_ASINS = [
 
 # open connection to keepa
 @pytest.fixture
-@async_generator
+# @async_generator
 async def api():
     keepa_api = await keepa.AsyncKeepa.create(TESTINGKEY)
     assert keepa_api.tokens_left
     assert keepa_api.time_to_refill >= 0
-    await yield_(keepa_api)
+    yield keepa_api
 
 
 @pytest.mark.asyncio
@@ -142,11 +140,10 @@ async def test_product_finder_query(api):
 #     keepa.interface.REQLIM = 2
 
 
-def test_productquery_raw(api):
-    request = api.query(PRODUCT_ASIN, history=False, raw=True)
-    raw = request[0]
-    assert isinstance(raw, requests.Response)
-    assert PRODUCT_ASIN in raw.text
+@pytest.mark.asyncio
+async def test_productquery_raw(api):
+    with pytest.raises(ValueError):
+        request = await api.query(PRODUCT_ASIN, history=False, raw=True)
 
 
 @pytest.mark.asyncio

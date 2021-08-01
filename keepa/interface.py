@@ -542,7 +542,8 @@ class Keepa():
             ``None``
 
         raw : bool, optional
-            When ``True``, return the raw request response.
+            When ``True``, return the raw request response.  This is
+            only available in the non-async class.
 
         Returns
         -------
@@ -2381,6 +2382,9 @@ class AsyncKeepa():
                     rating=False, out_of_stock_as_nan=True, stock=False,
                     product_code_is_asin=True, progress_bar=True, buybox=False,
                     wait=True, days=None, only_live_offers=None, raw=False):
+        if raw:
+            raise ValueError('Raw response is only available in the non-async class')
+
         # Format items into numpy array
         try:
             items = format_items(items)
@@ -2627,7 +2631,7 @@ class AsyncKeepa():
         response = await self._request('query', payload, wait=wait)
         return response['asinList']
 
-    async def _request(self, request_type, payload, wait=True, raw_response=False):
+    async def _request(self, request_type, payload, wait=True):
         """Queries keepa api server.  Parses raw response from keepa
         into a json format.  Handles errors and waits for available
         tokens if allowed.

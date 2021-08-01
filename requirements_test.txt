@@ -1,7 +1,6 @@
 pytest
 pytest-cov
-pytest-asyncio==0.14.0
-async_generator
+pytest-asyncio
 codecov
 matplotlib
 pandas
