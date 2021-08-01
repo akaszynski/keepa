@@ -142,6 +142,13 @@ async def test_product_finder_query(api):
 #     keepa.interface.REQLIM = 2
 
 
+def test_productquery_raw(api):
+    request = api.query(PRODUCT_ASIN, history=False, raw=True)
+    raw = request[0]
+    assert isinstance(raw, requests.Response)
+    assert PRODUCT_ASIN in raw.text
+
+
 @pytest.mark.asyncio
 async def test_productquery_nohistory(api):
     pre_update_tokens = api.tokens_left
