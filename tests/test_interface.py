@@ -1,3 +1,4 @@
+import requests
 import warnings
 import datetime
 import os
@@ -28,18 +29,20 @@ if os.path.isfile(keyfile):
         WEAKTESTINGKEY = f.read()
 else:
     # from travis-ci or appveyor
-    TESTINGKEY = os.environ.get('KEEPAKEY')
-    WEAKTESTINGKEY = os.environ.get('WEAKKEEPAKEY')
+    TESTINGKEY = os.environ['KEEPAKEY']
+    WEAKTESTINGKEY = os.environ['WEAKKEEPAKEY']
 
 # harry potter book ISBN
 PRODUCT_ASIN = '0439064872'
 
-# ASINs of a bunch of chairs
+
+# ASINs of a bunch of chairs generated with
 # categories = API.search_for_categories('chairs')
 # asins = []
 # for category in categories:
 #     asins.extend(API.best_sellers_query(category))
 # PRODUCT_ASINS = asins[:40]
+
 
 PRODUCT_ASINS = ['B00IAPNWG6', 'B01CUJMSB2', 'B01CUJMRLI',
                  'B00BMPT7CE', 'B00IAPNWE8', 'B0127O51FK',
@@ -118,6 +121,13 @@ def test_product_finder_query(api):
 #     products = api.query(PRODUCT_ASINS)
 #     assert (time.time() - t_start) > 1
 #     keepa.interface.REQLIM = 2
+
+
+def test_productquery_raw(api):
+    request = api.query(PRODUCT_ASIN, history=False, raw=True)
+    raw = request[0]
+    assert isinstance(raw, requests.Response)
+    assert PRODUCT_ASIN in raw.text
 
 
 def test_productquery_nohistory(api):

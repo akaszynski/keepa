@@ -28,8 +28,8 @@ if os.path.isfile(keyfile):
         WEAKTESTINGKEY = f.read()
 else:
     # from travis-ci or appveyor
-    TESTINGKEY = os.environ.get("KEEPAKEY")
-    WEAKTESTINGKEY = os.environ.get("WEAKKEEPAKEY")
+    TESTINGKEY = os.environ["KEEPAKEY"]
+    WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
 # harry potter book ISBN
 PRODUCT_ASIN = "0439064872"

@@ -411,8 +411,9 @@ class Keepa():
               offers=None, update=None, to_datetime=True,
               rating=False, out_of_stock_as_nan=True, stock=False,
               product_code_is_asin=True, progress_bar=True, buybox=False,
-              wait=True, days=None, only_live_offers=None):
-        """ Performs a product query of a list, array, or single ASIN.
+              wait=True, days=None, only_live_offers=None, raw=False):
+        """Performs a product query of a list, array, or single ASIN.
+
         Returns a list of product data with one entry for each
         product.
 
@@ -532,19 +533,25 @@ class Keepa():
             not changed since that date and is still active.  Default
             ``None``
 
+        raw : bool, optional
+            When ``True``, return the raw request response.
+
         Returns
         -------
-        products : list
-
-            See: https://keepa.com/#!discuss/t/product-object/116
-
-            List of products.  Each product within the list is a
-            dictionary.  The keys of each item may vary, so see the
-            keys within each product for further details.
+        list
+            List of products when ``raw=False``.  Each product
+            within the list is a dictionary.  The keys of each item
+            may vary, so see the keys within each product for further
+            details.
 
             Each product should contain at a minimum a "data" key
             containing a formatted dictionary.  For the available
             fields see the notes section
+
+            When ``raw=True``, a list of unparsed responses are
+            returned as :class:`requests.models.Response`.
+
+            See: https://keepa.com/#!discuss/t/product-object/116
 
         Notes
         -----
@@ -723,9 +730,13 @@ class Keepa():
                 wait=wait,
                 days=days,
                 only_live_offers=only_live_offers,
+                raw=raw,
             )
             idx += nrequest
-            products.extend(response['products'])
+            if raw:
+                products.append(response)
+            else:
+                products.extend(response['products'])
 
             if pbar is not None:
                 pbar.update(nrequest)
@@ -733,8 +744,7 @@ class Keepa():
         return products
 
     def _product_query(self, items, product_code_is_asin=True, **kwargs):
-        """
-        Sends query to keepa server and returns parsed JSON result.
+        """Sends query to keepa server and returns parsed JSON result.
 
         Parameters
         ----------
@@ -838,15 +848,18 @@ class Keepa():
         # Query and replace csv with parsed data if history enabled
         wait = kwargs.get("wait")
         kwargs.pop("wait", None)
-        response = self._request('product', kwargs, wait=wait)
-        if kwargs['history']:
+        raw_response = kwargs.pop('raw', False)
+        response = self._request('product', kwargs, wait=wait,
+                                 raw_response=raw_response)
+
+        if kwargs['history'] and not raw_response:
             for product in response['products']:
                 if product['csv']:  # if data exists
                     product['data'] = parse_csv(product['csv'],
                                                 to_datetime,
                                                 out_of_stock_as_nan)
 
-        if kwargs.get('stats', None):
+        if kwargs.get('stats', None) and not raw_response:
             for product in response['products']:
                 stats = product.get('stats', None)
                 if stats:
@@ -916,8 +929,7 @@ class Keepa():
             log.info('Best sellers search results not yet available')
 
     def search_for_categories(self, searchterm, domain='US', wait=True):
-        """
-        Searches for categories from Amazon.
+        """Searches for categories from Amazon.
 
         Parameters
         ----------
@@ -1009,7 +1021,7 @@ class Keepa():
             return response['categories']
 
     def seller_query(self, seller_id, domain='US', to_datetime=True, 
-                           storefront=False, update=None, wait=True):
+                     storefront=False, update=None, wait=True):
         """Receives seller information for a given seller id.  If a
         seller is not found no tokens will be consumed.
 
@@ -2220,10 +2232,11 @@ class Keepa():
         response = self._request('query', payload, wait=wait)
         return response['asinList']
 
-    def _request(self, request_type, payload, wait=True):
-        """Queries keepa api server.  Parses raw response from keepa
-        into a json format.  Handles errors and waits for available
-        tokens if allowed.
+    def _request(self, request_type, payload, wait=True, raw_response=False):
+        """Queries keepa api server.  
+
+        Parses raw response from keepa into a json format.  Handles
+        errors and waits for available tokens if allowed.
         """
         if wait:
             self.wait_for_tokens()
@@ -2255,6 +2268,9 @@ class Keepa():
 
         # always update tokens
         self.tokens_left = response['tokensLeft']
+
+        if raw_response:
+            return raw
         return response
 
 
