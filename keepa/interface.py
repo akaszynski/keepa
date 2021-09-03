@@ -412,7 +412,7 @@ class Keepa():
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
             log.warning('Waiting %.0f seconds for additional tokens' % tdelay)
-            asyncio.sleep(tdelay)
+            time.sleep(tdelay)
             self.update_status()
 
     def query(self, items, stats=None, domain='US', history=True,
