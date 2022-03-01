@@ -1,6 +1,4 @@
-"""
-Plotting module product data returned from keepa interface module
-"""
+"""Plotting module product data returned from keepa interface module."""
 import numpy as np
 
 from keepa.interface import keepa_minutes_to_time, parse_csv

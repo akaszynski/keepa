@@ -1,9 +1,6 @@
-"""Interface module to download Amazon product and history data from
-keepa.com
-"""
+"""Interface module to download Amazon product and history data from keepa.com."""
 import asyncio
 import datetime
-from functools import wraps
 import json
 import logging
 import time
@@ -18,7 +15,7 @@ from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
 
 
 def is_documented_by(original):
-    """Avoid copying the documentation"""
+    """Avoid copying the documentation."""
 
     def wrapper(target):
         target.__doc__ = original.__doc__
@@ -90,9 +87,12 @@ csv_indices = [
 
 
 def _parse_stats(stats, to_datetime):
-    """Parses *numeric* stats object. There is no need to parse strings or list of strings.\n
-    Keepa stats object response documentation: https://keepa.com/#!discuss/t/statistics-object/1308"""
+    """Parse numeric stats object.
 
+    There is no need to parse strings or list of strings.  Keepa stats object
+    response documentation:
+    https://keepa.com/#!discuss/t/statistics-object/1308
+    """
     stats_keys_parse_not_required = {
         "buyBoxSellerId",
         "sellerIdsLowestFBA",
@@ -183,7 +183,7 @@ def _parse_seller(seller_raw_response, to_datetime):
 
 
 def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
-    """Parses csv list from keepa into a python dictionary.
+    """Parse csv list from keepa into a python dictionary.
 
     Parameters
     ----------
@@ -333,7 +333,7 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
 
 
 def format_items(items):
-    """Checks if the input items are valid and formats them"""
+    """Check if the input items are valid and formats them."""
     if isinstance(items, list) or isinstance(items, np.ndarray):
         return np.unique(items)
     elif isinstance(items, str):
@@ -341,7 +341,7 @@ def format_items(items):
 
 
 class Keepa:
-    """Support a synchronous Python interface to keepa server.
+    r"""Support a synchronous Python interface to keepa server.
 
     Initializes API with access key.  Access key can be obtained by
     signing up for a reoccurring or one time plan at:
@@ -386,6 +386,7 @@ class Keepa:
     """
 
     def __init__(self, accesskey, timeout=10):
+        """Initialize server connection."""
         self.accesskey = accesskey
         self.status = None
         self.tokens_left = 0
@@ -398,7 +399,7 @@ class Keepa:
 
     @property
     def time_to_refill(self):
-        """Returns the time to refill in seconds"""
+        """Return the time to refill in seconds."""
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
         timeatrefile = self.status["timestamp"] + self.status["refillIn"]
@@ -416,11 +417,11 @@ class Keepa:
         return timetorefil / 1000.0
 
     def update_status(self):
-        """Updates available tokens"""
+        """Update available tokens."""
         self.status = self._request("token", {"key": self.accesskey}, wait=False)
 
     def wait_for_tokens(self):
-        """Checks any remaining tokens and waits if none are available."""
+        """Check if there are any remaining tokens and waits if none are available."""
         self.update_status()
 
         # Wait if no tokens available
@@ -450,7 +451,7 @@ class Keepa:
         only_live_offers=None,
         raw=False,
     ):
-        """Performs a product query of a list, array, or single ASIN.
+        """Perform a product query of a list, array, or single ASIN.
 
         Returns a list of product data with one entry for each
         product.
@@ -761,7 +762,7 @@ class Keepa:
                 nrequest = REQUEST_LIMIT
 
             # request from keepa and increment current position
-            item_request = items[idx : idx + nrequest]
+            item_request = items[idx : idx + nrequest]  # noqa: E203
             response = self._product_query(
                 item_request,
                 product_code_is_asin,
@@ -792,7 +793,7 @@ class Keepa:
         return products
 
     def _product_query(self, items, product_code_is_asin=True, **kwargs):
-        """Sends query to keepa server and returns parsed JSON result.
+        """Send query to keepa server and returns parsed JSON result.
 
         Parameters
         ----------
@@ -917,11 +918,10 @@ class Keepa:
         return response
 
     def best_sellers_query(self, category, rank_avg_range=0, domain="US", wait=True):
-        """
-        Retrieve an ASIN list of the most popular products based on
-        sales in a specific category or product group.  See
-        "search_for_categories" for information on how to get a
-        category.
+        """Retrieve an ASIN list of the most popular products.
+
+        This is based on sales in a specific category or product group.  See
+        "search_for_categories" for information on how to get a category.
 
         Root category lists (e.g. "Home & Kitchen") or product group
         lists contain up to 100,000 ASINs.
@@ -980,7 +980,7 @@ class Keepa:
             log.info("Best sellers search results not yet available")
 
     def search_for_categories(self, searchterm, domain="US", wait=True):
-        """Searches for categories from Amazon.
+        """Search for categories from Amazon.
 
         Parameters
         ----------
@@ -1086,8 +1086,9 @@ class Keepa:
         update=None,
         wait=True,
     ):
-        """Receives seller information for a given seller id.  If a
-        seller is not found no tokens will be consumed.
+        """Receive seller information for a given seller id.
+
+        If a seller is not found no tokens will be consumed.
 
         Token cost: 1 per requested seller
 
@@ -1177,9 +1178,9 @@ class Keepa:
         return _parse_seller(response["sellers"], to_datetime)
 
     def product_finder(self, product_parms, domain="US", wait=True):
-        """Query the keepa product database to find products matching
-        your criteria. Almost all product fields can be searched for
-        and sorted by.
+        """Query the keepa product database. to find products matching criteria.
+
+        Almost all product fields can be searched for and sort.
 
         Parameters
         ----------
@@ -2303,7 +2304,7 @@ class Keepa:
         return response["asinList"]
 
     def _request(self, request_type, payload, wait=True, raw_response=False):
-        """Queries keepa api server.
+        """Query keepa api server.
 
         Parses raw response from keepa into a json format.  Handles
         errors and waits for available tokens if allowed.
@@ -2348,7 +2349,7 @@ class Keepa:
 
 
 class AsyncKeepa:
-    """Class to support an asynchronous Python interface to keepa server.
+    r"""Class to support an asynchronous Python interface to keepa server.
 
     Initializes API with access key.  Access key can be obtained by
     signing up for a reoccurring or one time plan at:
@@ -2394,6 +2395,7 @@ class AsyncKeepa:
 
     @classmethod
     async def create(cls, accesskey, timeout=10):
+        """Create the async object."""
         self = AsyncKeepa()
         self.accesskey = accesskey
         self.status = None
@@ -2408,7 +2410,7 @@ class AsyncKeepa:
 
     @property
     def time_to_refill(self):
-        """Returns the time to refill in seconds"""
+        """Return the time to refill in seconds."""
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
         timeatrefile = self.status["timestamp"] + self.status["refillIn"]
@@ -2426,11 +2428,11 @@ class AsyncKeepa:
         return timetorefil / 1000.0
 
     async def update_status(self):
-        """Updates available tokens"""
+        """Update available tokens."""
         self.status = await self._request("token", {"key": self.accesskey}, wait=False)
 
     async def wait_for_tokens(self):
-        """Checks any remaining tokens and waits if none are available."""
+        """Check if there are any remaining tokens and waits if none are available."""
         await self.update_status()
 
         # Wait if no tokens available
@@ -2461,6 +2463,7 @@ class AsyncKeepa:
         only_live_offers=None,
         raw=False,
     ):
+        """Documented in Keepa.query."""
         if raw:
             raise ValueError("Raw response is only available in the non-async class")
 
@@ -2519,7 +2522,7 @@ class AsyncKeepa:
                 nrequest = REQUEST_LIMIT
 
             # request from keepa and increment current position
-            item_request = items[idx : idx + nrequest]
+            item_request = items[idx : idx + nrequest]  # noqa: E203
             response = await self._product_query(
                 item_request,
                 product_code_is_asin,
@@ -2547,6 +2550,7 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa._product_query)
     async def _product_query(self, items, product_code_is_asin=True, **kwargs):
+        """Documented in Keepa._product_query."""
         # ASINs convert to comma joined string
         assert len(items) <= 100
 
@@ -2615,6 +2619,7 @@ class AsyncKeepa:
     async def best_sellers_query(
         self, category, rank_avg_range=0, domain="US", wait=True
     ):
+        """Documented by Keepa.best_sellers_query."""
         assert domain in DCODES, "Invalid domain code"
 
         payload = {
@@ -2632,6 +2637,7 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa.search_for_categories)
     async def search_for_categories(self, searchterm, domain="US", wait=True):
+        """Documented by Keepa.search_for_categories."""
         assert domain in DCODES, "Invalid domain code"
 
         payload = {
@@ -2654,6 +2660,7 @@ class AsyncKeepa:
     async def category_lookup(
         self, category_id, domain="US", include_parents=0, wait=True
     ):
+        """Documented by Keepa.category_lookup."""
         assert domain in DCODES, "Invalid domain code"
 
         payload = {
@@ -2681,6 +2688,7 @@ class AsyncKeepa:
         update=None,
         wait=True,
     ):
+        """Documented by Keepa.sellerer_query."""
         if isinstance(seller_id, list):
             if len(seller_id) > 100:
                 err_str = "seller_id can contain at maximum 100 sellers"
@@ -2705,6 +2713,7 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa.product_finder)
     async def product_finder(self, product_parms, domain="US", wait=True):
+        """Documented by Keepa.product_finder."""
         # verify valid keys
         for key in product_parms:
             if key not in PRODUCT_REQUEST_KEYS:
@@ -2725,6 +2734,7 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa.deals)
     async def deals(self, deal_parms, domain="US", wait=True):
+        """Documented in Keepa.deals."""
         # verify valid keys
         for key in deal_parms:
             if key not in DEAL_REQUEST_KEYS:
@@ -2744,11 +2754,7 @@ class AsyncKeepa:
         return response["asinList"]
 
     async def _request(self, request_type, payload, wait=True):
-        """Queries keepa api server.  Parses raw response from keepa
-        into a json format.  Handles errors and waits for available
-        tokens if allowed.
-        """
-
+        """Documented in Keepa._request."""
         while True:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -2780,7 +2786,7 @@ class AsyncKeepa:
 
 
 def convert_offer_history(csv, to_datetime=True):
-    """Converts an offer history to human readable values.
+    """Convert an offer history to human readable values.
 
     Parameters
     ----------
@@ -2813,11 +2819,10 @@ def convert_offer_history(csv, to_datetime=True):
 
 
 def keepa_minutes_to_time(minutes, to_datetime=True):
-    """Accepts an array or list of minutes and converts it to a numpy
-    datetime array.  Assumes that keepa time is from keepa minutes
-    from ordinal.
-    """
+    """Accept an array or list of minutes and converts it to a numpy datetime array.
 
+    Assumes that keepa time is from keepa minutes from ordinal.
+    """
     # Convert to timedelta64 and shift
     dt = np.array(minutes, dtype="timedelta64[m]")
     dt = dt + KEEPA_ST_ORDINAL  # shift from ordinal
@@ -2825,11 +2830,11 @@ def keepa_minutes_to_time(minutes, to_datetime=True):
     # Convert to datetime if requested
     if to_datetime:
         return dt.astype(datetime.datetime)
-    else:
-        return dt
+    return dt
 
 
 def run_and_get(coro):
+    """Attempt to run an async request."""
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:

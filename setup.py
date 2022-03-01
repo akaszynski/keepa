@@ -1,4 +1,4 @@
-"""Setup for keepa"""
+"""Setup for keepaapi."""
 from io import open as io_open
 import os
 

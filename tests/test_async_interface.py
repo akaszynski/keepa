@@ -142,7 +142,7 @@ async def test_product_finder_query(api):
 @pytest.mark.asyncio
 async def test_productquery_raw(api):
     with pytest.raises(ValueError):
-        request = await api.query(PRODUCT_ASIN, history=False, raw=True)
+        await api.query(PRODUCT_ASIN, history=False, raw=True)
 
 
 @pytest.mark.asyncio

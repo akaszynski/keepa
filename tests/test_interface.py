@@ -249,19 +249,23 @@ def test_productquery_only_live_offers(api):
 
 
 def test_productquery_days(api, max_days: int = 5):
-    """Tests that 'days' param limits historical data to X days.  This
-    includes the csv, buyBoxSellerIdHistory, salesRanks, offers and
-    offers.offerCSV fields.  Each field may contain one day which
-    seems out of specified range. This means the value of the field
-    has been unchanged since that date, and was still active at least
-    until the max_days cutoff.
+    """Tests that 'days' param limits historical data to X days.
+
+    This includes the csv, buyBoxSellerIdHistory, salesRanks, offers and
+    offers.offerCSV fields.  Each field may contain one day which seems out of
+    specified range. This means the value of the field has been unchanged since
+    that date, and was still active at least until the max_days cutoff.
     """
 
     request = api.query(PRODUCT_ASIN, days=max_days, history=True, offers=20)
     product = request[0]
-    convert = lambda minutes: list(
-        set(keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes)
-    )
+
+    def convert(minutes):
+        """Convert keepaminutes to time."""
+        times = set(
+            keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes
+        )
+        return list(times)
 
     # Converting each field's list of keepa minutes into flat list of unique days.
     sales_ranks = convert(chain.from_iterable(product["salesRanks"].values()))[0::2]

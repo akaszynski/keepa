@@ -1,3 +1,5 @@
+"""Keepa query keys."""
+
 DEAL_REQUEST_KEYS = {
     "page": int,
     "domainId": int,
