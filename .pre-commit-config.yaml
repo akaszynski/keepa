@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/psf/black
-  rev: 21.12b0
+  rev: 22.1.0
   hooks:
   - id: black
     exclude: "^({{cookiecutter.project_slug}}/)"
@@ -17,7 +17,7 @@ repos:
   rev: v2.1.0
   hooks:
   - id: codespell
-  args: [--ignore-words=ignore_words.txt, -S ./docs/\*]
+    args: [-S ./docs/\*]
 - repo: https://github.com/pycqa/pydocstyle
   rev: 6.1.1
   hooks:
