@@ -14,6 +14,9 @@ keepa
 .. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/akaszynski/keepa
 
+.. image:: https://app.codacy.com/project/badge/Grade/9452f99f297c4a6eac14e2d21189ab6f
+  :target: https://www.codacy.com/gh/akaszynski/keepa/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=akaszynski/keepa&amp;utm_campaign=Badge_Grade
+
 
 This Python module allows you to interface with the API at `Keepa
 <https://keepa.com/>`_ to query for Amazon product information and
