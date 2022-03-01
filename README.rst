@@ -14,6 +14,7 @@ keepa
 .. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/akaszynski/keepa
 
+
 This Python module allows you to interface with the API at `Keepa
 <https://keepa.com/>`_ to query for Amazon product information and
 history.  It also contains a plotting module to allow for plotting of
