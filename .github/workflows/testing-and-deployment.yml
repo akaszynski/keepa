@@ -56,10 +56,6 @@ jobs:
           cd tests
           pytest -v  --cov keepa --cov-report xml
 
-        uses: codacy/codacy-coverage-reporter-action@v1
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-
       - name: Upload to PyPi
         if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
         run: |
