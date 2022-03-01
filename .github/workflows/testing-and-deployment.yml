@@ -3,6 +3,23 @@ name: Unit Testing
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
+  precommit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: 3.9
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+
   unit_testing:
     runs-on: ubuntu-latest
     strategy:
