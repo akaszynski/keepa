@@ -222,14 +222,41 @@ If you plan to do a lot of simulatneous query, you might want to speedup query u
     products = await api.query('059035342X', wait=False)
 
 
+Contributing
+------------
+Contribute to this repository by forking this repository and installing in
+development mode with::
+
+  git clone https://github.com/<USERNAME>/keepa
+  pip install -e .
+
+You can then add your feature or commit your bug fix and then run your unit
+testing with::
+
+  pip install requirements_test.txt
+  pytest
+
+Unit testing will automatically enforce minimum code coverage standards.
+
+Next, to ensure your code meets minimum code styling standards, run::
+
+  pip install pre-commit
+  pre-commit run --all-files
+
+Finally, `create a pull request`_ from your fork and I'll be sure to review it.
+
+
 Credits
 -------
-This Python module, written by Alex Kaszynski and several
-contribitors, is based on Java code written by Marius Johann, CEO
-keepa. Java source is can be found at `api_backend <https://github.com/keepacom/api_backend/>`_.
+This Python module, written by Alex Kaszynski and several contribitors, is
+based on Java code written by Marius Johann, CEO keepa. Java source is can be
+found at `api_backend <https://github.com/keepacom/api_backend/>`_.
 
 
 License
 -------
 Apache License, please see license file. Work is credited to both Alex
 Kaszynski and Marius Johann.
+
+
+.. _create a pull request: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request
