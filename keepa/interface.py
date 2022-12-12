@@ -2300,8 +2300,8 @@ class Keepa:
             "selection": json.dumps(deal_parms),
         }
 
-        response = self._request("query", payload, wait=wait)
-        return response["asinList"]
+        response = self._request("deal", payload, wait=wait)
+        return response
 
     def _request(self, request_type, payload, wait=True, raw_response=False):
         """Query keepa api server.
@@ -2750,8 +2750,8 @@ class AsyncKeepa:
             "selection": json.dumps(deal_parms),
         }
 
-        response = await self._request("query", payload, wait=wait)
-        return response["asinList"]
+        response = await self._request("deal", payload, wait=wait)
+        return response
 
     async def _request(self, request_type, payload, wait=True):
         """Documented in Keepa._request."""
