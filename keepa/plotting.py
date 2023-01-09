@@ -84,9 +84,7 @@ def plot_product(
 
         elif "COUNT_" in key and "time" not in key:
             x = np.append(product["data"][key + "_time"], lstupdate)
-            y = np.append(product["data"][key], product["data"][key][-1]).astype(
-                float
-            )
+            y = np.append(product["data"][key], product["data"][key][-1]).astype(float)
             replace_invalid(y)
 
             if np.all(np.isnan(y)):
@@ -97,9 +95,7 @@ def plot_product(
 
         elif "time" not in key:
             x = np.append(product["data"][key + "_time"], lstupdate)
-            y = np.append(product["data"][key], product["data"][key][-1]).astype(
-                float
-            )
+            y = np.append(product["data"][key], product["data"][key][-1]).astype(float)
             replace_invalid(y, max_value=price_limit)
 
             if np.all(np.isnan(y)):

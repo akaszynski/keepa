@@ -233,7 +233,9 @@ def test_productquery_offers(api):
 def test_productquery_only_live_offers(api):
     """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
     max_offers = 20
-    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False)
+    request = api.query(
+        PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False
+    )
 
     # there may not be any offers
     product_offers = request[0]["offers"]
@@ -242,7 +244,7 @@ def test_productquery_only_live_offers(api):
         last_seen_values = {offer["lastSeen"] for offer in product_offers}
         assert len(last_seen_values) == 1
     else:
-        warnings.warn(f'No live offers for {PRODUCT_ASIN}'),
+        warnings.warn(f"No live offers for {PRODUCT_ASIN}"),
 
 
 def test_productquery_days(api, max_days: int = 5):
@@ -364,7 +366,7 @@ def test_stock(api):
                 if "stockCSV" in offer:
                     assert offer["stockCSV"][-1]
     else:
-        warnings.warn(f'No live offers for {PRODUCT_ASIN}')
+        warnings.warn(f"No live offers for {PRODUCT_ASIN}")
 
 
 def test_keepatime(api):

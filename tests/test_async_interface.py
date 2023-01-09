@@ -1,5 +1,6 @@
 import datetime
 import os
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -292,7 +293,7 @@ async def test_stock(api):
                 if "stockCSV" in offer:
                     assert offer["stockCSV"][-1]
     else:
-        warnings.warn(f'No live offers for {PRODUCT_ASIN}')
+        warnings.warn(f"No live offers for {PRODUCT_ASIN}")
 
 
 @pytest.mark.asyncio
