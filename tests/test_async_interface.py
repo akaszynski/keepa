@@ -4,19 +4,16 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 
 import keepa
 
 # reduce the request limit for testing
 keepa.interface.REQLIM = 2
 
-try:
-    path = os.path.dirname(os.path.realpath(__file__))
-    keyfile = os.path.join(path, "key")
-    weak_keyfile = os.path.join(path, "weak_key")
-except Exception:
-    keyfile = "/home/alex/python/keepa/tests/key"
-    weak_keyfile = "/home/alex/python/keepa/tests/weak_key"
+path = os.path.dirname(os.path.realpath(__file__))
+keyfile = os.path.join(path, "key")
+weak_keyfile = os.path.join(path, "weak_key")
 
 if os.path.isfile(keyfile):
     with open(keyfile) as f:
@@ -28,8 +25,8 @@ else:
     TESTINGKEY = os.environ["KEEPAKEY"]
     WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
-# harry potter book ISBN
-PRODUCT_ASIN = "0439064872"
+# The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
+PRODUCT_ASIN = "B09X6JCFF5"
 
 # ASINs of a bunch of chairs
 # categories = API.search_for_categories('chairs')
@@ -83,8 +80,7 @@ PRODUCT_ASINS = [
 
 
 # open connection to keepa
-@pytest.fixture
-# @async_generator
+@pytest_asyncio.fixture()
 async def api():
     keepa_api = await keepa.AsyncKeepa.create(TESTINGKEY)
     assert keepa_api.tokens_left
@@ -290,10 +286,13 @@ async def test_stock(api):
     product = request[0]
     assert product["offersSuccessful"]
     live = product["liveOffersOrder"]
-    for offer in product["offers"]:
-        if offer["offerId"] in live:
-            if "stockCSV" in offer:
-                assert offer["stockCSV"][-1]
+    if live is not None:
+        for offer in product["offers"]:
+            if offer["offerId"] in live:
+                if "stockCSV" in offer:
+                    assert offer["stockCSV"][-1]
+    else:
+        warnings.warn(f'No live offers for {PRODUCT_ASIN}')
 
 
 @pytest.mark.asyncio

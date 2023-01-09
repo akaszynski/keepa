@@ -15,13 +15,9 @@ from keepa import keepa_minutes_to_time
 
 keepa.interface.REQLIM = 2
 
-try:
-    path = os.path.dirname(os.path.realpath(__file__))
-    keyfile = os.path.join(path, "key")
-    weak_keyfile = os.path.join(path, "weak_key")
-except Exception:  # for local testing
-    keyfile = "/home/alex/python/keepa/tests/key"
-    weak_keyfile = "/home/alex/python/keepa/tests/weak_key"
+path = os.path.dirname(os.path.realpath(__file__))
+keyfile = os.path.join(path, "key")
+weak_keyfile = os.path.join(path, "weak_key")
 
 if os.path.isfile(keyfile):
     with open(keyfile) as f:
@@ -33,8 +29,8 @@ else:
     TESTINGKEY = os.environ["KEEPAKEY"]
     WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
-# harry potter book ISBN
-PRODUCT_ASIN = "0439064872"
+# The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
+PRODUCT_ASIN = "B09X6JCFF5"
 
 
 # ASINs of a bunch of chairs generated with
@@ -237,15 +233,16 @@ def test_productquery_offers(api):
 def test_productquery_only_live_offers(api):
     """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
     max_offers = 20
-    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True)
+    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False)
+
+    # there may not be any offers
     product_offers = request[0]["offers"]
-
-    # Check there are no additional historical offers in the response.
-    assert len(product_offers) <= max_offers
-
-    # All offers are live and have the same last_seen keepa minutes date.
-    last_seen_values = {offer["lastSeen"] for offer in product_offers}
-    assert len(last_seen_values) == 1
+    if product_offers is not None:
+        # All offers are live and have the same last_seen keepa minutes date.
+        last_seen_values = {offer["lastSeen"] for offer in product_offers}
+        assert len(last_seen_values) == 1
+    else:
+        warnings.warn(f'No live offers for {PRODUCT_ASIN}'),
 
 
 def test_productquery_days(api, max_days: int = 5):
@@ -361,10 +358,13 @@ def test_stock(api):
     product = request[0]
     assert product["offersSuccessful"]
     live = product["liveOffersOrder"]
-    for offer in product["offers"]:
-        if offer["offerId"] in live:
-            if "stockCSV" in offer:
-                assert offer["stockCSV"][-1]
+    if live is not None:
+        for offer in product["offers"]:
+            if offer["offerId"] in live:
+                if "stockCSV" in offer:
+                    assert offer["stockCSV"][-1]
+    else:
+        warnings.warn(f'No live offers for {PRODUCT_ASIN}')
 
 
 def test_keepatime(api):

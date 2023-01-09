@@ -72,7 +72,7 @@ def plot_product(
             if product["data"][key].size > 1:
                 x = np.append(product["data"][key + "_time"], lstupdate)
                 y = np.append(product["data"][key], product["data"][key][-1]).astype(
-                    np.float
+                    float
                 )
                 replace_invalid(y)
 
@@ -85,7 +85,7 @@ def plot_product(
         elif "COUNT_" in key and "time" not in key:
             x = np.append(product["data"][key + "_time"], lstupdate)
             y = np.append(product["data"][key], product["data"][key][-1]).astype(
-                np.float
+                float
             )
             replace_invalid(y)
 
@@ -98,7 +98,7 @@ def plot_product(
         elif "time" not in key:
             x = np.append(product["data"][key + "_time"], lstupdate)
             y = np.append(product["data"][key], product["data"][key][-1]).astype(
-                np.float
+                float
             )
             replace_invalid(y, max_value=price_limit)
 
@@ -132,8 +132,6 @@ def plot_product(
 
 def replace_invalid(arr, max_value=None):
     """Replace invalid data with nan."""
-    with np.warnings.catch_warnings():
-        np.warnings.filterwarnings("ignore")
-        arr[arr < 0.0] = np.nan
-        if max_value:
-            arr[arr > max_value] = np.nan
+    arr[arr < 0.0] = np.nan
+    if max_value:
+        arr[arr > max_value] = np.nan
