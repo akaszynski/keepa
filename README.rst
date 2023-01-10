@@ -274,8 +274,8 @@ Finally, `create a pull request`_ from your fork and I'll be sure to review it.
 Credits
 -------
 This Python module, written by Alex Kaszynski and several contribitors, is
-based on Java code written by Marius Johann, CEO keepa. Java source is can be
-found at `api_backend <https://github.com/keepacom/api_backend/>`_.
+based on Java code written by Marius Johann, CEO Keepa. Java source is can be
+found at `keepacom/api_backend <https://github.com/keepacom/api_backend/>`_.
 
 
 License
