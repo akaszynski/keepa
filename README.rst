@@ -89,9 +89,6 @@ offer history using the ``keepa.AsyncKeepa`` class:
 
 .. code:: python
 
-    Query for all of Jim Butcher's books using the asynchronous
-    ``keepa.AsyncKeepa`` class.
-
     >>> import asyncio
     >>> import keepa
     >>> product_parms = {'author': 'jim butcher'}
@@ -109,8 +106,10 @@ offer history using the ``keepa.AsyncKeepa`` class:
      '0133235750',
      'B01MXXLJPZ']
 
-    Query for product with ASIN ``'B0088PUEPK'`` using the asynchronous
-    keepa interface.
+Query for product with ASIN ``'B0088PUEPK'`` using the asynchronous
+keepa interface.
+
+.. code:: python
 
     >>> import asyncio
     >>> import keepa
