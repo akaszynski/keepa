@@ -1301,7 +1301,7 @@ class Keepa:
         response = self._request("seller", payload, wait=wait)
         return _parse_seller(response["sellers"], to_datetime)
 
-    def product_finder(self, product_parms, domain="US", wait=True):
+    def product_finder(self, product_parms, domain="US", wait=True) -> list:
         """Query the keepa product database to find products matching criteria.
 
         Almost all product fields can be searched for and sort.
@@ -2316,12 +2316,17 @@ class Keepa:
             - ``'categories_include': int``
             - ``'categories_exclude': int``
 
-        domain : str, optional
+        domain : str, default: 'US'
             One of the following Amazon domains: RESERVED, US, GB, DE,
-            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+            FR, JP, CA, CN, IT, ES, IN, MX.
 
-        wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+        wait : bool, default: True
+            Wait available token before doing effective query.
+
+        Returns
+        -------
+        list
+            List of ASINs matching the product parameters.
 
         Examples
         --------
@@ -2331,8 +2336,8 @@ class Keepa:
         >>> import keepa
         >>> api = keepa.Keepa('<ENTER_ACTUAL_KEY_HERE>')
         >>> product_parms = {'author': 'jim butcher'}
-        >>> products = api.product_finder(product_parms)
-        >>> products
+        >>> asins = api.product_finder(product_parms)
+        >>> asins
         ['B000HRMAR2',
          '0578799790',
          'B07PW1SVHM',
@@ -2344,13 +2349,22 @@ class Keepa:
         Query for all of Jim Butcher's books using the asynchronous
         ``keepa.AsyncKeepa`` class.
 
+        >>> import asyncio
         >>> import keepa
-        >>> api = keepa.AsyncKeepa.create('<ENTER_ACTUAL_KEY_HERE>')
         >>> product_parms = {'author': 'jim butcher'}
-
-        Run this within a function:
-
-        >>> products = await api.product_finder(product_parms)
+        >>> async def main():
+        ...     key = '<REAL_KEEPA_KEY>'
+        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     return await api.product_finder(product_parms)
+        >>> asins = asyncio.run(main())
+        >>> asins
+        ['B000HRMAR2',
+         '0578799790',
+         'B07PW1SVHM',
+        ...
+         'B003MXM744',
+         '0133235750',
+         'B01MXXLJPZ']
 
         """
         # verify valid keys
@@ -2432,7 +2446,8 @@ class Keepa:
 
         Examples
         --------
-        Return deals from category 16310101.
+        Return deals from category 16310101 using the synchronous
+        ``keepa.Keepa`` class
 
         >>> import keepa
         >>> key = '<REAL_KEEPA_KEY>'
@@ -2448,6 +2463,30 @@ class Keepa:
         >>> deals['dr'][0]['title']
         'Orange Cream Rooibos, Tea Bags - Vanilla, Orange | Caffeine-Free,
         Antioxidant-rich, Hot & Iced | The Spice Hut, First Sip Of Tea'
+
+        Conduct the same query with the asynchronous ``keepa.AsyncKeepa``
+        class.
+
+        >>> import asyncio
+        >>> import keepa
+        >>> deal_parms = {"page": 0,
+        ...               "domainId": 1,
+        ...               "excludeCategories": [1064954, 11091801],
+        ...               "includeCategories": [16310101]}
+        >>> async def main():
+        ...     key = '<REAL_KEEPA_KEY>'
+        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     categories = await api.search_for_categories("movies")
+        ...     return await api.deals(deal_parms)
+        >>> asins = asyncio.run(main())
+        >>> asins
+        ['B0BF3P5XZS',
+         'B08JQN5VDT',
+         'B09SP8JPPK',
+         '0999296345',
+         'B07HPG684T',
+         '1984825577',
+        ...
 
         """
         # verify valid keys
@@ -2535,28 +2574,40 @@ class AsyncKeepa:
 
     Examples
     --------
-    Create the api object
+    Query for all of Jim Butcher's books using the asynchronous
+    ``keepa.AsyncKeepa`` class.
 
+    >>> import asyncio
     >>> import keepa
-    >>> mykey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    >>> api = await keepa.AsyncKeepa.create(mykey)
+    >>> product_parms = {'author': 'jim butcher'}
+    >>> async def main():
+    ...     key = '<REAL_KEEPA_KEY>'
+    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     return await api.product_finder(product_parms)
+    >>> asins = asyncio.run(main())
+    >>> asins
+    ['B000HRMAR2',
+     '0578799790',
+     'B07PW1SVHM',
+    ...
+     'B003MXM744',
+     '0133235750',
+     'B01MXXLJPZ']
 
-    Request data from two ASINs
+    Query for product with ASIN ``'B0088PUEPK'`` using the asynchronous
+    keepa interface.
 
-    >>> products = await api.query(['0439064872', '1426208081'])
+    >>> import asyncio
+    >>> import keepa
+    >>> async def main():
+    ...     key = '<REAL_KEEPA_KEY>'
+    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     return await api.query('B0088PUEPK')
+    >>> response = asyncio.run(main())
+    >>> response[0]['title']
+    'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
+    SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
 
-    Print item details
-
-    >>> print('Item 1')
-    >>> print('\t ASIN: {:s}'.format(products[0]['asin']))
-    >>> print('\t Title: {:s}'.format(products[0]['title']))
-
-    Print item price
-
-    >>> usedprice = products[0]['data']['MarketplaceUsed']
-    >>> usedtimes = products[0]['data']['MarketplaceUsed_time']
-    >>> print('\t Used price: ${:.2f}'.format(usedprice[-1]))
-    >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
     """
 
     @classmethod
