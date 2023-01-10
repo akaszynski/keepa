@@ -614,7 +614,9 @@ class Keepa:
 
         Notes
         -----
-        The following are data fields a product dictionary
+        The following are some of the fields a product dictionary. For a full
+        list and description, please see:
+        `product-object <https://keepa.com/#!discuss/t/product-object/116>`_
 
         AMAZON
             Amazon price history
