@@ -2328,14 +2328,23 @@ class Keepa:
         list
             List of ASINs matching the product parameters.
 
+        Notes
+        -----
+        When using the ``'sort'`` key in the ``product_parms`` parameter, use a
+        compatible key along with the type of sort. For example:
+        ``["current_SALES", "asc"]``
+
         Examples
         --------
         Query for all of Jim Butcher's books using the synchronous
-        ``keepa.Keepa`` class.
+        ``keepa.Keepa`` class. Sort by current sales
 
         >>> import keepa
         >>> api = keepa.Keepa('<ENTER_ACTUAL_KEY_HERE>')
-        >>> product_parms = {'author': 'jim butcher'}
+        >>> product_parms = {
+        ...     'author': 'jim butcher',
+        ...     'sort': ``["current_SALES", "asc"]``,
+        }
         >>> asins = api.product_finder(product_parms)
         >>> asins
         ['B000HRMAR2',
