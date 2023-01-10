@@ -2300,6 +2300,7 @@ class Keepa:
             - ``'salesRankDrops90_gte': int``
             - ``'salesRankDrops30_lte': int``
             - ``'salesRankDrops30_gte': int``
+            - ``'sort': list``
             - ``'stockAmazon_lte': int``
             - ``'stockAmazon_gte': int``
             - ``'stockBuyBox_lte': int``
@@ -2379,7 +2380,7 @@ class Keepa:
         # verify valid keys
         for key in product_parms:
             if key not in PRODUCT_REQUEST_KEYS:
-                raise RuntimeError('Invalid key "%s"' % key)
+                raise ValueError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = PRODUCT_REQUEST_KEYS[key]
