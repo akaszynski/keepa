@@ -62,7 +62,6 @@ jobs:
 
       - name: Unit testing
         run: |
-          pip install -r requirements.txt --disable-pip-version-check
           pip install -r requirements_test.txt --disable-pip-version-check
           cd tests
           pytest -v  --cov keepa --cov-report xml
