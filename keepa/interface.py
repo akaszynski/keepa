@@ -314,7 +314,7 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
             # Convert to float price if applicable
             if isfloat:
                 nan_mask = values < 0
-                values = values.astype(np.float) / 100
+                values = values.astype(float) / 100
                 if out_of_stock_as_nan:
                     values[nan_mask] = np.nan
 
@@ -327,7 +327,7 @@ def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
             product_data[key] = values
 
             # combine time and value into a data frame using time as index
-            product_data["df_%s" % key] = pd.DataFrame({"value": values}, index=timeval)
+            product_data[f"df_{key}"] = pd.DataFrame({"value": values}, index=timeval)
 
     return product_data
 
@@ -879,9 +879,8 @@ class Keepa:
         if kwargs["only_live_offers"] is None:
             del kwargs["only_live_offers"]
         else:
-            kwargs["only-live-offers"] = int(kwargs.pop("only_live_offers"))
             # Keepa's param actually doesn't use snake_case.
-            # I believe using snake case throughout the Keepa interface is better.
+            kwargs["only-live-offers"] = int(kwargs.pop("only_live_offers"))
 
         if kwargs["days"] is None:
             del kwargs["days"]
@@ -1171,7 +1170,7 @@ class Keepa:
 
         if storefront:
             payload["storefront"] = int(storefront)
-        if update:
+        if update is not False:
             payload["update"] = update
 
         response = self._request("seller", payload, wait=wait)
