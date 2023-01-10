@@ -32,10 +32,10 @@ Requirements
 ------------
 Module is compatible with Python >= 3.6 and requires:
 
- - ``numpy``
- - ``aiohttp``
- - ``matplotlib``
- - ``tqdm``
+- ``numpy``
+- ``aiohttp``
+- ``matplotlib``
+- ``tqdm``
 
 Product history can be plotted from the raw data when ``matplotlib``
 is installed.
@@ -85,21 +85,43 @@ Brief Example
 Brief Example using async
 -------------------------
 Here's an example of obtaining a product and plotting its price and
-offer history using the ``async`` interface:
+offer history using the ``keepa.AsyncKeepa`` class:
 
 .. code:: python
 
-    import keepa
+    Query for all of Jim Butcher's books using the asynchronous
+    ``keepa.AsyncKeepa`` class.
 
-    # establish interface with keepa (this is not a real key)
-    mykey = '0000000000000000000000000000000000000000000000000000000000000000'
-    api = await keepa.AsyncKeepa.create(mykey)
+    >>> import asyncio
+    >>> import keepa
+    >>> product_parms = {'author': 'jim butcher'}
+    >>> async def main():
+    ...     key = '<REAL_KEEPA_KEY>'
+    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     return await api.product_finder(product_parms)
+    >>> asins = asyncio.run(main())
+    >>> asins
+    ['B000HRMAR2',
+     '0578799790',
+     'B07PW1SVHM',
+    ...
+     'B003MXM744',
+     '0133235750',
+     'B01MXXLJPZ']
 
-    # plot product request 
-    request = 'B0088PUEPK'
-    products = await api.query(request)
-    product = products[0]
-    keepa.plot_product(product)
+    Query for product with ASIN ``'B0088PUEPK'`` using the asynchronous
+    keepa interface.
+
+    >>> import asyncio
+    >>> import keepa
+    >>> async def main():
+    ...     key = '<REAL_KEEPA_KEY>'
+    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     return await api.query('B0088PUEPK')
+    >>> response = asyncio.run(main())
+    >>> response[0]['title']
+    'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
+    SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
 
 
 Detailed Examples
