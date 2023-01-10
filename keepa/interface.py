@@ -1170,7 +1170,7 @@ class Keepa:
 
         if storefront:
             payload["storefront"] = int(storefront)
-        if update:
+        if update is not False:
             payload["update"] = update
 
         response = self._request("seller", payload, wait=wait)
