@@ -1,6 +1,6 @@
-pytest
-pytest-cov
-pytest-asyncio
-codecov
-matplotlib
+codecov==2.1.12
+matplotlib==3.6.2
 pandas
+pytest-asyncio==0.20.3
+pytest-cov==4.0.0
+pytest==7.2.0

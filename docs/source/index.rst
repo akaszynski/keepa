@@ -1,5 +1,5 @@
-keepa Documentation
-*******************
+keepa Python API Documentation
+******************************
 
 .. toctree::
    :maxdepth: 2

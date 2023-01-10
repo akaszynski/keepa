@@ -23,8 +23,8 @@ coverage:
     patch:
       default:
         # basic
-        target: 85%
-        threshold: 80%
+        target: 90
+        threshold: 90
         base: auto 
         # advanced
         branches: 

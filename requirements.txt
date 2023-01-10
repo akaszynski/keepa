@@ -1,4 +1,0 @@
-numpy
-aiohttp
-matplotlib
-tqdm

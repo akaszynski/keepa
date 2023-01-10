@@ -14,6 +14,10 @@ keepa
 .. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/akaszynski/keepa
 
+.. image:: https://app.codacy.com/project/badge/Grade/9452f99f297c4a6eac14e2d21189ab6f
+  :target: https://www.codacy.com/gh/akaszynski/keepa/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=akaszynski/keepa&amp;utm_campaign=Badge_Grade
+
+
 This Python module allows you to interface with the API at `Keepa
 <https://keepa.com/>`_ to query for Amazon product information and
 history.  It also contains a plotting module to allow for plotting of
@@ -28,10 +32,10 @@ Requirements
 ------------
 Module is compatible with Python >= 3.6 and requires:
 
- - ``numpy``
- - ``aiohttp``
- - ``matplotlib``
- - ``tqdm``
+- ``numpy``
+- ``aiohttp``
+- ``matplotlib``
+- ``tqdm``
 
 Product history can be plotted from the raw data when ``matplotlib``
 is installed.
@@ -81,21 +85,43 @@ Brief Example
 Brief Example using async
 -------------------------
 Here's an example of obtaining a product and plotting its price and
-offer history using the ``async`` interface:
+offer history using the ``keepa.AsyncKeepa`` class:
 
 .. code:: python
 
-    import keepa
+    Query for all of Jim Butcher's books using the asynchronous
+    ``keepa.AsyncKeepa`` class.
 
-    # establish interface with keepa (this is not a real key)
-    mykey = '0000000000000000000000000000000000000000000000000000000000000000'
-    api = await keepa.AsyncKeepa.create(mykey)
+    >>> import asyncio
+    >>> import keepa
+    >>> product_parms = {'author': 'jim butcher'}
+    >>> async def main():
+    ...     key = '<REAL_KEEPA_KEY>'
+    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     return await api.product_finder(product_parms)
+    >>> asins = asyncio.run(main())
+    >>> asins
+    ['B000HRMAR2',
+     '0578799790',
+     'B07PW1SVHM',
+    ...
+     'B003MXM744',
+     '0133235750',
+     'B01MXXLJPZ']
 
-    # plot product request 
-    request = 'B0088PUEPK'
-    products = await api.query(request)
-    product = products[0]
-    keepa.plot_product(product)
+    Query for product with ASIN ``'B0088PUEPK'`` using the asynchronous
+    keepa interface.
+
+    >>> import asyncio
+    >>> import keepa
+    >>> async def main():
+    ...     key = '<REAL_KEEPA_KEY>'
+    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     return await api.query('B0088PUEPK')
+    >>> response = asyncio.run(main())
+    >>> response[0]['title']
+    'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
+    SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
 
 
 Detailed Examples
@@ -222,14 +248,41 @@ If you plan to do a lot of simulatneous query, you might want to speedup query u
     products = await api.query('059035342X', wait=False)
 
 
+Contributing
+------------
+Contribute to this repository by forking this repository and installing in
+development mode with::
+
+  git clone https://github.com/<USERNAME>/keepa
+  pip install -e .
+
+You can then add your feature or commit your bug fix and then run your unit
+testing with::
+
+  pip install requirements_test.txt
+  pytest
+
+Unit testing will automatically enforce minimum code coverage standards.
+
+Next, to ensure your code meets minimum code styling standards, run::
+
+  pip install pre-commit
+  pre-commit run --all-files
+
+Finally, `create a pull request`_ from your fork and I'll be sure to review it.
+
+
 Credits
 -------
-This Python module, written by Alex Kaszynski and several
-contribitors, is based on Java code written by Marius Johann, CEO
-keepa. Java source is can be found at `api_backend <https://github.com/keepacom/api_backend/>`_.
+This Python module, written by Alex Kaszynski and several contribitors, is
+based on Java code written by Marius Johann, CEO keepa. Java source is can be
+found at `api_backend <https://github.com/keepacom/api_backend/>`_.
 
 
 License
 -------
 Apache License, please see license file. Work is credited to both Alex
 Kaszynski and Marius Johann.
+
+
+.. _create a pull request: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request

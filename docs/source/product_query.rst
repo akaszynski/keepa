@@ -15,8 +15,8 @@ after one hour. You can find more information on how our plans work in
 our documentation.
 
 
-Connecting to KeepaAPI
-~~~~~~~~~~~~~~~~~~~~~~
+Connecting to Keepa
+~~~~~~~~~~~~~~~~~~~
 Import interface and establish connection to server:
 
 .. code:: python
@@ -247,7 +247,7 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
     2018-02-04 08:40:00   $217.37
 
 Not all offers are active and some are only historical. The following
-example plots the historyof active offers for a single Amazon product.
+example plots the history of active offers for a single Amazon product.
 
 .. code:: python
 
@@ -264,7 +264,7 @@ example plots the historyof active offers for a single Amazon product.
         offer_times.append(times)
         offer_prices.append(prices)p
 
-    # you can aggregrate these using np.hstack or plot at the history individually
+    # you can aggregate these using np.hstack or plot at the history individually
     import matplotlib.pyplot as plt
     for i in range(len(offer_prices)):
         plt.step(offer_times[i], offer_prices[i])
