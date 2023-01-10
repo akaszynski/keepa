@@ -242,7 +242,7 @@ def test_productquery_only_live_offers(api):
     if product_offers is not None:
         # All offers are live and have similar times
         last_seen_values = [offer["lastSeen"] for offer in product_offers]
-        assert np.diff(np.abs(last_seen_values)).mean() < 60*24  # within one day
+        assert np.diff(np.abs(last_seen_values)).mean() < 60 * 24  # within one day
     else:
         warnings.warn(f"No live offers for {PRODUCT_ASIN}")
 
