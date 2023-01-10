@@ -7,7 +7,7 @@ on:
     tags:
       - "*"
     branches:
-      - main
+      - master
 
 jobs:
   precommit:
