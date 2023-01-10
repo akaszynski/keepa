@@ -98,8 +98,8 @@ async def test_deals(api):
         "includeCategories": [16310101],
     }
     deals = await api.deals(deal_parms)
-    assert isinstance(deals, list)
-    assert isinstance(deals[0], str)
+    assert isinstance(deals, dict)
+    assert isinstance(deals["dr"], list)
 
 
 @pytest.mark.asyncio

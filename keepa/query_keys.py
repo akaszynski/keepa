@@ -20,8 +20,14 @@ DEAL_REQUEST_KEYS = {
     "isFilterEnabled": bool,
     "hasReviews": bool,
     "filterErotic": bool,
+    "singleVariation": bool,
     "sortType": int,
     "dateRange": int,
+    "isPrimeExclusive": bool,
+    "mustHaveAmazonOffer": bool,
+    "mustNotHaveAmazonOffer": bool,
+    "warehouseConditions": list,
+    "hasAmazonOffer": bool,
 }
 
 
