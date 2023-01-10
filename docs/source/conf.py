@@ -89,8 +89,8 @@ html_theme_options = {
     "collapse_navigation": True,
     "use_edit_page_button": True,
     "logo": {
-        "image_light": "_static/keepa-logo.png",
-        "image_dark": "_static/keepa-logo.png",
+        "image_light": "keepa-logo.png",
+        "image_dark": "keepa-logo.png",
     },
 }
 
