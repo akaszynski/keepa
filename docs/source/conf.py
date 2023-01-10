@@ -88,10 +88,6 @@ html_theme_options = {
     "github_url": "https://github.com/akaszynski/keepa",
     "collapse_navigation": True,
     "use_edit_page_button": True,
-    "logo": {
-        "image_light": "_static/keepa-logo.png",
-        "image_dark": "_static/keepa-logo.png",
-    },
 }
 
 
