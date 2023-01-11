@@ -73,7 +73,7 @@ todo_include_todos = False
 import pydata_sphinx_theme  # noqa
 
 html_theme = "pydata_sphinx_theme"
-html_logo = "_static/keepa-logo.png"
+html_logo = "./_static/keepa-logo.png"
 
 html_context = {
     "github_user": "akaszynski",
@@ -88,6 +88,10 @@ html_theme_options = {
     "github_url": "https://github.com/akaszynski/keepa",
     "collapse_navigation": True,
     "use_edit_page_button": True,
+    "logo": {
+        "image_light": "keepa-logo.png",
+        "image_dark": "keepa-logo.png",
+    },
 }
 
 

@@ -1045,4 +1045,5 @@ PRODUCT_REQUEST_KEYS = {
     "itemWidth_gte": int,
     "itemWeight_lte": int,
     "itemWeight_gte": int,
+    "sort": list,
 }

@@ -614,7 +614,9 @@ class Keepa:
 
         Notes
         -----
-        The following are data fields a product dictionary
+        The following are some of the fields a product dictionary. For a full
+        list and description, please see:
+        `product-object <https://keepa.com/#!discuss/t/product-object/116>`_
 
         AMAZON
             Amazon price history
@@ -2300,6 +2302,7 @@ class Keepa:
             - ``'salesRankDrops90_gte': int``
             - ``'salesRankDrops30_lte': int``
             - ``'salesRankDrops30_gte': int``
+            - ``'sort': list``
             - ``'stockAmazon_lte': int``
             - ``'stockAmazon_gte': int``
             - ``'stockBuyBox_lte': int``
@@ -2328,14 +2331,23 @@ class Keepa:
         list
             List of ASINs matching the product parameters.
 
+        Notes
+        -----
+        When using the ``'sort'`` key in the ``product_parms`` parameter, use a
+        compatible key along with the type of sort. For example:
+        ``["current_SALES", "asc"]``
+
         Examples
         --------
         Query for all of Jim Butcher's books using the synchronous
-        ``keepa.Keepa`` class.
+        ``keepa.Keepa`` class. Sort by current sales
 
         >>> import keepa
         >>> api = keepa.Keepa('<ENTER_ACTUAL_KEY_HERE>')
-        >>> product_parms = {'author': 'jim butcher'}
+        >>> product_parms = {
+        ...     'author': 'jim butcher',
+        ...     'sort': ``["current_SALES", "asc"]``,
+        }
         >>> asins = api.product_finder(product_parms)
         >>> asins
         ['B000HRMAR2',
@@ -2370,7 +2382,7 @@ class Keepa:
         # verify valid keys
         for key in product_parms:
             if key not in PRODUCT_REQUEST_KEYS:
-                raise RuntimeError('Invalid key "%s"' % key)
+                raise ValueError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = PRODUCT_REQUEST_KEYS[key]
