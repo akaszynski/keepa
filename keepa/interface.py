@@ -357,7 +357,7 @@ class Keepa:
         raised if the server has not issued a response for timeout
         seconds.  Setting this to 0 disables the timeout, but will
         cause any request to hang indefiantly should keepa.com be down
-    
+
     logging_level: string, optional
         Logging level to use.  Default is 'DEBUG'.  Other options are
         'INFO', 'WARNING', 'ERROR', and 'CRITICAL'.
