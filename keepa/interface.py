@@ -25,7 +25,6 @@ def is_documented_by(original):
 
 
 log = logging.getLogger(__name__)
-log.setLevel("DEBUG")
 
 # hardcoded ordinal time from
 KEEPA_ST_ORDINAL = np.datetime64("2011-01-01")
@@ -358,6 +357,10 @@ class Keepa:
         raised if the server has not issued a response for timeout
         seconds.  Setting this to 0 disables the timeout, but will
         cause any request to hang indefiantly should keepa.com be down
+    
+    logging_level: string, optional
+        Logging level to use.  Default is 'DEBUG'.  Other options are
+        'INFO', 'WARNING', 'ERROR', and 'CRITICAL'.
 
     Examples
     --------
@@ -391,13 +394,20 @@ class Keepa:
 
     """
 
-    def __init__(self, accesskey, timeout=10):
+    def __init__(self, accesskey, timeout=10, logging_level="DEBUG"):
         """Initialize server connection."""
         self.accesskey = accesskey
         self.status = None
         self.tokens_left = 0
         self._timeout = timeout
 
+        # Set up logging
+        levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if logging_level not in levels:
+            raise TypeError(
+                "logging_level must be one of: " + ", ".join(levels)
+            )
+        log.setLevel(logging_level)
         # Store user's available tokens
         log.info("Connecting to keepa using key ending in %s", accesskey[-6:])
         self.update_status()
