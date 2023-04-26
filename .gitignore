@@ -27,6 +27,7 @@ tests/.coverage
 tests/htmlcov/
 *,cover
 .coverage
+.hypothesis
 
 # key storage
 tests/key

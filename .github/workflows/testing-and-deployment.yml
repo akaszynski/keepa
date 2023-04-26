@@ -7,26 +7,9 @@ on:
     tags:
       - "*"
     branches:
-      - master
+      - main
 
 jobs:
-  precommit:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install pre-commit
-        run: pip install pre-commit
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
-
   unit_testing:
     runs-on: ubuntu-latest
     strategy:
