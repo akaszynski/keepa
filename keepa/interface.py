@@ -404,9 +404,7 @@ class Keepa:
         # Set up logging
         levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if logging_level not in levels:
-            raise TypeError(
-                "logging_level must be one of: " + ", ".join(levels)
-            )
+            raise TypeError("logging_level must be one of: " + ", ".join(levels))
         log.setLevel(logging_level)
         # Store user's available tokens
         log.info("Connecting to keepa using key ending in %s", accesskey[-6:])
