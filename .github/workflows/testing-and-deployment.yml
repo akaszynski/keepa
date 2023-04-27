@@ -48,6 +48,7 @@ jobs:
           pytest -v --cov keepa --cov-report xml
 
       - uses: codecov/codecov-action@v3
+        if: matrix.python-version == '3.11'
         name: 'Upload coverage to codecov'
 
       - name: Upload to PyPi
