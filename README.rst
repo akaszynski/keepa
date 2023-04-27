@@ -1,36 +1,36 @@
-keepa
-=====
+Python keepa Client Library
+===========================
 
 .. image:: https://img.shields.io/pypi/v/keepa.svg?logo=python&logoColor=white
    :target: https://pypi.org/project/keepa/
 
-.. image:: https://travis-ci.org/akaszynski/keepa.svg?branch=master
-    :target: https://travis-ci.org/akaszynski/keepa
+.. image:: https://github.com/akaszynski/keepa/actions/workflows/testing-and-deployment.yml/badge.svg
+    :target: https://github.com/akaszynski/keepa/actions/workflows/testing-and-deployment.yml
 
 .. image:: https://readthedocs.org/projects/keepaapi/badge/?version=latest
     :target: https://keepaapi.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/akaszynski/keepa/branch/main/graph/badge.svg
   :target: https://codecov.io/gh/akaszynski/keepa
 
 .. image:: https://app.codacy.com/project/badge/Grade/9452f99f297c4a6eac14e2d21189ab6f
   :target: https://www.codacy.com/gh/akaszynski/keepa/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=akaszynski/keepa&amp;utm_campaign=Badge_Grade
 
 
-This Python module allows you to interface with the API at `Keepa
+This Python library allows you to interface with the API at `Keepa
 <https://keepa.com/>`_ to query for Amazon product information and
 history.  It also contains a plotting module to allow for plotting of
 a product.
 
-See API pricing at `Keepa API <https://keepa.com/#!api>`_
+See API pricing at `Keepa API <https://keepa.com/#!api>`_.
 
 Documentation can be found on readthedocs at `keepa Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
 
 
 Requirements
 ------------
-Module is compatible with Python >= 3.6 and requires:
+This library is compatible with Python >= 3.7 and requires:
 
 - ``numpy``
 - ``aiohttp``
@@ -71,12 +71,12 @@ Brief Example
     # Plot result (requires matplotlib)
     keepa.plot_product(products[0])
 
-.. figure:: https://github.com/akaszynski/keepa/raw/master/docs/source/images/Product_Price_Plot.png
+.. figure:: https://github.com/akaszynski/keepa/raw/main/docs/source/images/Product_Price_Plot.png
     :width: 500pt
 
     Product Price Plot
 
-.. figure:: https://github.com/akaszynski/keepa/raw/master/docs/source/images/Product_Offer_Plot.png
+.. figure:: https://github.com/akaszynski/keepa/raw/main/docs/source/images/Product_Offer_Plot.png
     :width: 500pt
 
     Product Offers Plot
