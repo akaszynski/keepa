@@ -11,7 +11,7 @@ Python keepa Client Library
     :target: https://keepaapi.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://codecov.io/gh/akaszynski/keepa/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/akaszynski/keepa/branch/main/graph/badge.svg
   :target: https://codecov.io/gh/akaszynski/keepa
 
 .. image:: https://app.codacy.com/project/badge/Grade/9452f99f297c4a6eac14e2d21189ab6f
@@ -71,12 +71,12 @@ Brief Example
     # Plot result (requires matplotlib)
     keepa.plot_product(products[0])
 
-.. figure:: https://github.com/akaszynski/keepa/raw/master/docs/source/images/Product_Price_Plot.png
+.. figure:: https://github.com/akaszynski/keepa/raw/main/docs/source/images/Product_Price_Plot.png
     :width: 500pt
 
     Product Price Plot
 
-.. figure:: https://github.com/akaszynski/keepa/raw/master/docs/source/images/Product_Offer_Plot.png
+.. figure:: https://github.com/akaszynski/keepa/raw/main/docs/source/images/Product_Offer_Plot.png
     :width: 500pt
 
     Product Offers Plot
