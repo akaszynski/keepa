@@ -2512,7 +2512,7 @@ class Keepa:
         # verify valid keys
         for key in deal_parms:
             if key not in DEAL_REQUEST_KEYS:
-                raise ValueError('Invalid key "{key}"')
+                raise ValueError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = DEAL_REQUEST_KEYS[key]
@@ -2975,7 +2975,7 @@ class AsyncKeepa:
         # verify valid keys
         for key in deal_parms:
             if key not in DEAL_REQUEST_KEYS:
-                raise ValueError('Invalid key "{key}"')
+                raise ValueError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = DEAL_REQUEST_KEYS[key]
