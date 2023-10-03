@@ -5,7 +5,7 @@ ci:
     autoupdate_schedule: monthly
 repos:
 - repo: https://github.com/psf/black
-  rev: 23.7.0
+  rev: 23.9.1
   hooks:
   - id: black
     exclude: "^({{cookiecutter.project_slug}}/)"
@@ -19,7 +19,7 @@ repos:
   - id: flake8
     exclude: "^({{cookiecutter.project_slug}}/)"
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.5
+  rev: v2.2.6
   hooks:
   - id: codespell
     args: [-S ./docs/\*]
