@@ -81,7 +81,7 @@ jobs:
       - name: Flatten directory structure
         run: |
           mv dist/*/* dist/
-          rm -rf keepa-wheel
+          rm -rf dist/keepa-wheel
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish package distributions to PyPI
