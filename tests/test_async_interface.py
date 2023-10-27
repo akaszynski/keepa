@@ -125,7 +125,7 @@ async def test_product_finder_query(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
 
-#     # exaust tokens
+#     # exhaust tokens
 #     while api.tokens_left > 0:
 #         api.query(PRODUCT_ASINS[:5])
 
