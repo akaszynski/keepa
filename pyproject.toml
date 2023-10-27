@@ -21,7 +21,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-homepage = "https://github.com/akaszynski/keepa"
 keywords = ["keepa"]
 dependencies = [
     "numpy >=1.9.3",
