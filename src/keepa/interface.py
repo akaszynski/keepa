@@ -2421,7 +2421,7 @@ class Keepa:
             # verify json type
             key_type = PRODUCT_REQUEST_KEYS[key]
             product_parms[key] = key_type(product_parms[key])
-            product_parms['perPage'] = n_products
+        product_parms['perPage'] = n_products
 
         payload = {
             "key": self.accesskey,
