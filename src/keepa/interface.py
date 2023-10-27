@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import time
+from typing import List
 
 import aiohttp
 import numpy as np
@@ -112,9 +113,7 @@ def _parse_stats(stats, to_datetime):
 
         if stat_value is not None:
             if stat_key == "lastOffersUpdate":
-                stats_parsed[stat_key] = keepa_minutes_to_time(
-                    [stat_value], to_datetime
-                )[0]
+                stats_parsed[stat_key] = keepa_minutes_to_time([stat_value], to_datetime)[0]
             elif isinstance(stat_value, list) and len(stat_value) > 0:
                 stat_value_dict = {}
                 convert_time_in_value_pair = any(
@@ -173,9 +172,7 @@ def _parse_seller(seller_raw_response, to_datetime):
                 return None
 
         seller.update(
-            filter(
-                lambda p: p is not None, map(convert_time_data, _seller_time_data_keys)
-            )
+            filter(lambda p: p is not None, map(convert_time_data, _seller_time_data_keys))
         )
 
     return dict(map(lambda seller: (seller["sellerId"], seller), sellers))
@@ -513,8 +510,8 @@ class Keepa:
             FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
 
         offers : int, optional
-            Adds available offers to product data.  Default 0.  Must
-            be between 20 and 100.
+            Adds available offers to product data. Default 0.  Must be between
+            20 and 100. Enabling this also enables the ``"buyBoxUsedHistory"``.
 
         update : int, optional
             if data is older than the input integer, keepa will
@@ -565,12 +562,11 @@ class Keepa:
             - buyBoxSellerIdHistory
             - all buy box fields in the statistics object
 
-            The buybox parameter
-            does not trigger a fresh data collection. If the offers
-            parameter is used the buybox parameter is ignored, as the
-            offers parameter also provides access to all buy box
-            related data. To access the statistics object the stats
-            parameter is required.
+            The buybox parameter does not trigger a fresh data collection. If
+            the offers parameter is used the buybox parameter is ignored, as
+            the offers parameter also provides access to all buy box related
+            data. To access the statistics object the stats parameter is
+            required.
 
         wait : bool, optional
             Wait available token before doing effective query,
@@ -758,10 +754,34 @@ class Keepa:
         ...     key = '<REAL_KEEPA_KEY>'
         ...     api = await keepa.AsyncKeepa().create(key)
         ...     return await api.query('B0088PUEPK')
+        ...
         >>> response = asyncio.run(main())
         >>> response[0]['title']
         'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
         SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
+
+        Load in product offers and convert the buy box data into a
+        ``pandas.DataFrame``.
+
+        >>> import keepa
+        >>> key = '<REAL_KEEPA_KEY>'
+        >>> api = keepa.Keepa(key)
+        >>> response = api.query('B0088PUEPK', offers=20)
+        >>> product = response[0]
+        >>> buybox_info = product['buyBoxUsedHistory']
+        >>> df = keepa.process_used_buybox(buybox_info)
+                       datetime         user_id         condition  isFBA
+        0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
+        1   2022-11-13 10:36:00  A18WXU4I7YR6UA  Used - Very Good  False
+        2   2022-11-15 23:50:00   AYUGEV9WZ4X5O   Used - Like New  False
+        3   2022-11-17 06:16:00  A18WXU4I7YR6UA  Used - Very Good  False
+        4   2022-11-17 10:56:00   AYUGEV9WZ4X5O   Used - Like New  False
+        ..                  ...             ...               ...    ...
+        115 2023-10-23 10:00:00   AYUGEV9WZ4X5O   Used - Like New  False
+        116 2023-10-25 21:14:00  A1U9HDFCZO1A84   Used - Like New  False
+        117 2023-10-26 04:08:00   AYUGEV9WZ4X5O   Used - Like New  False
+        118 2023-10-27 08:14:00  A1U9HDFCZO1A84   Used - Like New  False
+        119 2023-10-27 12:34:00   AYUGEV9WZ4X5O   Used - Like New  False
 
         """
         # Format items into numpy array
@@ -798,9 +818,7 @@ class Keepa:
             nitems,
             tcomplete,
         )
-        log.debug(
-            "\twith a refill rate of %d token(s) per minute", self.status["refillRate"]
-        )
+        log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
 
         # product list
         products = []
@@ -955,16 +973,12 @@ class Keepa:
         wait = kwargs.get("wait")
         kwargs.pop("wait", None)
         raw_response = kwargs.pop("raw", False)
-        response = self._request(
-            "product", kwargs, wait=wait, raw_response=raw_response
-        )
+        response = self._request("product", kwargs, wait=wait, raw_response=raw_response)
 
         if kwargs["history"] and not raw_response:
             for product in response["products"]:
                 if product["csv"]:  # if data exists
-                    product["data"] = parse_csv(
-                        product["csv"], to_datetime, out_of_stock_as_nan
-                    )
+                    product["data"] = parse_csv(product["csv"], to_datetime, out_of_stock_as_nan)
 
         if kwargs.get("stats", None) and not raw_response:
             for product in response["products"]:
@@ -1051,6 +1065,7 @@ class Keepa:
         ...     categories = await api.search_for_categories("movies")
         ...     category = list(categories.items())[0][0]
         ...     return await api.best_sellers_query(category)
+        ...
         >>> asins = asyncio.run(main())
         >>> asins
         ['B0BF3P5XZS',
@@ -1110,6 +1125,7 @@ class Keepa:
         >>> categories = api.search_for_categories('science')
         >>> for cat_id in categories:
         ...     print(cat_id, categories[cat_id]['name'])
+        ...
         9091159011 Behavioral Sciences
         8407535011 Fantasy, Horror & Science Fiction
         8407519011 Sciences & Technology
@@ -1132,14 +1148,11 @@ class Keepa:
         response = self._request("search", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise RuntimeError(
-                "Categories search results not yet available "
-                "or no search terms found."
+                "Categories search results not yet available " "or no search terms found."
             )
         return response["categories"]
 
-    def category_lookup(
-        self, category_id, domain="US", include_parents=False, wait=True
-    ):
+    def category_lookup(self, category_id, domain="US", include_parents=False, wait=True):
         """Return root categories given a categoryId.
 
         Parameters
@@ -1173,17 +1186,28 @@ class Keepa:
         >>> api = keepa.Keepa(key)
         >>> categories = api.category_lookup(0)
 
-        Print all root categories
+        Output the first category.
 
-        >>> for cat_id in categories:
-        >>>     print(cat_id, categories[cat_id]['name'])
-        133140011 Kindle Store
-        9013971011 Video Shorts
-        2350149011 Apps & Games
-        165796011 Baby Products
-        163856011 Digital Music
-        13727921011 Alexa Skills
-        ...
+        >>> list(categories.values())[0]
+        {'domainId': 1,
+         'catId': 133140011,
+         'name': 'Kindle Store',
+         'children': [133141011,
+          133143011,
+          6766606011,
+          7529231011,
+          118656435011,
+          2268072011,
+          119757513011,
+          358606011,
+          3000677011,
+          1293747011],
+         'parent': 0,
+         'highestRank': 6984155,
+         'productCount': 6417325,
+         'contextFreeName': 'Kindle Store',
+         'lowestRank': 1,
+         'matched': True}
 
         """
         if domain not in DCODES:
@@ -1198,9 +1222,7 @@ class Keepa:
 
         response = self._request("category", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
-            raise Exception(
-                "Category lookup results not yet available or no match found."
-            )
+            raise Exception("Category lookup results not yet available or no match found.")
         return response["categories"]
 
     def seller_query(
@@ -1311,7 +1333,7 @@ class Keepa:
         response = self._request("seller", payload, wait=wait)
         return _parse_seller(response["sellers"], to_datetime)
 
-    def product_finder(self, product_parms, domain="US", wait=True) -> list:
+    def product_finder(self, product_parms, domain="US", wait=True, n_products=50) -> list:
         """Query the keepa product database to find products matching criteria.
 
         Almost all product fields can be searched for and sort.
@@ -2334,6 +2356,9 @@ class Keepa:
         wait : bool, default: True
             Wait available token before doing effective query.
 
+        n_products : int, default 50
+            Maximum number of matching products returned by keepa.
+
         Returns
         -------
         list
@@ -2347,16 +2372,16 @@ class Keepa:
 
         Examples
         --------
-        Query for all of Jim Butcher's books using the synchronous
-        ``keepa.Keepa`` class. Sort by current sales
+        Query for the first 100 of Jim Butcher's books using the synchronous
+        ``keepa.Keepa`` class. Sort by current sales.
 
         >>> import keepa
         >>> api = keepa.Keepa('<ENTER_ACTUAL_KEY_HERE>')
         >>> product_parms = {
         ...     'author': 'jim butcher',
-        ...     'sort': ``["current_SALES", "asc"]``,
-        }
-        >>> asins = api.product_finder(product_parms)
+        ...     'sort': ["current_SALES", "asc"],
+        ... }
+        >>> asins = api.product_finder(product_parms, n_products=100)
         >>> asins
         ['B000HRMAR2',
          '0578799790',
@@ -2376,6 +2401,7 @@ class Keepa:
         ...     key = '<REAL_KEEPA_KEY>'
         ...     api = await keepa.AsyncKeepa().create(key)
         ...     return await api.product_finder(product_parms)
+        ...
         >>> asins = asyncio.run(main())
         >>> asins
         ['B000HRMAR2',
@@ -2399,7 +2425,7 @@ class Keepa:
         payload = {
             "key": self.accesskey,
             "domain": DCODES.index(domain),
-            "selection": json.dumps(product_parms),
+            "selection": json.dumps({**product_parms, **{'perPage': n_products}}),
         }
 
         response = self._request("query", payload, wait=wait)
@@ -2472,10 +2498,12 @@ class Keepa:
         >>> import keepa
         >>> key = '<REAL_KEEPA_KEY>'
         >>> api = keepa.Keepa(key)
-        >>> deal_parms = {"page": 0,
-        ...               "domainId": 1,
-        ...               "excludeCategories": [1064954, 11091801],
-        ...               "includeCategories": [16310101]}
+        >>> deal_parms = {
+        ...     "page": 0,
+        ...     "domainId": 1,
+        ...     "excludeCategories": [1064954, 11091801],
+        ...     "includeCategories": [16310101],
+        ... }
         >>> deals = api.deals(deal_parms)
 
         Get the title of the first deal.
@@ -2489,15 +2517,18 @@ class Keepa:
 
         >>> import asyncio
         >>> import keepa
-        >>> deal_parms = {"page": 0,
-        ...               "domainId": 1,
-        ...               "excludeCategories": [1064954, 11091801],
-        ...               "includeCategories": [16310101]}
+        >>> deal_parms = {
+        ...     "page": 0,
+        ...     "domainId": 1,
+        ...     "excludeCategories": [1064954, 11091801],
+        ...     "includeCategories": [16310101],
+        ... }
         >>> async def main():
         ...     key = '<REAL_KEEPA_KEY>'
         ...     api = await keepa.AsyncKeepa().create(key)
         ...     categories = await api.search_for_categories("movies")
         ...     return await api.deals(deal_parms)
+        ...
         >>> asins = asyncio.run(main())
         >>> asins
         ['B0BF3P5XZS',
@@ -2512,7 +2543,7 @@ class Keepa:
         # verify valid keys
         for key in deal_parms:
             if key not in DEAL_REQUEST_KEYS:
-                raise ValueError('Invalid key "{key}"')
+                raise ValueError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = DEAL_REQUEST_KEYS[key]
@@ -2604,6 +2635,7 @@ class AsyncKeepa:
     ...     key = '<REAL_KEEPA_KEY>'
     ...     api = await keepa.AsyncKeepa().create(key)
     ...     return await api.product_finder(product_parms)
+    ...
     >>> asins = asyncio.run(main())
     >>> asins
     ['B000HRMAR2',
@@ -2623,6 +2655,7 @@ class AsyncKeepa:
     ...     key = '<REAL_KEEPA_KEY>'
     ...     api = await keepa.AsyncKeepa().create(key)
     ...     return await api.query('B0088PUEPK')
+    ...
     >>> response = asyncio.run(main())
     >>> response[0]['title']
     'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
@@ -2737,9 +2770,7 @@ class AsyncKeepa:
             nitems,
             tcomplete,
         )
-        log.debug(
-            "\twith a refill rate of %d token(s) per minute", self.status["refillRate"]
-        )
+        log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
 
         # product list
         products = []
@@ -2840,9 +2871,7 @@ class AsyncKeepa:
         if kwargs["history"]:
             for product in response["products"]:
                 if product["csv"]:  # if data exists
-                    product["data"] = parse_csv(
-                        product["csv"], to_datetime, out_of_stock_as_nan
-                    )
+                    product["data"] = parse_csv(product["csv"], to_datetime, out_of_stock_as_nan)
 
         if kwargs.get("stats", None):
             for product in response["products"]:
@@ -2853,9 +2882,7 @@ class AsyncKeepa:
         return response
 
     @is_documented_by(Keepa.best_sellers_query)
-    async def best_sellers_query(
-        self, category, rank_avg_range=0, domain="US", wait=True
-    ):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain="US", wait=True):
         """Documented by Keepa.best_sellers_query."""
         assert domain in DCODES, "Invalid domain code"
 
@@ -2887,16 +2914,13 @@ class AsyncKeepa:
         response = await self._request("search", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise Exception(
-                "Categories search results not yet available "
-                + "or no search terms found."
+                "Categories search results not yet available " + "or no search terms found."
             )
         else:
             return response["categories"]
 
     @is_documented_by(Keepa.category_lookup)
-    async def category_lookup(
-        self, category_id, domain="US", include_parents=0, wait=True
-    ):
+    async def category_lookup(self, category_id, domain="US", include_parents=0, wait=True):
         """Documented by Keepa.category_lookup."""
         assert domain in DCODES, "Invalid domain code"
 
@@ -2909,9 +2933,7 @@ class AsyncKeepa:
 
         response = await self._request("category", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
-            raise Exception(
-                "Category lookup results not yet available or no" + "match found."
-            )
+            raise Exception("Category lookup results not yet available or no" + "match found.")
         else:
             return response["categories"]
 
@@ -2975,7 +2997,7 @@ class AsyncKeepa:
         # verify valid keys
         for key in deal_parms:
             if key not in DEAL_REQUEST_KEYS:
-                raise ValueError('Invalid key "{key}"')
+                raise ValueError(f'Invalid key "{key}"')
 
             # verify json type
             key_type = DEAL_REQUEST_KEYS[key]
@@ -3055,6 +3077,93 @@ def convert_offer_history(csv, to_datetime=True):
     times = keepa_minutes_to_time(times, to_datetime)
     prices = values / 100.0
     return times, prices
+
+
+def _str_to_bool(string: str):
+    if string:
+        return bool(int(string))
+    return False
+
+
+def process_used_buybox(buybox_info: List[str]) -> pd.DataFrame:
+    """
+    Process used buybox information to create a Pandas DataFrame.
+
+    Parameters
+    ----------
+    buybox_info : list of str
+        A list containing information about used buybox in a specific order:
+        [Keepa time minutes, seller id, condition, isFBA, ...]
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing four columns:
+        - 'datetime': Datetime objects converted from Keepa time minutes.
+        - 'user_id': String representing the seller ID.
+        - 'condition': String representing the condition of the product.
+        - 'isFBA': Boolean indicating whether the offer is Fulfilled by Amazon.
+
+    Notes
+    -----
+    The `condition` is mapped from its code to a descriptive string.
+    The `isFBA` field is converted to a boolean.
+
+    Examples
+    --------
+    Load in product offers and convert the buy box data into a
+    ``pandas.DataFrame``.
+
+    >>> import keepa
+    >>> key = '<REAL_KEEPA_KEY>'
+    >>> api = keepa.Keepa(key)
+    >>> response = api.query('B0088PUEPK', offers=20)
+    >>> product = response[0]
+    >>> buybox_info = product['buyBoxUsedHistory']
+    >>> df = keepa.process_used_buybox(buybox_info)
+                   datetime         user_id         condition  isFBA
+    0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
+    1   2022-11-13 10:36:00  A18WXU4I7YR6UA  Used - Very Good  False
+    2   2022-11-15 23:50:00   AYUGEV9WZ4X5O   Used - Like New  False
+    3   2022-11-17 06:16:00  A18WXU4I7YR6UA  Used - Very Good  False
+    4   2022-11-17 10:56:00   AYUGEV9WZ4X5O   Used - Like New  False
+    ..                  ...             ...               ...    ...
+    115 2023-10-23 10:00:00   AYUGEV9WZ4X5O   Used - Like New  False
+    116 2023-10-25 21:14:00  A1U9HDFCZO1A84   Used - Like New  False
+    117 2023-10-26 04:08:00   AYUGEV9WZ4X5O   Used - Like New  False
+    118 2023-10-27 08:14:00  A1U9HDFCZO1A84   Used - Like New  False
+    119 2023-10-27 12:34:00   AYUGEV9WZ4X5O   Used - Like New  False
+
+    """
+    datetime_arr = []
+    user_id_arr = []
+    condition_map = {
+        "": "Unknown",
+        "2": "Used - Like New",
+        "3": "Used - Very Good",
+        "4": "Used - Good",
+        "5": "Used - Acceptable",
+    }
+    condition_arr = []
+    isFBA_arr = []
+
+    for i in range(0, len(buybox_info), 4):
+        keepa_time = int(buybox_info[i])
+        datetime_arr.append(keepa_minutes_to_time([keepa_time])[0])
+        user_id_arr.append(buybox_info[i + 1])
+        condition_arr.append(condition_map[buybox_info[i + 2]])
+        isFBA_arr.append(_str_to_bool(buybox_info[i + 3]))
+
+    df = pd.DataFrame(
+        {
+            'datetime': datetime_arr,
+            'user_id': user_id_arr,
+            'condition': condition_arr,
+            'isFBA': isFBA_arr,
+        }
+    )
+
+    return df
 
 
 def keepa_minutes_to_time(minutes, to_datetime=True):

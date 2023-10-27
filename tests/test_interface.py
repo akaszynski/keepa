@@ -31,7 +31,7 @@ else:
 
 # The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
 PRODUCT_ASIN = "B09X6JCFF5"
-
+HARD_DRIVE_PRODUCT_ASIN = "B0088PUEPK"
 
 # ASINs of a bunch of chairs generated with
 # categories = API.search_for_categories('chairs')
@@ -139,7 +139,7 @@ def test_product_finder_query(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
 
-#     # exaust tokens
+#     # exhaust tokens
 #     while api.tokens_left > 0:
 #         api.query(PRODUCT_ASINS[:5])
 
@@ -233,9 +233,7 @@ def test_productquery_offers(api):
 def test_productquery_only_live_offers(api):
     """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
     max_offers = 20
-    request = api.query(
-        PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False
-    )
+    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False)
 
     # there may not be any offers
     product_offers = request[0]["offers"]
@@ -261,9 +259,7 @@ def test_productquery_days(api, max_days: int = 5):
 
     def convert(minutes):
         """Convert keepaminutes to time."""
-        times = set(
-            keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes
-        )
+        times = {keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes}
         return list(times)
 
     # Converting each field's list of keepa minutes into flat list of unique days.
@@ -272,9 +268,7 @@ def test_productquery_days(api, max_days: int = 5):
     buy_box_seller_id_history = convert(product["buyBoxSellerIdHistory"][0::2])
     offers_csv = list(convert(offer["offerCSV"][0::3]) for offer in product["offers"])
     df_dates = list(
-        list(df.axes[0])
-        for df_name, df in product["data"].items()
-        if "df_" in df_name and any(df)
+        list(df.axes[0]) for df_name, df in product["data"].items() if "df_" in df_name and any(df)
     )
     df_dates = list(
         list(datetime.date(year=ts.year, month=ts.month, day=ts.day) for ts in stamps)
@@ -333,6 +327,12 @@ def test_bestsellers(api):
     asins = api.best_sellers_query(category)
     valid_asins = keepa.format_items(asins)
     assert len(asins) == valid_asins.size
+
+
+def test_buybox_used(api):
+    request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
+    df = keepa.process_used_buybox(request[0]['buyBoxUsedHistory'])
+    assert isinstance(df, pd.DataFrame)
 
 
 def test_categories(api):

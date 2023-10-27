@@ -30,7 +30,7 @@ Documentation can be found on readthedocs at `keepa Documentation <https://keepa
 
 Requirements
 ------------
-This library is compatible with Python >= 3.7 and requires:
+This library is compatible with Python >= 3.8 and requires:
 
 - ``numpy``
 - ``aiohttp``
@@ -41,7 +41,7 @@ Product history can be plotted from the raw data when ``matplotlib``
 is installed.
 
 Interfacing with the ``keepa`` requires an access key and a monthly
-subscription from `Keepa API <https://keepa.com/#!api>`_
+subscription from `Keepa API <https://keepa.com/#!api>`_.
 
 Installation
 ------------
@@ -53,8 +53,10 @@ Module can be installed from `PyPi <https://pypi.org/project/keepa/>`_ with:
 
 
 Source code can also be downloaded from `GitHub
-<https://github.com/akaszynski/keepa>`_ and installed using:
-``python setup.py install`` or ``pip install .``
+<https://github.com/akaszynski/keepa>`_ and installed using::
+
+  cd keepa
+  pip install .
 
 
 Brief Example
@@ -247,18 +249,45 @@ If you plan to do a lot of simulatneous query, you might want to speedup query u
     products = await api.query('059035342X', wait=False)
 
 
+Buy Box Statistics
+~~~~~~~~~~~~~~~~~~
+To load used buy box statistics, you have to enable ``offers``. This example
+loads in product offers and converts the buy box data into a
+``pandas.DataFrame``.
+
+.. code:: pycon
+
+    >>> import keepa
+    >>> key = '<REAL_KEEPA_KEY>'
+    >>> api = keepa.Keepa(key)
+    >>> response = api.query('B0088PUEPK', offers=20)
+    >>> product = response[0]
+    >>> buybox_info = product['buyBoxUsedHistory']
+    >>> df = keepa.process_used_buybox(buybox_info)
+                   datetime         user_id         condition  isFBA
+    0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
+    1   2022-11-13 10:36:00  A18WXU4I7YR6UA  Used - Very Good  False
+    2   2022-11-15 23:50:00   AYUGEV9WZ4X5O   Used - Like New  False
+    3   2022-11-17 06:16:00  A18WXU4I7YR6UA  Used - Very Good  False
+    4   2022-11-17 10:56:00   AYUGEV9WZ4X5O   Used - Like New  False
+    ..                  ...             ...               ...    ...
+    115 2023-10-23 10:00:00   AYUGEV9WZ4X5O   Used - Like New  False
+    116 2023-10-25 21:14:00  A1U9HDFCZO1A84   Used - Like New  False
+    117 2023-10-26 04:08:00   AYUGEV9WZ4X5O   Used - Like New  False
+    118 2023-10-27 08:14:00  A1U9HDFCZO1A84   Used - Like New  False
+    119 2023-10-27 12:34:00   AYUGEV9WZ4X5O   Used - Like New  False
+
 Contributing
 ------------
 Contribute to this repository by forking this repository and installing in
 development mode with::
 
   git clone https://github.com/<USERNAME>/keepa
-  pip install -e .
+  pip install -e .[test]
 
 You can then add your feature or commit your bug fix and then run your unit
 testing with::
 
-  pip install requirements_test.txt
   pytest
 
 Unit testing will automatically enforce minimum code coverage standards.

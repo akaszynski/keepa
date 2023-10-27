@@ -5,21 +5,24 @@ ci:
     autoupdate_schedule: monthly
 repos:
 - repo: https://github.com/psf/black
-  rev: 23.3.0
+  rev: 23.10.1
   hooks:
   - id: black
-    exclude: "^({{cookiecutter.project_slug}}/)"
+- repo: https://github.com/keewis/blackdoc
+  rev: v0.3.8
+  hooks:
+  - id: blackdoc
+    files: '\.py$'
 - repo: https://github.com/pycqa/isort
   rev: 5.12.0
   hooks:
   - id: isort
 - repo: https://github.com/PyCQA/flake8
-  rev: 6.0.0
+  rev: 6.1.0
   hooks:
   - id: flake8
-    exclude: "^({{cookiecutter.project_slug}}/)"
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.4
+  rev: v2.2.6
   hooks:
   - id: codespell
     args: [-S ./docs/\*]
@@ -29,3 +32,16 @@ repos:
   - id: pydocstyle
     additional_dependencies: [toml]
     exclude: "tests/"
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.10.1
+  hooks:
+  - id: pyupgrade
+    args: [--py38-plus, --keep-runtime-typing]
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+  - id: check-merge-conflict
+  - id: debug-statements
+  - id: no-commit-to-branch
+    args: [--branch, main]
+  - id: requirements-txt-fixer

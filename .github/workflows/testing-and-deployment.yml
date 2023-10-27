@@ -1,3 +1,5 @@
+name: CI/CD
+
 on:
   pull_request:
   workflow_dispatch:
@@ -9,17 +11,18 @@ on:
 
 jobs:
   unit_testing:
+    name: Build and Testing
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
     env:
       KEEPAKEY: ${{ secrets.KEEPAKEY }}
       WEAKKEEPAKEY: ${{ secrets.WEAKKEEPAKEY }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -32,9 +35,7 @@ jobs:
 
       - name: Install
         run: |
-          python setup.py sdist
-          pip install dist/*.tar.gz --disable-pip-version-check
-          cd tests/
+          pip install .[test] --disable-pip-version-check
           python -c "import keepa"
 
       - name: Validate Keys
@@ -43,21 +44,45 @@ jobs:
 
       - name: Unit testing
         run: |
-          pip install -r requirements_test.txt --disable-pip-version-check
-          cd tests
           pytest -v --cov keepa --cov-report xml
 
       - uses: codecov/codecov-action@v3
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.12'
         name: 'Upload coverage to codecov'
 
-      - name: Upload to PyPi
-        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      - name: Build wheel
+        if: matrix.python-version == '3.12'
         run: |
-          pip install twine
-          python setup.py sdist
-          twine upload --skip-existing dist/keepa*.tar.gz
-        env: # Or as an environment variable
-          TWINE_USERNAME: "__token__"
-          TWINE_PASSWORD: ${{ secrets.TWINE_TOKEN }}
-          TWINE_REPOSITORY_URL: "https://upload.pypi.org/legacy/"
+          pip install build --disable-pip-version-check
+          python -m build
+
+      - name: Upload wheel
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v3
+        with:
+          name: keepa-wheel
+          path: dist/
+          retention-days: 1
+
+  release:
+    name: Upload release to PyPI
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
+    needs: [unit_testing]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/keepa
+    permissions:
+      id-token: write  # this permission is mandatory for trusted publishing
+    steps:
+      - uses: actions/download-artifact@v2
+      - name: Display structure of downloaded files
+        run: ls -R
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: |
+            ./**/*.whl
