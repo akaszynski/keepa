@@ -4,14 +4,7 @@ from datetime import datetime
 from io import open as io_open
 import os
 
-__version__ = None
-version_file = os.path.join(
-    os.path.dirname(__file__), "..", "..", "keepa", "_version.py"
-)
-
-with io_open(version_file, mode="r") as fd:
-    exec(fd.read())
-
+from keepa import __version__
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
@@ -87,6 +80,7 @@ html_theme_options = {
     "show_prev_next": False,
     "github_url": "https://github.com/akaszynski/keepa",
     "collapse_navigation": True,
+    "navigation_with_keys": False,
     "use_edit_page_button": True,
     "logo": {
         "image_light": "keepa-logo.png",
