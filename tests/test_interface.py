@@ -139,7 +139,7 @@ def test_product_finder_query(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
 
-#     # exaust tokens
+#     # exhaust tokens
 #     while api.tokens_left > 0:
 #         api.query(PRODUCT_ASINS[:5])
 
@@ -259,7 +259,7 @@ def test_productquery_days(api, max_days: int = 5):
 
     def convert(minutes):
         """Convert keepaminutes to time."""
-        times = set(keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes)
+        times = {keepa_minutes_to_time(keepa_minute).date() for keepa_minute in minutes}
         return list(times)
 
     # Converting each field's list of keepa minutes into flat list of unique days.
