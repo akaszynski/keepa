@@ -78,6 +78,8 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: dist/
+      - name: Flatten directory structure
+        run: mv dist/*/* dist/
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish package distributions to PyPI
