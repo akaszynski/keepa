@@ -30,7 +30,7 @@ Documentation can be found on readthedocs at `keepa Documentation <https://keepa
 
 Requirements
 ------------
-This library is compatible with Python >= 3.7 and requires:
+This library is compatible with Python >= 3.8 and requires:
 
 - ``numpy``
 - ``aiohttp``
@@ -41,7 +41,7 @@ Product history can be plotted from the raw data when ``matplotlib``
 is installed.
 
 Interfacing with the ``keepa`` requires an access key and a monthly
-subscription from `Keepa API <https://keepa.com/#!api>`_
+subscription from `Keepa API <https://keepa.com/#!api>`_.
 
 Installation
 ------------
@@ -53,8 +53,10 @@ Module can be installed from `PyPi <https://pypi.org/project/keepa/>`_ with:
 
 
 Source code can also be downloaded from `GitHub
-<https://github.com/akaszynski/keepa>`_ and installed using:
-``python setup.py install`` or ``pip install .``
+<https://github.com/akaszynski/keepa>`_ and installed using::
+
+  cd keepa
+  pip install .
 
 
 Brief Example
@@ -253,12 +255,11 @@ Contribute to this repository by forking this repository and installing in
 development mode with::
 
   git clone https://github.com/<USERNAME>/keepa
-  pip install -e .
+  pip install -e .[test]
 
 You can then add your feature or commit your bug fix and then run your unit
 testing with::
 
-  pip install requirements_test.txt
   pytest
 
 Unit testing will automatically enforce minimum code coverage standards.

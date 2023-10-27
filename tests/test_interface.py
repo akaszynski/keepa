@@ -233,9 +233,7 @@ def test_productquery_offers(api):
 def test_productquery_only_live_offers(api):
     """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
     max_offers = 20
-    request = api.query(
-        PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False
-    )
+    request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False)
 
     # there may not be any offers
     product_offers = request[0]["offers"]
@@ -270,9 +268,7 @@ def test_productquery_days(api, max_days: int = 5):
     buy_box_seller_id_history = convert(product["buyBoxSellerIdHistory"][0::2])
     offers_csv = list(convert(offer["offerCSV"][0::3]) for offer in product["offers"])
     df_dates = list(
-        list(df.axes[0])
-        for df_name, df in product["data"].items()
-        if "df_" in df_name and any(df)
+        list(df.axes[0]) for df_name, df in product["data"].items() if "df_" in df_name and any(df)
     )
     df_dates = list(
         list(datetime.date(year=ts.year, month=ts.month, day=ts.day) for ts in stamps)

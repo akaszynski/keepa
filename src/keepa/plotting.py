@@ -71,9 +71,7 @@ def plot_product(
         elif "SALES" in key and "time" not in key:
             if product["data"][key].size > 1:
                 x = np.append(product["data"][key + "_time"], lstupdate)
-                y = np.append(product["data"][key], product["data"][key][-1]).astype(
-                    float
-                )
+                y = np.append(product["data"][key], product["data"][key][-1]).astype(float)
                 replace_invalid(y)
 
                 if np.all(np.isnan(y)):

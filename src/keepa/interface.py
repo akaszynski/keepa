@@ -112,9 +112,7 @@ def _parse_stats(stats, to_datetime):
 
         if stat_value is not None:
             if stat_key == "lastOffersUpdate":
-                stats_parsed[stat_key] = keepa_minutes_to_time(
-                    [stat_value], to_datetime
-                )[0]
+                stats_parsed[stat_key] = keepa_minutes_to_time([stat_value], to_datetime)[0]
             elif isinstance(stat_value, list) and len(stat_value) > 0:
                 stat_value_dict = {}
                 convert_time_in_value_pair = any(
@@ -173,9 +171,7 @@ def _parse_seller(seller_raw_response, to_datetime):
                 return None
 
         seller.update(
-            filter(
-                lambda p: p is not None, map(convert_time_data, _seller_time_data_keys)
-            )
+            filter(lambda p: p is not None, map(convert_time_data, _seller_time_data_keys))
         )
 
     return dict(map(lambda seller: (seller["sellerId"], seller), sellers))
@@ -799,9 +795,7 @@ class Keepa:
             nitems,
             tcomplete,
         )
-        log.debug(
-            "\twith a refill rate of %d token(s) per minute", self.status["refillRate"]
-        )
+        log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
 
         # product list
         products = []
@@ -956,16 +950,12 @@ class Keepa:
         wait = kwargs.get("wait")
         kwargs.pop("wait", None)
         raw_response = kwargs.pop("raw", False)
-        response = self._request(
-            "product", kwargs, wait=wait, raw_response=raw_response
-        )
+        response = self._request("product", kwargs, wait=wait, raw_response=raw_response)
 
         if kwargs["history"] and not raw_response:
             for product in response["products"]:
                 if product["csv"]:  # if data exists
-                    product["data"] = parse_csv(
-                        product["csv"], to_datetime, out_of_stock_as_nan
-                    )
+                    product["data"] = parse_csv(product["csv"], to_datetime, out_of_stock_as_nan)
 
         if kwargs.get("stats", None) and not raw_response:
             for product in response["products"]:
@@ -1135,14 +1125,11 @@ class Keepa:
         response = self._request("search", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise RuntimeError(
-                "Categories search results not yet available "
-                "or no search terms found."
+                "Categories search results not yet available " "or no search terms found."
             )
         return response["categories"]
 
-    def category_lookup(
-        self, category_id, domain="US", include_parents=False, wait=True
-    ):
+    def category_lookup(self, category_id, domain="US", include_parents=False, wait=True):
         """Return root categories given a categoryId.
 
         Parameters
@@ -1212,9 +1199,7 @@ class Keepa:
 
         response = self._request("category", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
-            raise Exception(
-                "Category lookup results not yet available or no match found."
-            )
+            raise Exception("Category lookup results not yet available or no match found.")
         return response["categories"]
 
     def seller_query(
@@ -2760,9 +2745,7 @@ class AsyncKeepa:
             nitems,
             tcomplete,
         )
-        log.debug(
-            "\twith a refill rate of %d token(s) per minute", self.status["refillRate"]
-        )
+        log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
 
         # product list
         products = []
@@ -2863,9 +2846,7 @@ class AsyncKeepa:
         if kwargs["history"]:
             for product in response["products"]:
                 if product["csv"]:  # if data exists
-                    product["data"] = parse_csv(
-                        product["csv"], to_datetime, out_of_stock_as_nan
-                    )
+                    product["data"] = parse_csv(product["csv"], to_datetime, out_of_stock_as_nan)
 
         if kwargs.get("stats", None):
             for product in response["products"]:
@@ -2876,9 +2857,7 @@ class AsyncKeepa:
         return response
 
     @is_documented_by(Keepa.best_sellers_query)
-    async def best_sellers_query(
-        self, category, rank_avg_range=0, domain="US", wait=True
-    ):
+    async def best_sellers_query(self, category, rank_avg_range=0, domain="US", wait=True):
         """Documented by Keepa.best_sellers_query."""
         assert domain in DCODES, "Invalid domain code"
 
@@ -2910,16 +2889,13 @@ class AsyncKeepa:
         response = await self._request("search", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise Exception(
-                "Categories search results not yet available "
-                + "or no search terms found."
+                "Categories search results not yet available " + "or no search terms found."
             )
         else:
             return response["categories"]
 
     @is_documented_by(Keepa.category_lookup)
-    async def category_lookup(
-        self, category_id, domain="US", include_parents=0, wait=True
-    ):
+    async def category_lookup(self, category_id, domain="US", include_parents=0, wait=True):
         """Documented by Keepa.category_lookup."""
         assert domain in DCODES, "Invalid domain code"
 
@@ -2932,9 +2908,7 @@ class AsyncKeepa:
 
         response = await self._request("category", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
-            raise Exception(
-                "Category lookup results not yet available or no" + "match found."
-            )
+            raise Exception("Category lookup results not yet available or no" + "match found.")
         else:
             return response["categories"]
 
