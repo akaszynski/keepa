@@ -1333,7 +1333,7 @@ class Keepa:
         response = self._request("seller", payload, wait=wait)
         return _parse_seller(response["sellers"], to_datetime)
 
-    def product_finder(self, product_parms, domain="US", wait=True) -> list:
+    def product_finder(self, product_parms, domain="US", wait=True, n_products=50) -> list:
         """Query the keepa product database to find products matching criteria.
 
         Almost all product fields can be searched for and sort.
@@ -2356,6 +2356,9 @@ class Keepa:
         wait : bool, default: True
             Wait available token before doing effective query.
 
+        n_products : int, default 50
+            Maximum number of matching products returned by keepa.
+
         Returns
         -------
         list
@@ -2369,8 +2372,8 @@ class Keepa:
 
         Examples
         --------
-        Query for all of Jim Butcher's books using the synchronous
-        ``keepa.Keepa`` class. Sort by current sales
+        Query for the first 100 of Jim Butcher's books using the synchronous
+        ``keepa.Keepa`` class. Sort by current sales.
 
         >>> import keepa
         >>> api = keepa.Keepa('<ENTER_ACTUAL_KEY_HERE>')
@@ -2378,8 +2381,7 @@ class Keepa:
         ...     'author': 'jim butcher',
         ...     'sort': ["current_SALES", "asc"],
         ... }
-
-        >>> asins = api.product_finder(product_parms)
+        >>> asins = api.product_finder(product_parms, n_products=100)
         >>> asins
         ['B000HRMAR2',
          '0578799790',
@@ -2419,6 +2421,7 @@ class Keepa:
             # verify json type
             key_type = PRODUCT_REQUEST_KEYS[key]
             product_parms[key] = key_type(product_parms[key])
+            product_parms['perPage'] = n_products
 
         payload = {
             "key": self.accesskey,
