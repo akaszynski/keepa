@@ -1,3 +1,5 @@
+name: CI/CD
+
 on:
   pull_request:
   workflow_dispatch:
@@ -9,6 +11,7 @@ on:
 
 jobs:
   unit_testing:
+    name: Build and Testing
     runs-on: ubuntu-latest
     strategy:
       matrix:
