@@ -70,7 +70,7 @@ jobs:
     needs: [unit_testing]
     runs-on: ubuntu-latest
     environment:
-      name: deployment
+      name: pypi
       url: https://pypi.org/p/keepa
     permissions:
       id-token: write  # this permission is mandatory for trusted publishing
