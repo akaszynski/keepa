@@ -28,6 +28,7 @@ else:
 
 # The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
 PRODUCT_ASIN = "B09X6JCFF5"
+HARD_DRIVE_PRODUCT_ASIN = "B0088PUEPK"
 
 # ASINs of a bunch of chairs
 # categories = API.search_for_categories('chairs')
@@ -256,6 +257,13 @@ async def test_bestsellers(api):
     asins = await api.best_sellers_query(category)
     valid_asins = keepa.format_items(asins)
     assert len(asins) == valid_asins.size
+
+
+@pytest.mark.asyncio
+async def test_buybox_used(api):
+    request = await api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
+    df = keepa.process_used_buybox(request[0]['buyBoxUsedHistory'])
+    assert isinstance(df, pd.DataFrame)
 
 
 @pytest.mark.asyncio
