@@ -32,9 +32,7 @@ jobs:
 
       - name: Install
         run: |
-          python setup.py sdist
-          pip install dist/*.tar.gz --disable-pip-version-check
-          cd tests/
+          pip install .[test] --disable-pip-version-check
           python -c "import keepa"
 
       - name: Validate Keys
@@ -43,18 +41,23 @@ jobs:
 
       - name: Unit testing
         run: |
-          pip install -r requirements_test.txt --disable-pip-version-check
-          cd tests
           pytest -v --cov keepa --cov-report xml
 
       - uses: codecov/codecov-action@v3
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.12'
         name: 'Upload coverage to codecov'
 
+      - name: Build wheel
+        if: matrix.python-version == '3.12'
+        run: |
+          pip install build --disable-pip-version-check
+          python -m build
+
       - name: Upload wheel
+        if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.PACKAGE_NAME }}-${{ runner.os }}-${{ matrix.python-version }}
+          name: keepa-wheel
           path: dist/
           retention-days: 1
 
