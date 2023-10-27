@@ -7,6 +7,7 @@ from keepa.interface import (  # noqa: F401
     convert_offer_history,
     format_items,
     keepa_minutes_to_time,
+    process_used_buybox,
     run_and_get,
 )
 from keepa.plotting import plot_product  # noqa: F401
