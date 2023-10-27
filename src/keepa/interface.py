@@ -767,7 +767,7 @@ class Keepa:
         >>> api = keepa.Keepa(key)
         >>> response = api.query('B0088PUEPK', offers=20)
         >>> product = response[0]
-        >>> product['buyBoxUsedHistory']
+        >>> buybox_info = product['buyBoxUsedHistory']
         >>> df = keepa.process_used_buybox(buybox_info)
                        datetime         user_id         condition  isFBA
         0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
@@ -3116,7 +3116,7 @@ def process_used_buybox(buybox_info: list[str]) -> pd.DataFrame:
     >>> api = keepa.Keepa(key)
     >>> response = api.query('B0088PUEPK', offers=20)
     >>> product = response[0]
-    >>> product['buyBoxUsedHistory']
+    >>> buybox_info = product['buyBoxUsedHistory']
     >>> df = keepa.process_used_buybox(buybox_info)
                    datetime         user_id         condition  isFBA
     0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
