@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import time
+from typing import List
 
 import aiohttp
 import numpy as np
@@ -3082,7 +3083,7 @@ def _str_to_bool(string: str):
     return False
 
 
-def process_used_buybox(buybox_info: list[str]) -> pd.DataFrame:
+def process_used_buybox(buybox_info: List[str]) -> pd.DataFrame:
     """
     Process used buybox information to create a Pandas DataFrame.
 
