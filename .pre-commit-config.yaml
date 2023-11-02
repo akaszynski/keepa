@@ -2,12 +2,8 @@
 # See https://pre-commit.ci/
 ci:
     autofix_prs: true
-    autoupdate_schedule: monthly
+    autoupdate_schedule: quarterly
 repos:
-- repo: https://github.com/psf/black
-  rev: 23.10.1
-  hooks:
-  - id: black
 - repo: https://github.com/keewis/blackdoc
   rev: v0.3.8
   hooks:
@@ -17,10 +13,13 @@ repos:
   rev: 5.12.0
   hooks:
   - id: isort
-- repo: https://github.com/PyCQA/flake8
-  rev: 6.1.0
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.3
   hooks:
-  - id: flake8
+    - id: ruff
+      args: [--fix, --exit-non-zero-on-fix]
+      exclude: ^(docs/|tests)
+    - id: ruff-format
 - repo: https://github.com/codespell-project/codespell
   rev: v2.2.6
   hooks:
@@ -33,7 +32,7 @@ repos:
     additional_dependencies: [toml]
     exclude: "tests/"
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.10.1
+  rev: v3.15.0
   hooks:
   - id: pyupgrade
     args: [--py38-plus, --keep-runtime-typing]

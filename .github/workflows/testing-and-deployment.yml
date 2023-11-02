@@ -75,7 +75,6 @@ jobs:
     permissions:
       id-token: write  # this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/download-artifact@v2
         with:
           path: dist/
       - name: Flatten directory structure

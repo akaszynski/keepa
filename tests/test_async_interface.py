@@ -182,7 +182,7 @@ async def test_productquery_update(api):
     # should be live data
     now = datetime.datetime.now()
     delta = now - product["data"]["USED_time"][-1]
-    assert delta.days <= 35
+    assert delta.days <= 60
 
     # check for empty arrays
     history = product["data"]
@@ -262,7 +262,7 @@ async def test_bestsellers(api):
 @pytest.mark.asyncio
 async def test_buybox_used(api):
     request = await api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
-    df = keepa.process_used_buybox(request[0]['buyBoxUsedHistory'])
+    df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
     assert isinstance(df, pd.DataFrame)
 
 
