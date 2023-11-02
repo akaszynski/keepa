@@ -1,6 +1,6 @@
 """Keepaapi module."""
 
-__version__ = "1.3.7"
+__version__ = "1.3.8"
 from keepa.interface import (  # noqa: F401
     DCODES,
     KEEPA_ST_ORDINAL,
