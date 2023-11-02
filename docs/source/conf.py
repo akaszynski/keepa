@@ -1,8 +1,6 @@
 """Sphinx configuration file for keepaapi."""
 # import pydata_sphinx_theme  # noqa
 from datetime import datetime
-from io import open as io_open
-import os
 
 from keepa import __version__
 
