@@ -2,7 +2,7 @@
 # See https://pre-commit.ci/
 ci:
     autofix_prs: true
-    autoupdate_schedule: monthly
+    autoupdate_schedule: quarterly
 repos:
 - repo: https://github.com/keewis/blackdoc
   rev: v0.3.8
@@ -32,7 +32,7 @@ repos:
     additional_dependencies: [toml]
     exclude: "tests/"
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.10.1
+  rev: v3.15.0
   hooks:
   - id: pyupgrade
     args: [--py38-plus, --keep-runtime-typing]
