@@ -1,4 +1,0 @@
-[flake8]
-max-line-length = 120
-show-source = True
-exclude=.git,.tox,dist,*egg,build,backoffice/*/migrations/*,.*,docker/*,docs/*,keepa/__init__.py

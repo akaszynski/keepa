@@ -364,28 +364,28 @@ class Keepa:
     Create the api object.
 
     >>> import keepa
-    >>> key = '<REAL_KEEPA_KEY>'
+    >>> key = "<REAL_KEEPA_KEY>"
     >>> api = keepa.Keepa(key)
 
     Request data from two ASINs.
 
-    >>> products = api.query(['0439064872', '1426208081'])
+    >>> products = api.query(["0439064872", "1426208081"])
 
     Print item details.
 
-    >>> print('Item 1')
-    >>> print('\t ASIN: {:s}'.format(products[0]['asin']))
-    >>> print('\t Title: {:s}'.format(products[0]['title']))
+    >>> print("Item 1")
+    >>> print("\t ASIN: {:s}".format(products[0]["asin"]))
+    >>> print("\t Title: {:s}".format(products[0]["title"]))
     Item 1
         ASIN: 0439064872
         Title: Harry Potter and the Chamber of Secrets (2)
 
     Print item price.
 
-    >>> usedprice = products[0]['data']['USED']
-    >>> usedtimes = products[0]['data']['USED_time']
-    >>> print('\t Used price: ${:.2f}'.format(usedprice[-1]))
-    >>> print('\t as of: {:s}'.format(str(usedtimes[-1])))
+    >>> usedprice = products[0]["data"]["USED"]
+    >>> usedtimes = products[0]["data"]["USED_time"]
+    >>> print("\t Used price: ${:.2f}".format(usedprice[-1]))
+    >>> print("\t as of: {:s}".format(str(usedtimes[-1])))
         Used price: $0.52
         as of: 2023-01-03 04:46:00
 
@@ -418,7 +418,7 @@ class Keepa:
         should be 0.0 seconds.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
         >>> api.time_to_refill
         0.0
@@ -738,10 +738,10 @@ class Keepa:
         keepa interface.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
-        >>> response = api.query('B0088PUEPK')
-        >>> response[0]['title']
+        >>> response = api.query("B0088PUEPK")
+        >>> response[0]["title"]
         'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
         SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
 
@@ -751,12 +751,12 @@ class Keepa:
         >>> import asyncio
         >>> import keepa
         >>> async def main():
-        ...     key = '<REAL_KEEPA_KEY>'
+        ...     key = "<REAL_KEEPA_KEY>"
         ...     api = await keepa.AsyncKeepa().create(key)
-        ...     return await api.query('B0088PUEPK')
+        ...     return await api.query("B0088PUEPK")
         ...
         >>> response = asyncio.run(main())
-        >>> response[0]['title']
+        >>> response[0]["title"]
         'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
         SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
 
@@ -764,11 +764,11 @@ class Keepa:
         ``pandas.DataFrame``.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
-        >>> response = api.query('B0088PUEPK', offers=20)
+        >>> response = api.query("B0088PUEPK", offers=20)
         >>> product = response[0]
-        >>> buybox_info = product['buyBoxUsedHistory']
+        >>> buybox_info = product["buyBoxUsedHistory"]
         >>> df = keepa.process_used_buybox(buybox_info)
                        datetime         user_id         condition  isFBA
         0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
@@ -1040,7 +1040,7 @@ class Keepa:
         Query for the best sellers among the ``"movies"`` category.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
         >>> categories = api.search_for_categories("movies")
         >>> category = list(categories.items())[0][0]
@@ -1060,7 +1060,7 @@ class Keepa:
         >>> import asyncio
         >>> import keepa
         >>> async def main():
-        ...     key = '<REAL_KEEPA_KEY>'
+        ...     key = "<REAL_KEEPA_KEY>"
         ...     api = await keepa.AsyncKeepa().create(key)
         ...     categories = await api.search_for_categories("movies")
         ...     category = list(categories.items())[0][0]
@@ -1120,11 +1120,11 @@ class Keepa:
         Print all categories from science.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
-        >>> categories = api.search_for_categories('science')
+        >>> categories = api.search_for_categories("science")
         >>> for cat_id in categories:
-        ...     print(cat_id, categories[cat_id]['name'])
+        ...     print(cat_id, categories[cat_id]["name"])
         ...
         9091159011 Behavioral Sciences
         8407535011 Fantasy, Horror & Science Fiction
@@ -1182,7 +1182,7 @@ class Keepa:
         Use 0 to return all root categories.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
         >>> categories = api.category_lookup(0)
 
@@ -1300,10 +1300,10 @@ class Keepa:
         Return the information from seller ``'A2L77EE7U53NWQ'``.
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
-        >>> seller_info = api.seller_query('A2L77EE7U53NWQ', 'US')
-        >>> seller_info['A2L77EE7U53NWQ']['sellerName']
+        >>> seller_info = api.seller_query("A2L77EE7U53NWQ", "US")
+        >>> seller_info["A2L77EE7U53NWQ"]["sellerName"]
         'Amazon Warehouse'
 
         Notes
@@ -2376,10 +2376,10 @@ class Keepa:
         ``keepa.Keepa`` class. Sort by current sales.
 
         >>> import keepa
-        >>> api = keepa.Keepa('<ENTER_ACTUAL_KEY_HERE>')
+        >>> api = keepa.Keepa("<ENTER_ACTUAL_KEY_HERE>")
         >>> product_parms = {
-        ...     'author': 'jim butcher',
-        ...     'sort': ["current_SALES", "asc"],
+        ...     "author": "jim butcher",
+        ...     "sort": ["current_SALES", "asc"],
         ... }
         >>> asins = api.product_finder(product_parms, n_products=100)
         >>> asins
@@ -2396,9 +2396,9 @@ class Keepa:
 
         >>> import asyncio
         >>> import keepa
-        >>> product_parms = {'author': 'jim butcher'}
+        >>> product_parms = {"author": "jim butcher"}
         >>> async def main():
-        ...     key = '<REAL_KEEPA_KEY>'
+        ...     key = "<REAL_KEEPA_KEY>"
         ...     api = await keepa.AsyncKeepa().create(key)
         ...     return await api.product_finder(product_parms)
         ...
@@ -2425,7 +2425,7 @@ class Keepa:
         payload = {
             "key": self.accesskey,
             "domain": DCODES.index(domain),
-            "selection": json.dumps({**product_parms, **{'perPage': n_products}}),
+            "selection": json.dumps({**product_parms, **{"perPage": n_products}}),
         }
 
         response = self._request("query", payload, wait=wait)
@@ -2496,7 +2496,7 @@ class Keepa:
         ``keepa.Keepa`` class
 
         >>> import keepa
-        >>> key = '<REAL_KEEPA_KEY>'
+        >>> key = "<REAL_KEEPA_KEY>"
         >>> api = keepa.Keepa(key)
         >>> deal_parms = {
         ...     "page": 0,
@@ -2508,7 +2508,7 @@ class Keepa:
 
         Get the title of the first deal.
 
-        >>> deals['dr'][0]['title']
+        >>> deals["dr"][0]["title"]
         'Orange Cream Rooibos, Tea Bags - Vanilla, Orange | Caffeine-Free,
         Antioxidant-rich, Hot & Iced | The Spice Hut, First Sip Of Tea'
 
@@ -2524,7 +2524,7 @@ class Keepa:
         ...     "includeCategories": [16310101],
         ... }
         >>> async def main():
-        ...     key = '<REAL_KEEPA_KEY>'
+        ...     key = "<REAL_KEEPA_KEY>"
         ...     api = await keepa.AsyncKeepa().create(key)
         ...     categories = await api.search_for_categories("movies")
         ...     return await api.deals(deal_parms)
@@ -2630,9 +2630,9 @@ class AsyncKeepa:
 
     >>> import asyncio
     >>> import keepa
-    >>> product_parms = {'author': 'jim butcher'}
+    >>> product_parms = {"author": "jim butcher"}
     >>> async def main():
-    ...     key = '<REAL_KEEPA_KEY>'
+    ...     key = "<REAL_KEEPA_KEY>"
     ...     api = await keepa.AsyncKeepa().create(key)
     ...     return await api.product_finder(product_parms)
     ...
@@ -2652,12 +2652,12 @@ class AsyncKeepa:
     >>> import asyncio
     >>> import keepa
     >>> async def main():
-    ...     key = '<REAL_KEEPA_KEY>'
+    ...     key = "<REAL_KEEPA_KEY>"
     ...     api = await keepa.AsyncKeepa().create(key)
-    ...     return await api.query('B0088PUEPK')
+    ...     return await api.query("B0088PUEPK")
     ...
     >>> response = asyncio.run(main())
-    >>> response[0]['title']
+    >>> response[0]["title"]
     'Western Digital 1TB WD Blue PC Internal Hard Drive HDD - 7200 RPM,
     SATA 6 Gb/s, 64 MB Cache, 3.5" - WD10EZEX'
 
@@ -3115,11 +3115,11 @@ def process_used_buybox(buybox_info: List[str]) -> pd.DataFrame:
     ``pandas.DataFrame``.
 
     >>> import keepa
-    >>> key = '<REAL_KEEPA_KEY>'
+    >>> key = "<REAL_KEEPA_KEY>"
     >>> api = keepa.Keepa(key)
-    >>> response = api.query('B0088PUEPK', offers=20)
+    >>> response = api.query("B0088PUEPK", offers=20)
     >>> product = response[0]
-    >>> buybox_info = product['buyBoxUsedHistory']
+    >>> buybox_info = product["buyBoxUsedHistory"]
     >>> df = keepa.process_used_buybox(buybox_info)
                    datetime         user_id         condition  isFBA
     0   2022-11-02 16:46:00  A1QUAC68EAM09F   Used - Like New   True
@@ -3156,10 +3156,10 @@ def process_used_buybox(buybox_info: List[str]) -> pd.DataFrame:
 
     df = pd.DataFrame(
         {
-            'datetime': datetime_arr,
-            'user_id': user_id_arr,
-            'condition': condition_arr,
-            'isFBA': isFBA_arr,
+            "datetime": datetime_arr,
+            "user_id": user_id_arr,
+            "condition": condition_arr,
+            "isFBA": isFBA_arr,
         }
     )
 

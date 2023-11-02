@@ -331,7 +331,7 @@ def test_bestsellers(api):
 
 def test_buybox_used(api):
     request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
-    df = keepa.process_used_buybox(request[0]['buyBoxUsedHistory'])
+    df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
     assert isinstance(df, pd.DataFrame)
 
 
