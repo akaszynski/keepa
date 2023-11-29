@@ -27,7 +27,7 @@ dependencies = [
     "requests >=2.2",
     "tqdm",
     "aiohttp; python_version!='3.12.*'",
-    "aiohttp==3.9.0b0; python_version=='3.12.*'",  # until aiohttp gets upgraded
+    "aiohttp==3.9.0; python_version=='3.12.*'",  # until aiohttp gets upgraded
     "pandas",
 ]
 
