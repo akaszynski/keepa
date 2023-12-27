@@ -38,5 +38,5 @@ setup(
     ],
     url="https://github.com/akaszynski/keepa",
     keywords="keepa",
-    install_requires=["numpy>=1.9.3", "requests>=2.2", "tqdm", "aiohttp", "pandas"],
+    install_requires=["numpy>=1.9.3", "requests>=2.2", "tqdm", "aiohttp", "pandas", "security~=1.2.0"],
 )
