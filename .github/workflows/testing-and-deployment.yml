@@ -46,7 +46,7 @@ jobs:
         run: |
           pytest -v --cov keepa --cov-report xml
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
         name: 'Upload coverage to codecov'
 
