@@ -27,7 +27,7 @@ dependencies = [
     "requests >=2.2",
     "tqdm",
     "aiohttp",
-    "pandas",
+    "pandas <= 3.0",
 ]
 
 [project.urls]

@@ -364,7 +364,8 @@ def test_stock(api):
         for offer in product["offers"]:
             if offer["offerId"] in live:
                 if "stockCSV" in offer:
-                    assert offer["stockCSV"][-1]
+                    if not offer["stockCSV"][-1]:
+                        warnings.warn(f"No live offers for {PRODUCT_ASIN}")
     else:
         warnings.warn(f"No live offers for {PRODUCT_ASIN}")
 

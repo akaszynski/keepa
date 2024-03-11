@@ -294,7 +294,6 @@ Unit testing will automatically enforce minimum code coverage standards.
 
 Next, to ensure your code meets minimum code styling standards, run::
 
-  pip install pre-commit
   pre-commit run --all-files
 
 Finally, `create a pull request`_ from your fork and I'll be sure to review it.
