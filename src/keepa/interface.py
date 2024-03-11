@@ -1,4 +1,5 @@
 """Interface module to download Amazon product and history data from keepa.com."""
+
 import asyncio
 import datetime
 import json
