@@ -44,8 +44,8 @@ SCODES = {
 
 # domain codes
 # Valid values: [ 1: com | 2: co.uk | 3: de | 4: fr | 5:
-#                 co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx ]
-DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN", "MX"]
+#                 co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx | 12: com.br ]
+DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN", "MX", "BR"]
 
 # csv indices. used when parsing csv and stats fields.
 # https://github.com/keepacom/api_backend
