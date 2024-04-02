@@ -30,7 +30,7 @@ else:
     WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
 # The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
-PRODUCT_ASIN = "B0BY3LW7RB"
+PRODUCT_ASIN = "B09X6JCFF5"
 HARD_DRIVE_PRODUCT_ASIN = "B0088PUEPK"
 
 # ASINs of a bunch of chairs generated with
@@ -311,9 +311,10 @@ def test_productquery_offers_multiple(api):
 
 
 def test_domain(api):
-    request = api.query(PRODUCT_ASIN, history=False, domain="BR")
+    asin = "0394800028"
+    request = api.query(asin, history=False, domain="BR")
     product = request[0]
-    assert product["asin"] == PRODUCT_ASIN
+    assert product["asin"] == asin
 
 
 def test_invalid_domain(api):

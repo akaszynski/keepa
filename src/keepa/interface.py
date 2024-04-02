@@ -506,9 +506,9 @@ class Keepa:
             timestamps (unix epoch time milliseconds) or two date
             strings (ISO8601, with or without time in UTC).
 
-        domain : str, optional
+        domain : str, default: "US"
             One of the following Amazon domains: RESERVED, US, GB, DE,
-            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+            FR, JP, CA, CN, IT, ES, IN, MX, BR.
 
         offers : int, optional
             Adds available offers to product data. Default 0.  Must be between
@@ -886,7 +886,7 @@ class Keepa:
 
         domain : str
             One of the following Amazon domains:
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
+            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
 
         offers : bool, optional
             Adds product offers to product data.
@@ -1022,10 +1022,9 @@ class Keepa:
             the best sellers list for. You can find category node ids
             via the category search "search_for_categories".
 
-        domain : str
-            Amazon locale you want to access. Must be one of the following
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
-            Default US.
+        domain : str, default: "US"
+            Amazon locale you want to access. Must be one of the following:
+            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
 
         wait : bool, optional
             Wait available token before doing effective query.
@@ -1078,7 +1077,10 @@ class Keepa:
         ...
 
         """
-        assert domain in DCODES, "Invalid domain code"
+        if domain not in DCODES:
+            raise ValueError(
+                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
+            )
 
         payload = {
             "key": self.accesskey,
@@ -1101,10 +1103,9 @@ class Keepa:
         searchterm : str
             Input search term.
 
-        domain : str, default: 'US'
-            Amazon locale you want to access. Must be one of the following
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
-            Default US.
+        domain : str, default: "US"
+            Amazon locale you want to access. Must be one of the following:
+            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
 
         wait : bool, default: True
             Wait available token before doing effective query.
@@ -1137,7 +1138,10 @@ class Keepa:
         144 Science Fiction & Fantasy
 
         """
-        assert domain in DCODES, "Invalid domain code"
+        if domain not in DCODES:
+            raise ValueError(
+                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
+            )
 
         payload = {
             "key": self.accesskey,
@@ -1163,9 +1167,8 @@ class Keepa:
             categories.
 
         domain : str, default: "US"
-            Amazon locale you want to access. Must be one of the following
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX
-            Default US
+            Amazon locale you want to access. Must be one of the following:
+            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
 
         include_parents : bool, default: False
             Include parents.
@@ -1212,7 +1215,9 @@ class Keepa:
 
         """
         if domain not in DCODES:
-            raise ValueError("Invalid domain code")
+            raise ValueError(
+                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
+            )
 
         payload = {
             "key": self.accesskey,
@@ -2885,7 +2890,10 @@ class AsyncKeepa:
     @is_documented_by(Keepa.best_sellers_query)
     async def best_sellers_query(self, category, rank_avg_range=0, domain="US", wait=True):
         """Documented by Keepa.best_sellers_query."""
-        assert domain in DCODES, "Invalid domain code"
+        if domain not in DCODES:
+            raise ValueError(
+                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
+            )
 
         payload = {
             "key": self.accesskey,
@@ -2903,7 +2911,10 @@ class AsyncKeepa:
     @is_documented_by(Keepa.search_for_categories)
     async def search_for_categories(self, searchterm, domain="US", wait=True):
         """Documented by Keepa.search_for_categories."""
-        assert domain in DCODES, "Invalid domain code"
+        if domain not in DCODES:
+            raise ValueError(
+                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
+            )
 
         payload = {
             "key": self.accesskey,
@@ -2923,7 +2934,10 @@ class AsyncKeepa:
     @is_documented_by(Keepa.category_lookup)
     async def category_lookup(self, category_id, domain="US", include_parents=0, wait=True):
         """Documented by Keepa.category_lookup."""
-        assert domain in DCODES, "Invalid domain code"
+        if domain not in DCODES:
+            raise ValueError(
+                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
+            )
 
         payload = {
             "key": self.accesskey,
