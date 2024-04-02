@@ -311,9 +311,10 @@ def test_productquery_offers_multiple(api):
 
 
 def test_domain(api):
-    request = api.query(PRODUCT_ASIN, history=False, domain="DE")
+    asin = "0394800028"
+    request = api.query(asin, history=False, domain="BR")
     product = request[0]
-    assert product["asin"] == PRODUCT_ASIN
+    assert product["asin"] == asin
 
 
 def test_invalid_domain(api):
