@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "*"
+    - '*'
     branches:
-      - main
+    - main
 
 jobs:
   unit_testing:
@@ -22,44 +22,44 @@ jobs:
       WEAKKEEPAKEY: ${{ secrets.WEAKKEEPAKEY }}
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
 
-      - name: Install
-        run: |
-          pip install .[test] --disable-pip-version-check
-          python -c "import keepa"
+    - name: Install
+      run: |
+        pip install .[test] --disable-pip-version-check
+        python -c "import keepa"
 
-      - name: Validate Keys
-        run: |
-          python -c "import os, keepa; keepa.Keepa(os.environ.get('KEEPAKEY'))"
+    - name: Validate Keys
+      run: |
+        python -c "import os, keepa; keepa.Keepa(os.environ.get('KEEPAKEY'))"
 
-      - name: Unit testing
-        run: |
-          pytest -v --cov keepa --cov-report xml
+    - name: Unit testing
+      run: |
+        pytest -v --cov keepa --cov-report xml
 
-      - uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.12'
-        name: 'Upload coverage to codecov'
+    - uses: codecov/codecov-action@v4
+      if: matrix.python-version == '3.12'
+      name: Upload coverage to codecov
 
-      - name: Build wheel
-        if: matrix.python-version == '3.12'
-        run: |
-          pip install build --disable-pip-version-check
-          python -m build
+    - name: Build wheel
+      if: matrix.python-version == '3.12'
+      run: |
+        pip install build --disable-pip-version-check
+        python -m build
 
-      - name: Upload wheel
-        if: matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
-        with:
-          name: keepa-wheel
-          path: dist/
-          retention-days: 1
+    - name: Upload wheel
+      if: matrix.python-version == '3.12'
+      uses: actions/upload-artifact@v4
+      with:
+        name: keepa-wheel
+        path: dist/
+        retention-days: 1
 
   release:
     name: Upload release to PyPI
@@ -72,20 +72,20 @@ jobs:
     permissions:
       id-token: write  # this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist/
-      - name: Flatten directory structure
-        run: |
-          mv dist/*/* dist/
-          rm -rf dist/keepa-wheel
-      - name: Display structure of downloaded files
-        run: ls -R
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: |
-            ./**/*.whl
+    - uses: actions/download-artifact@v4
+      with:
+        path: dist/
+    - name: Flatten directory structure
+      run: |
+        mv dist/*/* dist/
+        rm -rf dist/keepa-wheel
+    - name: Display structure of downloaded files
+      run: ls -R
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        generate_release_notes: true
+        files: |
+          ./**/*.whl

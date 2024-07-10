@@ -8,14 +8,14 @@ coverage:
         # basic
         target: 85%
         threshold: 80%
-        base: auto 
-        flags: 
-          - unit
-        paths: 
-          - "src"
+        base: auto
+        flags:
+        - unit
+        paths:
+        - src
        # advanced
-        branches: 
-          - master
+        branches:
+        - master
         if_not_found: success
         if_ci_failed: error
         informational: false
@@ -25,18 +25,18 @@ coverage:
         # basic
         target: 90
         threshold: 90
-        base: auto 
+        base: auto
         # advanced
-        branches: 
-          - master
+        branches:
+        - master
         if_no_uploads: error
         if_not_found: success
         if_ci_failed: error
         only_pulls: false
-        flags: 
-          - "unit"
-        paths: 
-          - "src"
+        flags:
+        - unit
+        paths:
+        - src
 
 
 parsers:
@@ -48,6 +48,6 @@ parsers:
       macro: no
 
 comment:
-  layout: "reach,diff,flags,tree"
+  layout: reach,diff,flags,tree
   behavior: default
   require_changes: no
