@@ -5,7 +5,8 @@ import datetime
 import json
 import logging
 import time
-from typing import List
+from enum import Enum
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import aiohttp
 import numpy as np
@@ -13,7 +14,8 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-from keepa.query_keys import DEAL_REQUEST_KEYS, PRODUCT_REQUEST_KEYS
+from keepa.data_models import ProductParams
+from keepa.query_keys import DEAL_REQUEST_KEYS
 
 
 def is_documented_by(original):
@@ -51,46 +53,46 @@ DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN"
 # https://github.com/keepacom/api_backend
 # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
 # [index in csv, key name, isfloat(is price or rating)]
-csv_indices = [
-    [0, "AMAZON", True],
-    [1, "NEW", True],
-    [2, "USED", True],
-    [3, "SALES", False],
-    [4, "LISTPRICE", True],
-    [5, "COLLECTIBLE", True],
-    [6, "REFURBISHED", True],
-    [7, "NEW_FBM_SHIPPING", True],
-    [8, "LIGHTNING_DEAL", True],
-    [9, "WAREHOUSE", True],
-    [10, "NEW_FBA", True],
-    [11, "COUNT_NEW", False],
-    [12, "COUNT_USED", False],
-    [13, "COUNT_REFURBISHED", False],
-    [14, "CollectableOffers", False],
-    [15, "EXTRA_INFO_UPDATES", False],
-    [16, "RATING", True],
-    [17, "COUNT_REVIEWS", False],
-    [18, "BUY_BOX_SHIPPING", True],
-    [19, "USED_NEW_SHIPPING", True],
-    [20, "USED_VERY_GOOD_SHIPPING", True],
-    [21, "USED_GOOD_SHIPPING", True],
-    [22, "USED_ACCEPTABLE_SHIPPING", True],
-    [23, "COLLECTIBLE_NEW_SHIPPING", True],
-    [24, "COLLECTIBLE_VERY_GOOD_SHIPPING", True],
-    [25, "COLLECTIBLE_GOOD_SHIPPING", True],
-    [26, "COLLECTIBLE_ACCEPTABLE_SHIPPING", True],
-    [27, "REFURBISHED_SHIPPING", True],
-    [28, "EBAY_NEW_SHIPPING", True],
-    [29, "EBAY_USED_SHIPPING", True],
-    [30, "TRADE_IN", True],
-    [31, "RENT", False],
+csv_indices: List[Tuple[int, str, bool]] = [
+    (0, "AMAZON", True),
+    (1, "NEW", True),
+    (2, "USED", True),
+    (3, "SALES", False),
+    (4, "LISTPRICE", True),
+    (5, "COLLECTIBLE", True),
+    (6, "REFURBISHED", True),
+    (7, "NEW_FBM_SHIPPING", True),
+    (8, "LIGHTNING_DEAL", True),
+    (9, "WAREHOUSE", True),
+    (10, "NEW_FBA", True),
+    (11, "COUNT_NEW", False),
+    (12, "COUNT_USED", False),
+    (13, "COUNT_REFURBISHED", False),
+    (14, "CollectableOffers", False),
+    (15, "EXTRA_INFO_UPDATES", False),
+    (16, "RATING", True),
+    (17, "COUNT_REVIEWS", False),
+    (18, "BUY_BOX_SHIPPING", True),
+    (19, "USED_NEW_SHIPPING", True),
+    (20, "USED_VERY_GOOD_SHIPPING", True),
+    (21, "USED_GOOD_SHIPPING", True),
+    (22, "USED_ACCEPTABLE_SHIPPING", True),
+    (23, "COLLECTIBLE_NEW_SHIPPING", True),
+    (24, "COLLECTIBLE_VERY_GOOD_SHIPPING", True),
+    (25, "COLLECTIBLE_GOOD_SHIPPING", True),
+    (26, "COLLECTIBLE_ACCEPTABLE_SHIPPING", True),
+    (27, "REFURBISHED_SHIPPING", True),
+    (28, "EBAY_NEW_SHIPPING", True),
+    (29, "EBAY_USED_SHIPPING", True),
+    (30, "TRADE_IN", True),
+    (31, "RENT", False),
 ]
 
 
-def _parse_stats(stats, to_datetime):
+def _parse_stats(stats: Dict[str, Union[None, int, List[int]]], to_datetime: bool):
     """Parse numeric stats object.
 
-    There is no need to parse strings or list of strings.  Keepa stats object
+    There is no need to parse strings or list of strings. Keepa stats object
     response documentation:
     https://keepa.com/#!discuss/t/statistics-object/1308
     """
@@ -337,6 +339,44 @@ def format_items(items):
         return np.asarray([items])
 
 
+class Domain(Enum):
+    """Enumeration for Amazon domain regions.
+
+    Examples
+    --------
+    >>> import keepa
+    >>> keepa.Domain.US
+    <Domain.US: 'US'>
+
+    """
+
+    RESERVED = "RESERVED"
+    US = "US"
+    GB = "GB"
+    DE = "DE"
+    FR = "FR"
+    JP = "JP"
+    CA = "CA"
+    RESERVED2 = "RESERVED2"
+    IT = "IT"
+    ES = "ES"
+    IN = "IN"
+    MX = "MX"
+    BR = "BR"
+
+
+def _domain_to_dcode(domain: Union[str, Domain]) -> int:
+    """Convert a domain to a domain code."""
+    if isinstance(domain, Domain):
+        domain_str = domain.value
+    else:
+        domain_str = domain
+
+    if domain not in DCODES:
+        raise ValueError(f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}")
+    return DCODES.index(domain_str)
+
+
 class Keepa:
     r"""Support a synchronous Python interface to keepa server.
 
@@ -348,14 +388,12 @@ class Keepa:
     ----------
     accesskey : str
         64 character access key string.
-
     timeout : float, optional
         Default timeout when issuing any request.  This is not a time
         limit on the entire response download; rather, an exception is
         raised if the server has not issued a response for timeout
         seconds.  Setting this to 0 disables the timeout, but will
         cause any request to hang indefiantly should keepa.com be down
-
     logging_level: string, optional
         Logging level to use.  Default is 'DEBUG'.  Other options are
         'INFO', 'WARNING', 'ERROR', and 'CRITICAL'.
@@ -392,10 +430,9 @@ class Keepa:
 
     """
 
-    def __init__(self, accesskey, timeout=10, logging_level="DEBUG"):
+    def __init__(self, accesskey: str, timeout: float = 10.0, logging_level: str = "DEBUG"):
         """Initialize server connection."""
         self.accesskey = accesskey
-        self.status = None
         self.tokens_left = 0
         self._timeout = timeout
 
@@ -406,7 +443,7 @@ class Keepa:
         log.setLevel(logging_level)
         # Store user's available tokens
         log.info("Connecting to keepa using key ending in %s", accesskey[-6:])
-        self.update_status()
+        self.status = self.update_status()
         log.info("%d tokens remain", self.tokens_left)
 
     @property
@@ -441,11 +478,13 @@ class Keepa:
         # Return value in seconds
         return timetorefil / 1000.0
 
-    def update_status(self):
+    def update_status(self) -> Dict[str, Any]:
         """Update available tokens."""
-        self.status = self._request("token", {"key": self.accesskey}, wait=False)
+        status = self._request("token", {"key": self.accesskey}, wait=False)
+        self.status = status
+        return status
 
-    def wait_for_tokens(self):
+    def wait_for_tokens(self) -> None:
         """Check if there are any remaining tokens and waits if none are available."""
         self.update_status()
 
@@ -458,24 +497,24 @@ class Keepa:
 
     def query(
         self,
-        items,
-        stats=None,
-        domain="US",
-        history=True,
-        offers=None,
-        update=None,
-        to_datetime=True,
-        rating=False,
-        out_of_stock_as_nan=True,
-        stock=False,
-        product_code_is_asin=True,
-        progress_bar=True,
-        buybox=False,
-        wait=True,
-        days=None,
-        only_live_offers=None,
-        raw=False,
-    ):
+        items: Union[str, Sequence[str]],
+        stats: Optional[Union[int]] = None,
+        domain: str = "US",
+        history: bool = True,
+        offers: Optional[int] = None,
+        update: Optional[int] = None,
+        to_datetime: bool = True,
+        rating: bool = False,
+        out_of_stock_as_nan: bool = True,
+        stock: bool = False,
+        product_code_is_asin: bool = True,
+        progress_bar: bool = True,
+        buybox: bool = False,
+        wait: bool = True,
+        days: Optional[int] = None,
+        only_live_offers: Optional[bool] = None,
+        raw: bool = False,
+    ) -> List[Dict[str, Any]]:
         """Perform a product query of a list, array, or single ASIN.
 
         Returns a list of product data with one entry for each
@@ -483,12 +522,12 @@ class Keepa:
 
         Parameters
         ----------
-        items : str, list, np.ndarray
-            A list, array, or single asin, UPC, EAN, or ISBN-13
-            identifying a product.  ASINs should be 10 characters and
-            match a product on Amazon.  Items not matching Amazon
-            product or duplicate Items will return no data.  When
-            using non-ASIN items, set product_code_is_asin to False
+        items : str, Sequence[str]
+            A list, array, or single asin, UPC, EAN, or ISBN-13 identifying a
+            product. ASINs should be 10 characters and match a product on
+            Amazon. Items not matching Amazon product or duplicate Items will
+            return no data. When using non-ASIN items, set
+            ``product_code_is_asin`` to ``False``.
 
         stats : int or date, optional
             No extra token cost. If specified the product object will
@@ -506,38 +545,35 @@ class Keepa:
             timestamps (unix epoch time milliseconds) or two date
             strings (ISO8601, with or without time in UTC).
 
-        domain : str, default: "US"
-            One of the following Amazon domains: RESERVED, US, GB, DE,
-            FR, JP, CA, CN, IT, ES, IN, MX, BR.
-
-        offers : int, optional
-            Adds available offers to product data. Default 0.  Must be between
-            20 and 100. Enabling this also enables the ``"buyBoxUsedHistory"``.
-
-        update : int, optional
-            if data is older than the input integer, keepa will
-            update their database and return live data.  If set to 0
-            (live data), request may cost an additional token.
-            Default None
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         history : bool, optional
             When set to True includes the price, sales, and offer
             history of a product.  Set to False to reduce request time
             if data is not required.  Default True
 
-        rating : bool, optional
-            When set to to True, includes the existing RATING and
-            COUNT_REVIEWS history of the csv field.  Default False
+        offers : int, optional
+            Adds available offers to product data. Default 0. Must be between
+            20 and 100. Enabling this also enables the ``"buyBoxUsedHistory"``.
 
-        to_datetime : bool, optional
+        update : int, optional
+            If data is older than the input integer, keepa will update their
+            database and return live data. If set to 0 (live data), request may
+            cost an additional token. Default (``None``) will not update.
+
+        to_datetime : bool, default: True
             Modifies numpy minutes to datetime.datetime values.
-            Default True.
 
-        out_of_stock_as_nan : bool, optional
+        rating : bool, default: False
+            When set to to True, includes the existing RATING and
+            COUNT_REVIEWS history of the csv field.
+
+        out_of_stock_as_nan : bool, default: True
             When True, prices are NAN when price category is out of
-            stock.  When False, prices are -0.01 Default True
+            stock.  When False, prices are -0.01.
 
-        stock : bool, optional
+        stock : bool, default: False
             Can only be used if the offers parameter is also True. If
             True, the stock will be collected for all retrieved live
             offers. Note: We can only determine stock up 10 qty. Stock
@@ -545,14 +581,13 @@ class Keepa:
             take longer. Existing stock history will be included
             whether or not the stock parameter is used.
 
-        product_code_is_asin : bool, optional
+        product_code_is_asin : bool, default: True
             The type of product code you are requesting. True when
             product code is an ASIN, an Amazon standard identification
             number, or 'code', for UPC, EAN, or ISBN-13 codes.
 
-        progress_bar : bool, optional
-            Display a progress bar using ``tqdm``.  Defaults to
-            ``True``.
+        progress_bar : bool, default: True
+            Display a progress bar using ``tqdm``.
 
         buybox : bool, optional
             Additional token cost: 2 per product). When true the
@@ -569,35 +604,32 @@ class Keepa:
             data. To access the statistics object the stats parameter is
             required.
 
-        wait : bool, optional
-            Wait available token before doing effective query,
-            Defaults to ``True``.
+        wait : bool, default: True
+            Wait available token before doing effective query.
 
         only_live_offers : bool, optional
             If set to True, the product object will only include live
             marketplace offers (when used in combination with the
-            offers parameter).  If you do not need historical offers
+            offers parameter). If you do not need historical offers
             use this to have them removed from the response. This can
             improve processing time and considerably decrease the size
-            of the response.  Default None
+            of the response.
 
         days : int, optional
-            Any positive integer value. If specified and has positive
-            value X the product object will limit all historical data
-            to the recent X days.  This includes the csv,
-            buyBoxSellerIdHistory, salesRanks, offers and
-            offers.offerCSV fields. If you do not need old historical
-            data use this to have it removed from the response. This
-            can improve processing time and considerably decrease the
-            size of the response.  The parameter does not use calendar
-            days - so 1 day equals the last 24 hours.  The oldest data
-            point of each field may have a date value which is out of
-            the specified range. This means the value of the field has
-            not changed since that date and is still active.  Default
-            ``None``
+            Any positive integer value. If specified and has positive value X
+            the product object will limit all historical data to the recent X
+            days.  This includes the csv, buyBoxSellerIdHistory, salesRanks,
+            offers and offers.offerCSV fields. If you do not need old
+            historical data use this to have it removed from the response. This
+            can improve processing time and considerably decrease the size of
+            the response.  The parameter does not use calendar days - so 1 day
+            equals the last 24 hours.  The oldest data point of each field may
+            have a date value which is out of the specified range. This means
+            the value of the field has not changed since that date and is still
+            active.
 
-        raw : bool, optional
-            When ``True``, return the raw request response.  This is
+        raw : bool, default; False
+            When ``True``, return the raw request response. This is
             only available in the non-async class.
 
         Returns
@@ -884,9 +916,8 @@ class Keepa:
         stats : int or date format
             Set the stats time for get sales rank inside this range
 
-        domain : str
-            One of the following Amazon domains:
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         offers : bool, optional
             Adds product offers to product data.
@@ -935,7 +966,7 @@ class Keepa:
             kwargs["code"] = ",".join(items)
 
         kwargs["key"] = self.accesskey
-        kwargs["domain"] = DCODES.index(kwargs["domain"])
+        kwargs["domain"] = _domain_to_dcode(kwargs["domain"])
 
         # Convert bool values to 0 and 1.
         kwargs["stock"] = int(kwargs["stock"])
@@ -989,7 +1020,9 @@ class Keepa:
 
         return response
 
-    def best_sellers_query(self, category, rank_avg_range=0, domain="US", wait=True):
+    def best_sellers_query(
+        self, category, rank_avg_range=0, domain: Union[str, Domain] = "US", wait=True
+    ):
         """Retrieve an ASIN list of the most popular products.
 
         This is based on sales in a specific category or product group.  See
@@ -1022,9 +1055,8 @@ class Keepa:
             the best sellers list for. You can find category node ids
             via the category search "search_for_categories".
 
-        domain : str, default: "US"
-            Amazon locale you want to access. Must be one of the following:
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         wait : bool, optional
             Wait available token before doing effective query.
@@ -1077,14 +1109,9 @@ class Keepa:
         ...
 
         """
-        if domain not in DCODES:
-            raise ValueError(
-                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
-            )
-
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "category": category,
             "range": rank_avg_range,
         }
@@ -1095,7 +1122,9 @@ class Keepa:
         else:  # pragma: no cover
             log.info("Best sellers search results not yet available")
 
-    def search_for_categories(self, searchterm, domain="US", wait=True) -> list:
+    def search_for_categories(
+        self, searchterm, domain: Union[str, Domain] = "US", wait=True
+    ) -> list:
         """Search for categories from Amazon.
 
         Parameters
@@ -1103,9 +1132,8 @@ class Keepa:
         searchterm : str
             Input search term.
 
-        domain : str, default: "US"
-            Amazon locale you want to access. Must be one of the following:
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         wait : bool, default: True
             Wait available token before doing effective query.
@@ -1138,14 +1166,9 @@ class Keepa:
         144 Science Fiction & Fantasy
 
         """
-        if domain not in DCODES:
-            raise ValueError(
-                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
-            )
-
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "type": "category",
             "term": searchterm,
         }
@@ -1157,7 +1180,9 @@ class Keepa:
             )
         return response["categories"]
 
-    def category_lookup(self, category_id, domain="US", include_parents=False, wait=True):
+    def category_lookup(
+        self, category_id, domain: Union[str, Domain] = "US", include_parents=False, wait=True
+    ):
         """Return root categories given a categoryId.
 
         Parameters
@@ -1166,9 +1191,8 @@ class Keepa:
             ID for specific category or 0 to return a list of root
             categories.
 
-        domain : str, default: "US"
-            Amazon locale you want to access. Must be one of the following:
-            RESERVED, US, GB, DE, FR, JP, CA, CN, IT, ES, IN, MX, BR.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         include_parents : bool, default: False
             Include parents.
@@ -1214,14 +1238,9 @@ class Keepa:
          'matched': True}
 
         """
-        if domain not in DCODES:
-            raise ValueError(
-                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
-            )
-
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "category": category_id,
             "parents": int(include_parents),
         }
@@ -1234,7 +1253,7 @@ class Keepa:
     def seller_query(
         self,
         seller_id,
-        domain="US",
+        domain: Union[str, Domain] = "US",
         to_datetime=True,
         storefront=False,
         update=None,
@@ -1255,9 +1274,8 @@ class Keepa:
             profile pages in the seller parameter of the URL as well
             as in the offers results from a product query.
 
-        domain : str, optional
-            One of the following Amazon domains: RESERVED, US, GB, DE,
-            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         storefront : bool, optional
             If specified the seller object will contain additional
@@ -1327,7 +1345,7 @@ class Keepa:
 
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "seller": seller,
         }
 
@@ -1339,1035 +1357,31 @@ class Keepa:
         response = self._request("seller", payload, wait=wait)
         return _parse_seller(response["sellers"], to_datetime)
 
-    def product_finder(self, product_parms, domain="US", wait=True, n_products=50) -> list:
+    def product_finder(
+        self,
+        product_parms: Union[Dict[str, Any], ProductParams],
+        domain: Union[str, Domain] = "US",
+        wait=True,
+        n_products=50,
+    ) -> List[str]:
         """Query the keepa product database to find products matching criteria.
 
-        Almost all product fields can be searched for and sort.
+        Almost all product fields can be searched for and sorted.
 
         Parameters
         ----------
-        product_parms : dict
-            Dictionary containing one or more of the following keys:
-
-            - ``'author': str``
-            - ``'availabilityAmazon': int``
-            - ``'avg180_AMAZON_lte': int``
-            - ``'avg180_AMAZON_gte': int``
-            - ``'avg180_BUY_BOX_SHIPPING_lte': int``
-            - ``'avg180_BUY_BOX_SHIPPING_gte': int``
-            - ``'avg180_COLLECTIBLE_lte': int``
-            - ``'avg180_COLLECTIBLE_gte': int``
-            - ``'avg180_COUNT_COLLECTIBLE_lte': int``
-            - ``'avg180_COUNT_COLLECTIBLE_gte': int``
-            - ``'avg180_COUNT_NEW_lte': int``
-            - ``'avg180_COUNT_NEW_gte': int``
-            - ``'avg180_COUNT_REFURBISHED_lte': int``
-            - ``'avg180_COUNT_REFURBISHED_gte': int``
-            - ``'avg180_COUNT_REVIEWS_lte': int``
-            - ``'avg180_COUNT_REVIEWS_gte': int``
-            - ``'avg180_COUNT_USED_lte': int``
-            - ``'avg180_COUNT_USED_gte': int``
-            - ``'avg180_EBAY_NEW_SHIPPING_lte': int``
-            - ``'avg180_EBAY_NEW_SHIPPING_gte': int``
-            - ``'avg180_EBAY_USED_SHIPPING_lte': int``
-            - ``'avg180_EBAY_USED_SHIPPING_gte': int``
-            - ``'avg180_LIGHTNING_DEAL_lte': int``
-            - ``'avg180_LIGHTNING_DEAL_gte': int``
-            - ``'avg180_LISTPRICE_lte': int``
-            - ``'avg180_LISTPRICE_gte': int``
-            - ``'avg180_NEW_lte': int``
-            - ``'avg180_NEW_gte': int``
-            - ``'avg180_NEW_FBA_lte': int``
-            - ``'avg180_NEW_FBA_gte': int``
-            - ``'avg180_NEW_FBM_SHIPPING_lte': int``
-            - ``'avg180_NEW_FBM_SHIPPING_gte': int``
-            - ``'avg180_RATING_lte': int``
-            - ``'avg180_RATING_gte': int``
-            - ``'avg180_REFURBISHED_lte': int``
-            - ``'avg180_REFURBISHED_gte': int``
-            - ``'avg180_REFURBISHED_SHIPPING_lte': int``
-            - ``'avg180_REFURBISHED_SHIPPING_gte': int``
-            - ``'avg180_RENT_lte': int``
-            - ``'avg180_RENT_gte': int``
-            - ``'avg180_SALES_lte': int``
-            - ``'avg180_SALES_gte': int``
-            - ``'avg180_TRADE_IN_lte': int``
-            - ``'avg180_TRADE_IN_gte': int``
-            - ``'avg180_USED_lte': int``
-            - ``'avg180_USED_gte': int``
-            - ``'avg180_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'avg180_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'avg180_USED_GOOD_SHIPPING_lte': int``
-            - ``'avg180_USED_GOOD_SHIPPING_gte': int``
-            - ``'avg180_USED_NEW_SHIPPING_lte': int``
-            - ``'avg180_USED_NEW_SHIPPING_gte': int``
-            - ``'avg180_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'avg180_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'avg180_WAREHOUSE_lte': int``
-            - ``'avg180_WAREHOUSE_gte': int``
-            - ``'avg1_AMAZON_lte': int``
-            - ``'avg1_AMAZON_gte': int``
-            - ``'avg1_BUY_BOX_SHIPPING_lte': int``
-            - ``'avg1_BUY_BOX_SHIPPING_gte': int``
-            - ``'avg1_COLLECTIBLE_lte': int``
-            - ``'avg1_COLLECTIBLE_gte': int``
-            - ``'avg1_COUNT_COLLECTIBLE_lte': int``
-            - ``'avg1_COUNT_COLLECTIBLE_gte': int``
-            - ``'avg1_COUNT_NEW_lte': int``
-            - ``'avg1_COUNT_NEW_gte': int``
-            - ``'avg1_COUNT_REFURBISHED_lte': int``
-            - ``'avg1_COUNT_REFURBISHED_gte': int``
-            - ``'avg1_COUNT_REVIEWS_lte': int``
-            - ``'avg1_COUNT_REVIEWS_gte': int``
-            - ``'avg1_COUNT_USED_lte': int``
-            - ``'avg1_COUNT_USED_gte': int``
-            - ``'avg1_EBAY_NEW_SHIPPING_lte': int``
-            - ``'avg1_EBAY_NEW_SHIPPING_gte': int``
-            - ``'avg1_EBAY_USED_SHIPPING_lte': int``
-            - ``'avg1_EBAY_USED_SHIPPING_gte': int``
-            - ``'avg1_LIGHTNING_DEAL_lte': int``
-            - ``'avg1_LIGHTNING_DEAL_gte': int``
-            - ``'avg1_LISTPRICE_lte': int``
-            - ``'avg1_LISTPRICE_gte': int``
-            - ``'avg1_NEW_lte': int``
-            - ``'avg1_NEW_gte': int``
-            - ``'avg1_NEW_FBA_lte': int``
-            - ``'avg1_NEW_FBA_gte': int``
-            - ``'avg1_NEW_FBM_SHIPPING_lte': int``
-            - ``'avg1_NEW_FBM_SHIPPING_gte': int``
-            - ``'avg1_RATING_lte': int``
-            - ``'avg1_RATING_gte': int``
-            - ``'avg1_REFURBISHED_lte': int``
-            - ``'avg1_REFURBISHED_gte': int``
-            - ``'avg1_REFURBISHED_SHIPPING_lte': int``
-            - ``'avg1_REFURBISHED_SHIPPING_gte': int``
-            - ``'avg1_RENT_lte': int``
-            - ``'avg1_RENT_gte': int``
-            - ``'avg1_SALES_lte': int``
-            - ``'avg1_SALES_lte': int``
-            - ``'avg1_SALES_gte': int``
-            - ``'avg1_TRADE_IN_lte': int``
-            - ``'avg1_TRADE_IN_gte': int``
-            - ``'avg1_USED_lte': int``
-            - ``'avg1_USED_gte': int``
-            - ``'avg1_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'avg1_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'avg1_USED_GOOD_SHIPPING_lte': int``
-            - ``'avg1_USED_GOOD_SHIPPING_gte': int``
-            - ``'avg1_USED_NEW_SHIPPING_lte': int``
-            - ``'avg1_USED_NEW_SHIPPING_gte': int``
-            - ``'avg1_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'avg1_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'avg1_WAREHOUSE_lte': int``
-            - ``'avg1_WAREHOUSE_gte': int``
-            - ``'avg30_AMAZON_lte': int``
-            - ``'avg30_AMAZON_gte': int``
-            - ``'avg30_BUY_BOX_SHIPPING_lte': int``
-            - ``'avg30_BUY_BOX_SHIPPING_gte': int``
-            - ``'avg30_COLLECTIBLE_lte': int``
-            - ``'avg30_COLLECTIBLE_gte': int``
-            - ``'avg30_COUNT_COLLECTIBLE_lte': int``
-            - ``'avg30_COUNT_COLLECTIBLE_gte': int``
-            - ``'avg30_COUNT_NEW_lte': int``
-            - ``'avg30_COUNT_NEW_gte': int``
-            - ``'avg30_COUNT_REFURBISHED_lte': int``
-            - ``'avg30_COUNT_REFURBISHED_gte': int``
-            - ``'avg30_COUNT_REVIEWS_lte': int``
-            - ``'avg30_COUNT_REVIEWS_gte': int``
-            - ``'avg30_COUNT_USED_lte': int``
-            - ``'avg30_COUNT_USED_gte': int``
-            - ``'avg30_EBAY_NEW_SHIPPING_lte': int``
-            - ``'avg30_EBAY_NEW_SHIPPING_gte': int``
-            - ``'avg30_EBAY_USED_SHIPPING_lte': int``
-            - ``'avg30_EBAY_USED_SHIPPING_gte': int``
-            - ``'avg30_LIGHTNING_DEAL_lte': int``
-            - ``'avg30_LIGHTNING_DEAL_gte': int``
-            - ``'avg30_LISTPRICE_lte': int``
-            - ``'avg30_LISTPRICE_gte': int``
-            - ``'avg30_NEW_lte': int``
-            - ``'avg30_NEW_gte': int``
-            - ``'avg30_NEW_FBA_lte': int``
-            - ``'avg30_NEW_FBA_gte': int``
-            - ``'avg30_NEW_FBM_SHIPPING_lte': int``
-            - ``'avg30_NEW_FBM_SHIPPING_gte': int``
-            - ``'avg30_RATING_lte': int``
-            - ``'avg30_RATING_gte': int``
-            - ``'avg30_REFURBISHED_lte': int``
-            - ``'avg30_REFURBISHED_gte': int``
-            - ``'avg30_REFURBISHED_SHIPPING_lte': int``
-            - ``'avg30_REFURBISHED_SHIPPING_gte': int``
-            - ``'avg30_RENT_lte': int``
-            - ``'avg30_RENT_gte': int``
-            - ``'avg30_SALES_lte': int``
-            - ``'avg30_SALES_gte': int``
-            - ``'avg30_TRADE_IN_lte': int``
-            - ``'avg30_TRADE_IN_gte': int``
-            - ``'avg30_USED_lte': int``
-            - ``'avg30_USED_gte': int``
-            - ``'avg30_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'avg30_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'avg30_USED_GOOD_SHIPPING_lte': int``
-            - ``'avg30_USED_GOOD_SHIPPING_gte': int``
-            - ``'avg30_USED_NEW_SHIPPING_lte': int``
-            - ``'avg30_USED_NEW_SHIPPING_gte': int``
-            - ``'avg30_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'avg30_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'avg30_WAREHOUSE_lte': int``
-            - ``'avg30_WAREHOUSE_gte': int``
-            - ``'avg7_AMAZON_lte': int``
-            - ``'avg7_AMAZON_gte': int``
-            - ``'avg7_BUY_BOX_SHIPPING_lte': int``
-            - ``'avg7_BUY_BOX_SHIPPING_gte': int``
-            - ``'avg7_COLLECTIBLE_lte': int``
-            - ``'avg7_COLLECTIBLE_gte': int``
-            - ``'avg7_COUNT_COLLECTIBLE_lte': int``
-            - ``'avg7_COUNT_COLLECTIBLE_gte': int``
-            - ``'avg7_COUNT_NEW_lte': int``
-            - ``'avg7_COUNT_NEW_gte': int``
-            - ``'avg7_COUNT_REFURBISHED_lte': int``
-            - ``'avg7_COUNT_REFURBISHED_gte': int``
-            - ``'avg7_COUNT_REVIEWS_lte': int``
-            - ``'avg7_COUNT_REVIEWS_gte': int``
-            - ``'avg7_COUNT_USED_lte': int``
-            - ``'avg7_COUNT_USED_gte': int``
-            - ``'avg7_EBAY_NEW_SHIPPING_lte': int``
-            - ``'avg7_EBAY_NEW_SHIPPING_gte': int``
-            - ``'avg7_EBAY_USED_SHIPPING_lte': int``
-            - ``'avg7_EBAY_USED_SHIPPING_gte': int``
-            - ``'avg7_LIGHTNING_DEAL_lte': int``
-            - ``'avg7_LIGHTNING_DEAL_gte': int``
-            - ``'avg7_LISTPRICE_lte': int``
-            - ``'avg7_LISTPRICE_gte': int``
-            - ``'avg7_NEW_lte': int``
-            - ``'avg7_NEW_gte': int``
-            - ``'avg7_NEW_FBA_lte': int``
-            - ``'avg7_NEW_FBA_gte': int``
-            - ``'avg7_NEW_FBM_SHIPPING_lte': int``
-            - ``'avg7_NEW_FBM_SHIPPING_gte': int``
-            - ``'avg7_RATING_lte': int``
-            - ``'avg7_RATING_gte': int``
-            - ``'avg7_REFURBISHED_lte': int``
-            - ``'avg7_REFURBISHED_gte': int``
-            - ``'avg7_REFURBISHED_SHIPPING_lte': int``
-            - ``'avg7_REFURBISHED_SHIPPING_gte': int``
-            - ``'avg7_RENT_lte': int``
-            - ``'avg7_RENT_gte': int``
-            - ``'avg7_SALES_lte': int``
-            - ``'avg7_SALES_gte': int``
-            - ``'avg7_TRADE_IN_lte': int``
-            - ``'avg7_TRADE_IN_gte': int``
-            - ``'avg7_USED_lte': int``
-            - ``'avg7_USED_gte': int``
-            - ``'avg7_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'avg7_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'avg7_USED_GOOD_SHIPPING_lte': int``
-            - ``'avg7_USED_GOOD_SHIPPING_gte': int``
-            - ``'avg7_USED_NEW_SHIPPING_lte': int``
-            - ``'avg7_USED_NEW_SHIPPING_gte': int``
-            - ``'avg7_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'avg7_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'avg7_WAREHOUSE_lte': int``
-            - ``'avg7_WAREHOUSE_gte': int``
-            - ``'avg90_AMAZON_lte': int``
-            - ``'avg90_AMAZON_gte': int``
-            - ``'avg90_BUY_BOX_SHIPPING_lte': int``
-            - ``'avg90_BUY_BOX_SHIPPING_gte': int``
-            - ``'avg90_COLLECTIBLE_lte': int``
-            - ``'avg90_COLLECTIBLE_gte': int``
-            - ``'avg90_COUNT_COLLECTIBLE_lte': int``
-            - ``'avg90_COUNT_COLLECTIBLE_gte': int``
-            - ``'avg90_COUNT_NEW_lte': int``
-            - ``'avg90_COUNT_NEW_gte': int``
-            - ``'avg90_COUNT_REFURBISHED_lte': int``
-            - ``'avg90_COUNT_REFURBISHED_gte': int``
-            - ``'avg90_COUNT_REVIEWS_lte': int``
-            - ``'avg90_COUNT_REVIEWS_gte': int``
-            - ``'avg90_COUNT_USED_lte': int``
-            - ``'avg90_COUNT_USED_gte': int``
-            - ``'avg90_EBAY_NEW_SHIPPING_lte': int``
-            - ``'avg90_EBAY_NEW_SHIPPING_gte': int``
-            - ``'avg90_EBAY_USED_SHIPPING_lte': int``
-            - ``'avg90_EBAY_USED_SHIPPING_gte': int``
-            - ``'avg90_LIGHTNING_DEAL_lte': int``
-            - ``'avg90_LIGHTNING_DEAL_gte': int``
-            - ``'avg90_LISTPRICE_lte': int``
-            - ``'avg90_LISTPRICE_gte': int``
-            - ``'avg90_NEW_lte': int``
-            - ``'avg90_NEW_gte': int``
-            - ``'avg90_NEW_FBA_lte': int``
-            - ``'avg90_NEW_FBA_gte': int``
-            - ``'avg90_NEW_FBM_SHIPPING_lte': int``
-            - ``'avg90_NEW_FBM_SHIPPING_gte': int``
-            - ``'avg90_RATING_lte': int``
-            - ``'avg90_RATING_gte': int``
-            - ``'avg90_REFURBISHED_lte': int``
-            - ``'avg90_REFURBISHED_gte': int``
-            - ``'avg90_REFURBISHED_SHIPPING_lte': int``
-            - ``'avg90_REFURBISHED_SHIPPING_gte': int``
-            - ``'avg90_RENT_lte': int``
-            - ``'avg90_RENT_gte': int``
-            - ``'avg90_SALES_lte': int``
-            - ``'avg90_SALES_gte': int``
-            - ``'avg90_TRADE_IN_lte': int``
-            - ``'avg90_TRADE_IN_gte': int``
-            - ``'avg90_USED_lte': int``
-            - ``'avg90_USED_gte': int``
-            - ``'avg90_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'avg90_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'avg90_USED_GOOD_SHIPPING_lte': int``
-            - ``'avg90_USED_GOOD_SHIPPING_gte': int``
-            - ``'avg90_USED_NEW_SHIPPING_lte': int``
-            - ``'avg90_USED_NEW_SHIPPING_gte': int``
-            - ``'avg90_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'avg90_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'avg90_WAREHOUSE_lte': int``
-            - ``'avg90_WAREHOUSE_gte': int``
-            - ``'backInStock_AMAZON': bool``
-            - ``'backInStock_BUY_BOX_SHIPPING': bool``
-            - ``'backInStock_COLLECTIBLE': bool``
-            - ``'backInStock_COUNT_COLLECTIBLE': bool``
-            - ``'backInStock_COUNT_NEW': bool``
-            - ``'backInStock_COUNT_REFURBISHED': bool``
-            - ``'backInStock_COUNT_REVIEWS': bool``
-            - ``'backInStock_COUNT_USED': bool``
-            - ``'backInStock_EBAY_NEW_SHIPPING': bool``
-            - ``'backInStock_EBAY_USED_SHIPPING': bool``
-            - ``'backInStock_LIGHTNING_DEAL': bool``
-            - ``'backInStock_LISTPRICE': bool``
-            - ``'backInStock_NEW': bool``
-            - ``'backInStock_NEW_FBA': bool``
-            - ``'backInStock_NEW_FBM_SHIPPING': bool``
-            - ``'backInStock_RATING': bool``
-            - ``'backInStock_REFURBISHED': bool``
-            - ``'backInStock_REFURBISHED_SHIPPING': bool``
-            - ``'backInStock_RENT': bool``
-            - ``'backInStock_SALES': bool``
-            - ``'backInStock_TRADE_IN': bool``
-            - ``'backInStock_USED': bool``
-            - ``'backInStock_USED_ACCEPTABLE_SHIPPING': bool``
-            - ``'backInStock_USED_GOOD_SHIPPING': bool``
-            - ``'backInStock_USED_NEW_SHIPPING': bool``
-            - ``'backInStock_USED_VERY_GOOD_SHIPPING': bool``
-            - ``'backInStock_WAREHOUSE': bool``
-            - ``'binding': str``
-            - ``'brand': str``
-            - ``'buyBoxSellerId': str``
-            - ``'color': str``
-            - ``'couponOneTimeAbsolute_lte': int``
-            - ``'couponOneTimeAbsolute_gte': int``
-            - ``'couponOneTimePercent_lte': int``
-            - ``'couponOneTimePercent_gte': int``
-            - ``'couponSNSAbsolute_lte': int``
-            - ``'couponSNSAbsolute_gte': int``
-            - ``'couponSNSPercent_lte': int``
-            - ``'couponSNSPercent_gte': int``
-            - ``'current_AMAZON_lte': int``
-            - ``'current_AMAZON_gte': int``
-            - ``'current_BUY_BOX_SHIPPING_lte': int``
-            - ``'current_BUY_BOX_SHIPPING_gte': int``
-            - ``'current_COLLECTIBLE_lte': int``
-            - ``'current_COLLECTIBLE_gte': int``
-            - ``'current_COUNT_COLLECTIBLE_lte': int``
-            - ``'current_COUNT_COLLECTIBLE_gte': int``
-            - ``'current_COUNT_NEW_lte': int``
-            - ``'current_COUNT_NEW_gte': int``
-            - ``'current_COUNT_REFURBISHED_lte': int``
-            - ``'current_COUNT_REFURBISHED_gte': int``
-            - ``'current_COUNT_REVIEWS_lte': int``
-            - ``'current_COUNT_REVIEWS_gte': int``
-            - ``'current_COUNT_USED_lte': int``
-            - ``'current_COUNT_USED_gte': int``
-            - ``'current_EBAY_NEW_SHIPPING_lte': int``
-            - ``'current_EBAY_NEW_SHIPPING_gte': int``
-            - ``'current_EBAY_USED_SHIPPING_lte': int``
-            - ``'current_EBAY_USED_SHIPPING_gte': int``
-            - ``'current_LIGHTNING_DEAL_lte': int``
-            - ``'current_LIGHTNING_DEAL_gte': int``
-            - ``'current_LISTPRICE_lte': int``
-            - ``'current_LISTPRICE_gte': int``
-            - ``'current_NEW_lte': int``
-            - ``'current_NEW_gte': int``
-            - ``'current_NEW_FBA_lte': int``
-            - ``'current_NEW_FBA_gte': int``
-            - ``'current_NEW_FBM_SHIPPING_lte': int``
-            - ``'current_NEW_FBM_SHIPPING_gte': int``
-            - ``'current_RATING_lte': int``
-            - ``'current_RATING_gte': int``
-            - ``'current_REFURBISHED_lte': int``
-            - ``'current_REFURBISHED_gte': int``
-            - ``'current_REFURBISHED_SHIPPING_lte': int``
-            - ``'current_REFURBISHED_SHIPPING_gte': int``
-            - ``'current_RENT_lte': int``
-            - ``'current_RENT_gte': int``
-            - ``'current_SALES_lte': int``
-            - ``'current_SALES_gte': int``
-            - ``'current_TRADE_IN_lte': int``
-            - ``'current_TRADE_IN_gte': int``
-            - ``'current_USED_lte': int``
-            - ``'current_USED_gte': int``
-            - ``'current_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'current_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'current_USED_GOOD_SHIPPING_lte': int``
-            - ``'current_USED_GOOD_SHIPPING_gte': int``
-            - ``'current_USED_NEW_SHIPPING_lte': int``
-            - ``'current_USED_NEW_SHIPPING_gte': int``
-            - ``'current_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'current_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'current_WAREHOUSE_lte': int``
-            - ``'current_WAREHOUSE_gte': int``
-            - ``'delta1_AMAZON_lte': int``
-            - ``'delta1_AMAZON_gte': int``
-            - ``'delta1_BUY_BOX_SHIPPING_lte': int``
-            - ``'delta1_BUY_BOX_SHIPPING_gte': int``
-            - ``'delta1_COLLECTIBLE_lte': int``
-            - ``'delta1_COLLECTIBLE_gte': int``
-            - ``'delta1_COUNT_COLLECTIBLE_lte': int``
-            - ``'delta1_COUNT_COLLECTIBLE_gte': int``
-            - ``'delta1_COUNT_NEW_lte': int``
-            - ``'delta1_COUNT_NEW_gte': int``
-            - ``'delta1_COUNT_REFURBISHED_lte': int``
-            - ``'delta1_COUNT_REFURBISHED_gte': int``
-            - ``'delta1_COUNT_REVIEWS_lte': int``
-            - ``'delta1_COUNT_REVIEWS_gte': int``
-            - ``'delta1_COUNT_USED_lte': int``
-            - ``'delta1_COUNT_USED_gte': int``
-            - ``'delta1_EBAY_NEW_SHIPPING_lte': int``
-            - ``'delta1_EBAY_NEW_SHIPPING_gte': int``
-            - ``'delta1_EBAY_USED_SHIPPING_lte': int``
-            - ``'delta1_EBAY_USED_SHIPPING_gte': int``
-            - ``'delta1_LIGHTNING_DEAL_lte': int``
-            - ``'delta1_LIGHTNING_DEAL_gte': int``
-            - ``'delta1_LISTPRICE_lte': int``
-            - ``'delta1_LISTPRICE_gte': int``
-            - ``'delta1_NEW_lte': int``
-            - ``'delta1_NEW_gte': int``
-            - ``'delta1_NEW_FBA_lte': int``
-            - ``'delta1_NEW_FBA_gte': int``
-            - ``'delta1_NEW_FBM_SHIPPING_lte': int``
-            - ``'delta1_NEW_FBM_SHIPPING_gte': int``
-            - ``'delta1_RATING_lte': int``
-            - ``'delta1_RATING_gte': int``
-            - ``'delta1_REFURBISHED_lte': int``
-            - ``'delta1_REFURBISHED_gte': int``
-            - ``'delta1_REFURBISHED_SHIPPING_lte': int``
-            - ``'delta1_REFURBISHED_SHIPPING_gte': int``
-            - ``'delta1_RENT_lte': int``
-            - ``'delta1_RENT_gte': int``
-            - ``'delta1_SALES_lte': int``
-            - ``'delta1_SALES_gte': int``
-            - ``'delta1_TRADE_IN_lte': int``
-            - ``'delta1_TRADE_IN_gte': int``
-            - ``'delta1_USED_lte': int``
-            - ``'delta1_USED_gte': int``
-            - ``'delta1_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'delta1_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'delta1_USED_GOOD_SHIPPING_lte': int``
-            - ``'delta1_USED_GOOD_SHIPPING_gte': int``
-            - ``'delta1_USED_NEW_SHIPPING_lte': int``
-            - ``'delta1_USED_NEW_SHIPPING_gte': int``
-            - ``'delta1_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'delta1_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'delta1_WAREHOUSE_lte': int``
-            - ``'delta1_WAREHOUSE_gte': int``
-            - ``'delta30_AMAZON_lte': int``
-            - ``'delta30_AMAZON_gte': int``
-            - ``'delta30_BUY_BOX_SHIPPING_lte': int``
-            - ``'delta30_BUY_BOX_SHIPPING_gte': int``
-            - ``'delta30_COLLECTIBLE_lte': int``
-            - ``'delta30_COLLECTIBLE_gte': int``
-            - ``'delta30_COUNT_COLLECTIBLE_lte': int``
-            - ``'delta30_COUNT_COLLECTIBLE_gte': int``
-            - ``'delta30_COUNT_NEW_lte': int``
-            - ``'delta30_COUNT_NEW_gte': int``
-            - ``'delta30_COUNT_REFURBISHED_lte': int``
-            - ``'delta30_COUNT_REFURBISHED_gte': int``
-            - ``'delta30_COUNT_REVIEWS_lte': int``
-            - ``'delta30_COUNT_REVIEWS_gte': int``
-            - ``'delta30_COUNT_USED_lte': int``
-            - ``'delta30_COUNT_USED_gte': int``
-            - ``'delta30_EBAY_NEW_SHIPPING_lte': int``
-            - ``'delta30_EBAY_NEW_SHIPPING_gte': int``
-            - ``'delta30_EBAY_USED_SHIPPING_lte': int``
-            - ``'delta30_EBAY_USED_SHIPPING_gte': int``
-            - ``'delta30_LIGHTNING_DEAL_lte': int``
-            - ``'delta30_LIGHTNING_DEAL_gte': int``
-            - ``'delta30_LISTPRICE_lte': int``
-            - ``'delta30_LISTPRICE_gte': int``
-            - ``'delta30_NEW_lte': int``
-            - ``'delta30_NEW_gte': int``
-            - ``'delta30_NEW_FBA_lte': int``
-            - ``'delta30_NEW_FBA_gte': int``
-            - ``'delta30_NEW_FBM_SHIPPING_lte': int``
-            - ``'delta30_NEW_FBM_SHIPPING_gte': int``
-            - ``'delta30_RATING_lte': int``
-            - ``'delta30_RATING_gte': int``
-            - ``'delta30_REFURBISHED_lte': int``
-            - ``'delta30_REFURBISHED_gte': int``
-            - ``'delta30_REFURBISHED_SHIPPING_lte': int``
-            - ``'delta30_REFURBISHED_SHIPPING_gte': int``
-            - ``'delta30_RENT_lte': int``
-            - ``'delta30_RENT_gte': int``
-            - ``'delta30_SALES_lte': int``
-            - ``'delta30_SALES_gte': int``
-            - ``'delta30_TRADE_IN_lte': int``
-            - ``'delta30_TRADE_IN_gte': int``
-            - ``'delta30_USED_lte': int``
-            - ``'delta30_USED_gte': int``
-            - ``'delta30_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'delta30_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'delta30_USED_GOOD_SHIPPING_lte': int``
-            - ``'delta30_USED_GOOD_SHIPPING_gte': int``
-            - ``'delta30_USED_NEW_SHIPPING_lte': int``
-            - ``'delta30_USED_NEW_SHIPPING_gte': int``
-            - ``'delta30_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'delta30_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'delta30_WAREHOUSE_lte': int``
-            - ``'delta30_WAREHOUSE_gte': int``
-            - ``'delta7_AMAZON_lte': int``
-            - ``'delta7_AMAZON_gte': int``
-            - ``'delta7_BUY_BOX_SHIPPING_lte': int``
-            - ``'delta7_BUY_BOX_SHIPPING_gte': int``
-            - ``'delta7_COLLECTIBLE_lte': int``
-            - ``'delta7_COLLECTIBLE_gte': int``
-            - ``'delta7_COUNT_COLLECTIBLE_lte': int``
-            - ``'delta7_COUNT_COLLECTIBLE_gte': int``
-            - ``'delta7_COUNT_NEW_lte': int``
-            - ``'delta7_COUNT_NEW_gte': int``
-            - ``'delta7_COUNT_REFURBISHED_lte': int``
-            - ``'delta7_COUNT_REFURBISHED_gte': int``
-            - ``'delta7_COUNT_REVIEWS_lte': int``
-            - ``'delta7_COUNT_REVIEWS_gte': int``
-            - ``'delta7_COUNT_USED_lte': int``
-            - ``'delta7_COUNT_USED_gte': int``
-            - ``'delta7_EBAY_NEW_SHIPPING_lte': int``
-            - ``'delta7_EBAY_NEW_SHIPPING_gte': int``
-            - ``'delta7_EBAY_USED_SHIPPING_lte': int``
-            - ``'delta7_EBAY_USED_SHIPPING_gte': int``
-            - ``'delta7_LIGHTNING_DEAL_lte': int``
-            - ``'delta7_LIGHTNING_DEAL_gte': int``
-            - ``'delta7_LISTPRICE_lte': int``
-            - ``'delta7_LISTPRICE_gte': int``
-            - ``'delta7_NEW_lte': int``
-            - ``'delta7_NEW_gte': int``
-            - ``'delta7_NEW_FBA_lte': int``
-            - ``'delta7_NEW_FBA_gte': int``
-            - ``'delta7_NEW_FBM_SHIPPING_lte': int``
-            - ``'delta7_NEW_FBM_SHIPPING_gte': int``
-            - ``'delta7_RATING_lte': int``
-            - ``'delta7_RATING_gte': int``
-            - ``'delta7_REFURBISHED_lte': int``
-            - ``'delta7_REFURBISHED_gte': int``
-            - ``'delta7_REFURBISHED_SHIPPING_lte': int``
-            - ``'delta7_REFURBISHED_SHIPPING_gte': int``
-            - ``'delta7_RENT_lte': int``
-            - ``'delta7_RENT_gte': int``
-            - ``'delta7_SALES_lte': int``
-            - ``'delta7_SALES_gte': int``
-            - ``'delta7_TRADE_IN_lte': int``
-            - ``'delta7_TRADE_IN_gte': int``
-            - ``'delta7_USED_lte': int``
-            - ``'delta7_USED_gte': int``
-            - ``'delta7_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'delta7_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'delta7_USED_GOOD_SHIPPING_lte': int``
-            - ``'delta7_USED_GOOD_SHIPPING_gte': int``
-            - ``'delta7_USED_NEW_SHIPPING_lte': int``
-            - ``'delta7_USED_NEW_SHIPPING_gte': int``
-            - ``'delta7_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'delta7_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'delta7_WAREHOUSE_lte': int``
-            - ``'delta7_WAREHOUSE_gte': int``
-            - ``'delta90_AMAZON_lte': int``
-            - ``'delta90_AMAZON_gte': int``
-            - ``'delta90_BUY_BOX_SHIPPING_lte': int``
-            - ``'delta90_BUY_BOX_SHIPPING_gte': int``
-            - ``'delta90_COLLECTIBLE_lte': int``
-            - ``'delta90_COLLECTIBLE_gte': int``
-            - ``'delta90_COUNT_COLLECTIBLE_lte': int``
-            - ``'delta90_COUNT_COLLECTIBLE_gte': int``
-            - ``'delta90_COUNT_NEW_lte': int``
-            - ``'delta90_COUNT_NEW_gte': int``
-            - ``'delta90_COUNT_REFURBISHED_lte': int``
-            - ``'delta90_COUNT_REFURBISHED_gte': int``
-            - ``'delta90_COUNT_REVIEWS_lte': int``
-            - ``'delta90_COUNT_REVIEWS_gte': int``
-            - ``'delta90_COUNT_USED_lte': int``
-            - ``'delta90_COUNT_USED_gte': int``
-            - ``'delta90_EBAY_NEW_SHIPPING_lte': int``
-            - ``'delta90_EBAY_NEW_SHIPPING_gte': int``
-            - ``'delta90_EBAY_USED_SHIPPING_lte': int``
-            - ``'delta90_EBAY_USED_SHIPPING_gte': int``
-            - ``'delta90_LIGHTNING_DEAL_lte': int``
-            - ``'delta90_LIGHTNING_DEAL_gte': int``
-            - ``'delta90_LISTPRICE_lte': int``
-            - ``'delta90_LISTPRICE_gte': int``
-            - ``'delta90_NEW_lte': int``
-            - ``'delta90_NEW_gte': int``
-            - ``'delta90_NEW_FBA_lte': int``
-            - ``'delta90_NEW_FBA_gte': int``
-            - ``'delta90_NEW_FBM_SHIPPING_lte': int``
-            - ``'delta90_NEW_FBM_SHIPPING_gte': int``
-            - ``'delta90_RATING_lte': int``
-            - ``'delta90_RATING_gte': int``
-            - ``'delta90_REFURBISHED_lte': int``
-            - ``'delta90_REFURBISHED_gte': int``
-            - ``'delta90_REFURBISHED_SHIPPING_lte': int``
-            - ``'delta90_REFURBISHED_SHIPPING_gte': int``
-            - ``'delta90_RENT_lte': int``
-            - ``'delta90_RENT_gte': int``
-            - ``'delta90_SALES_lte': int``
-            - ``'delta90_SALES_gte': int``
-            - ``'delta90_TRADE_IN_lte': int``
-            - ``'delta90_TRADE_IN_gte': int``
-            - ``'delta90_USED_lte': int``
-            - ``'delta90_USED_gte': int``
-            - ``'delta90_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'delta90_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'delta90_USED_GOOD_SHIPPING_lte': int``
-            - ``'delta90_USED_GOOD_SHIPPING_gte': int``
-            - ``'delta90_USED_NEW_SHIPPING_lte': int``
-            - ``'delta90_USED_NEW_SHIPPING_gte': int``
-            - ``'delta90_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'delta90_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'delta90_WAREHOUSE_lte': int``
-            - ``'delta90_WAREHOUSE_gte': int``
-            - ``'deltaLast_AMAZON_lte': int``
-            - ``'deltaLast_AMAZON_gte': int``
-            - ``'deltaLast_BUY_BOX_SHIPPING_lte': int``
-            - ``'deltaLast_BUY_BOX_SHIPPING_gte': int``
-            - ``'deltaLast_COLLECTIBLE_lte': int``
-            - ``'deltaLast_COLLECTIBLE_gte': int``
-            - ``'deltaLast_COUNT_COLLECTIBLE_lte': int``
-            - ``'deltaLast_COUNT_COLLECTIBLE_gte': int``
-            - ``'deltaLast_COUNT_NEW_lte': int``
-            - ``'deltaLast_COUNT_NEW_gte': int``
-            - ``'deltaLast_COUNT_REFURBISHED_lte': int``
-            - ``'deltaLast_COUNT_REFURBISHED_gte': int``
-            - ``'deltaLast_COUNT_REVIEWS_lte': int``
-            - ``'deltaLast_COUNT_REVIEWS_gte': int``
-            - ``'deltaLast_COUNT_USED_lte': int``
-            - ``'deltaLast_COUNT_USED_gte': int``
-            - ``'deltaLast_EBAY_NEW_SHIPPING_lte': int``
-            - ``'deltaLast_EBAY_NEW_SHIPPING_gte': int``
-            - ``'deltaLast_EBAY_USED_SHIPPING_lte': int``
-            - ``'deltaLast_EBAY_USED_SHIPPING_gte': int``
-            - ``'deltaLast_LIGHTNING_DEAL_lte': int``
-            - ``'deltaLast_LIGHTNING_DEAL_gte': int``
-            - ``'deltaLast_LISTPRICE_lte': int``
-            - ``'deltaLast_LISTPRICE_gte': int``
-            - ``'deltaLast_NEW_lte': int``
-            - ``'deltaLast_NEW_gte': int``
-            - ``'deltaLast_NEW_FBA_lte': int``
-            - ``'deltaLast_NEW_FBA_gte': int``
-            - ``'deltaLast_NEW_FBM_SHIPPING_lte': int``
-            - ``'deltaLast_NEW_FBM_SHIPPING_gte': int``
-            - ``'deltaLast_RATING_lte': int``
-            - ``'deltaLast_RATING_gte': int``
-            - ``'deltaLast_REFURBISHED_lte': int``
-            - ``'deltaLast_REFURBISHED_gte': int``
-            - ``'deltaLast_REFURBISHED_SHIPPING_lte': int``
-            - ``'deltaLast_REFURBISHED_SHIPPING_gte': int``
-            - ``'deltaLast_RENT_lte': int``
-            - ``'deltaLast_RENT_gte': int``
-            - ``'deltaLast_SALES_lte': int``
-            - ``'deltaLast_SALES_gte': int``
-            - ``'deltaLast_TRADE_IN_lte': int``
-            - ``'deltaLast_TRADE_IN_gte': int``
-            - ``'deltaLast_USED_lte': int``
-            - ``'deltaLast_USED_gte': int``
-            - ``'deltaLast_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'deltaLast_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'deltaLast_USED_GOOD_SHIPPING_lte': int``
-            - ``'deltaLast_USED_GOOD_SHIPPING_gte': int``
-            - ``'deltaLast_USED_NEW_SHIPPING_lte': int``
-            - ``'deltaLast_USED_NEW_SHIPPING_gte': int``
-            - ``'deltaLast_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'deltaLast_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'deltaLast_WAREHOUSE_lte': int``
-            - ``'deltaLast_WAREHOUSE_gte': int``
-            - ``'deltaPercent1_AMAZON_lte': int``
-            - ``'deltaPercent1_AMAZON_gte': int``
-            - ``'deltaPercent1_BUY_BOX_SHIPPING_lte': int``
-            - ``'deltaPercent1_BUY_BOX_SHIPPING_gte': int``
-            - ``'deltaPercent1_COLLECTIBLE_lte': int``
-            - ``'deltaPercent1_COLLECTIBLE_gte': int``
-            - ``'deltaPercent1_COUNT_COLLECTIBLE_lte': int``
-            - ``'deltaPercent1_COUNT_COLLECTIBLE_gte': int``
-            - ``'deltaPercent1_COUNT_NEW_lte': int``
-            - ``'deltaPercent1_COUNT_NEW_gte': int``
-            - ``'deltaPercent1_COUNT_REFURBISHED_lte': int``
-            - ``'deltaPercent1_COUNT_REFURBISHED_gte': int``
-            - ``'deltaPercent1_COUNT_REVIEWS_lte': int``
-            - ``'deltaPercent1_COUNT_REVIEWS_gte': int``
-            - ``'deltaPercent1_COUNT_USED_lte': int``
-            - ``'deltaPercent1_COUNT_USED_gte': int``
-            - ``'deltaPercent1_EBAY_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent1_EBAY_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent1_EBAY_USED_SHIPPING_lte': int``
-            - ``'deltaPercent1_EBAY_USED_SHIPPING_gte': int``
-            - ``'deltaPercent1_LIGHTNING_DEAL_lte': int``
-            - ``'deltaPercent1_LIGHTNING_DEAL_gte': int``
-            - ``'deltaPercent1_LISTPRICE_lte': int``
-            - ``'deltaPercent1_LISTPRICE_gte': int``
-            - ``'deltaPercent1_NEW_lte': int``
-            - ``'deltaPercent1_NEW_gte': int``
-            - ``'deltaPercent1_NEW_FBA_lte': int``
-            - ``'deltaPercent1_NEW_FBA_gte': int``
-            - ``'deltaPercent1_NEW_FBM_SHIPPING_lte': int``
-            - ``'deltaPercent1_NEW_FBM_SHIPPING_gte': int``
-            - ``'deltaPercent1_RATING_lte': int``
-            - ``'deltaPercent1_RATING_gte': int``
-            - ``'deltaPercent1_REFURBISHED_lte': int``
-            - ``'deltaPercent1_REFURBISHED_gte': int``
-            - ``'deltaPercent1_REFURBISHED_SHIPPING_lte': int``
-            - ``'deltaPercent1_REFURBISHED_SHIPPING_gte': int``
-            - ``'deltaPercent1_RENT_lte': int``
-            - ``'deltaPercent1_RENT_gte': int``
-            - ``'deltaPercent1_SALES_lte': int``
-            - ``'deltaPercent1_SALES_gte': int``
-            - ``'deltaPercent1_TRADE_IN_lte': int``
-            - ``'deltaPercent1_TRADE_IN_gte': int``
-            - ``'deltaPercent1_USED_lte': int``
-            - ``'deltaPercent1_USED_gte': int``
-            - ``'deltaPercent1_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'deltaPercent1_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'deltaPercent1_USED_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent1_USED_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent1_USED_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent1_USED_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent1_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent1_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent1_WAREHOUSE_lte': int``
-            - ``'deltaPercent1_WAREHOUSE_gte': int``
-            - ``'deltaPercent30_AMAZON_lte': int``
-            - ``'deltaPercent30_AMAZON_gte': int``
-            - ``'deltaPercent30_BUY_BOX_SHIPPING_lte': int``
-            - ``'deltaPercent30_BUY_BOX_SHIPPING_gte': int``
-            - ``'deltaPercent30_COLLECTIBLE_lte': int``
-            - ``'deltaPercent30_COLLECTIBLE_gte': int``
-            - ``'deltaPercent30_COUNT_COLLECTIBLE_lte': int``
-            - ``'deltaPercent30_COUNT_COLLECTIBLE_gte': int``
-            - ``'deltaPercent30_COUNT_NEW_lte': int``
-            - ``'deltaPercent30_COUNT_NEW_gte': int``
-            - ``'deltaPercent30_COUNT_REFURBISHED_lte': int``
-            - ``'deltaPercent30_COUNT_REFURBISHED_gte': int``
-            - ``'deltaPercent30_COUNT_REVIEWS_lte': int``
-            - ``'deltaPercent30_COUNT_REVIEWS_gte': int``
-            - ``'deltaPercent30_COUNT_USED_lte': int``
-            - ``'deltaPercent30_COUNT_USED_gte': int``
-            - ``'deltaPercent30_EBAY_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent30_EBAY_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent30_EBAY_USED_SHIPPING_lte': int``
-            - ``'deltaPercent30_EBAY_USED_SHIPPING_gte': int``
-            - ``'deltaPercent30_LIGHTNING_DEAL_lte': int``
-            - ``'deltaPercent30_LIGHTNING_DEAL_gte': int``
-            - ``'deltaPercent30_LISTPRICE_lte': int``
-            - ``'deltaPercent30_LISTPRICE_gte': int``
-            - ``'deltaPercent30_NEW_lte': int``
-            - ``'deltaPercent30_NEW_gte': int``
-            - ``'deltaPercent30_NEW_FBA_lte': int``
-            - ``'deltaPercent30_NEW_FBA_gte': int``
-            - ``'deltaPercent30_NEW_FBM_SHIPPING_lte': int``
-            - ``'deltaPercent30_NEW_FBM_SHIPPING_gte': int``
-            - ``'deltaPercent30_RATING_lte': int``
-            - ``'deltaPercent30_RATING_gte': int``
-            - ``'deltaPercent30_REFURBISHED_lte': int``
-            - ``'deltaPercent30_REFURBISHED_gte': int``
-            - ``'deltaPercent30_REFURBISHED_SHIPPING_lte': int``
-            - ``'deltaPercent30_REFURBISHED_SHIPPING_gte': int``
-            - ``'deltaPercent30_RENT_lte': int``
-            - ``'deltaPercent30_RENT_gte': int``
-            - ``'deltaPercent30_SALES_lte': int``
-            - ``'deltaPercent30_SALES_gte': int``
-            - ``'deltaPercent30_TRADE_IN_lte': int``
-            - ``'deltaPercent30_TRADE_IN_gte': int``
-            - ``'deltaPercent30_USED_lte': int``
-            - ``'deltaPercent30_USED_gte': int``
-            - ``'deltaPercent30_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'deltaPercent30_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'deltaPercent30_USED_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent30_USED_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent30_USED_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent30_USED_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent30_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent30_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent30_WAREHOUSE_lte': int``
-            - ``'deltaPercent30_WAREHOUSE_gte': int``
-            - ``'deltaPercent7_AMAZON_lte': int``
-            - ``'deltaPercent7_AMAZON_gte': int``
-            - ``'deltaPercent7_BUY_BOX_SHIPPING_lte': int``
-            - ``'deltaPercent7_BUY_BOX_SHIPPING_gte': int``
-            - ``'deltaPercent7_COLLECTIBLE_lte': int``
-            - ``'deltaPercent7_COLLECTIBLE_gte': int``
-            - ``'deltaPercent7_COUNT_COLLECTIBLE_lte': int``
-            - ``'deltaPercent7_COUNT_COLLECTIBLE_gte': int``
-            - ``'deltaPercent7_COUNT_NEW_lte': int``
-            - ``'deltaPercent7_COUNT_NEW_gte': int``
-            - ``'deltaPercent7_COUNT_REFURBISHED_lte': int``
-            - ``'deltaPercent7_COUNT_REFURBISHED_gte': int``
-            - ``'deltaPercent7_COUNT_REVIEWS_lte': int``
-            - ``'deltaPercent7_COUNT_REVIEWS_gte': int``
-            - ``'deltaPercent7_COUNT_USED_lte': int``
-            - ``'deltaPercent7_COUNT_USED_gte': int``
-            - ``'deltaPercent7_EBAY_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent7_EBAY_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent7_EBAY_USED_SHIPPING_lte': int``
-            - ``'deltaPercent7_EBAY_USED_SHIPPING_gte': int``
-            - ``'deltaPercent7_LIGHTNING_DEAL_lte': int``
-            - ``'deltaPercent7_LIGHTNING_DEAL_gte': int``
-            - ``'deltaPercent7_LISTPRICE_lte': int``
-            - ``'deltaPercent7_LISTPRICE_gte': int``
-            - ``'deltaPercent7_NEW_lte': int``
-            - ``'deltaPercent7_NEW_gte': int``
-            - ``'deltaPercent7_NEW_FBA_lte': int``
-            - ``'deltaPercent7_NEW_FBA_gte': int``
-            - ``'deltaPercent7_NEW_FBM_SHIPPING_lte': int``
-            - ``'deltaPercent7_NEW_FBM_SHIPPING_gte': int``
-            - ``'deltaPercent7_RATING_lte': int``
-            - ``'deltaPercent7_RATING_gte': int``
-            - ``'deltaPercent7_REFURBISHED_lte': int``
-            - ``'deltaPercent7_REFURBISHED_gte': int``
-            - ``'deltaPercent7_REFURBISHED_SHIPPING_lte': int``
-            - ``'deltaPercent7_REFURBISHED_SHIPPING_gte': int``
-            - ``'deltaPercent7_RENT_lte': int``
-            - ``'deltaPercent7_RENT_gte': int``
-            - ``'deltaPercent7_SALES_lte': int``
-            - ``'deltaPercent7_SALES_gte': int``
-            - ``'deltaPercent7_TRADE_IN_lte': int``
-            - ``'deltaPercent7_TRADE_IN_gte': int``
-            - ``'deltaPercent7_USED_lte': int``
-            - ``'deltaPercent7_USED_gte': int``
-            - ``'deltaPercent7_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'deltaPercent7_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'deltaPercent7_USED_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent7_USED_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent7_USED_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent7_USED_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent7_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent7_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent7_WAREHOUSE_lte': int``
-            - ``'deltaPercent7_WAREHOUSE_gte': int``
-            - ``'deltaPercent90_AMAZON_lte': int``
-            - ``'deltaPercent90_AMAZON_gte': int``
-            - ``'deltaPercent90_BUY_BOX_SHIPPING_lte': int``
-            - ``'deltaPercent90_BUY_BOX_SHIPPING_gte': int``
-            - ``'deltaPercent90_COLLECTIBLE_lte': int``
-            - ``'deltaPercent90_COLLECTIBLE_gte': int``
-            - ``'deltaPercent90_COUNT_COLLECTIBLE_lte': int``
-            - ``'deltaPercent90_COUNT_COLLECTIBLE_gte': int``
-            - ``'deltaPercent90_COUNT_NEW_lte': int``
-            - ``'deltaPercent90_COUNT_NEW_gte': int``
-            - ``'deltaPercent90_COUNT_REFURBISHED_lte': int``
-            - ``'deltaPercent90_COUNT_REFURBISHED_gte': int``
-            - ``'deltaPercent90_COUNT_REVIEWS_lte': int``
-            - ``'deltaPercent90_COUNT_REVIEWS_gte': int``
-            - ``'deltaPercent90_COUNT_USED_lte': int``
-            - ``'deltaPercent90_COUNT_USED_gte': int``
-            - ``'deltaPercent90_EBAY_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent90_EBAY_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent90_EBAY_USED_SHIPPING_lte': int``
-            - ``'deltaPercent90_EBAY_USED_SHIPPING_gte': int``
-            - ``'deltaPercent90_LIGHTNING_DEAL_lte': int``
-            - ``'deltaPercent90_LIGHTNING_DEAL_gte': int``
-            - ``'deltaPercent90_LISTPRICE_lte': int``
-            - ``'deltaPercent90_LISTPRICE_gte': int``
-            - ``'deltaPercent90_NEW_lte': int``
-            - ``'deltaPercent90_NEW_gte': int``
-            - ``'deltaPercent90_NEW_FBA_lte': int``
-            - ``'deltaPercent90_NEW_FBA_gte': int``
-            - ``'deltaPercent90_NEW_FBM_SHIPPING_lte': int``
-            - ``'deltaPercent90_NEW_FBM_SHIPPING_gte': int``
-            - ``'deltaPercent90_RATING_lte': int``
-            - ``'deltaPercent90_RATING_gte': int``
-            - ``'deltaPercent90_REFURBISHED_lte': int``
-            - ``'deltaPercent90_REFURBISHED_gte': int``
-            - ``'deltaPercent90_REFURBISHED_SHIPPING_lte': int``
-            - ``'deltaPercent90_REFURBISHED_SHIPPING_gte': int``
-            - ``'deltaPercent90_RENT_lte': int``
-            - ``'deltaPercent90_RENT_gte': int``
-            - ``'deltaPercent90_SALES_lte': int``
-            - ``'deltaPercent90_SALES_gte': int``
-            - ``'deltaPercent90_TRADE_IN_lte': int``
-            - ``'deltaPercent90_TRADE_IN_gte': int``
-            - ``'deltaPercent90_USED_lte': int``
-            - ``'deltaPercent90_USED_gte': int``
-            - ``'deltaPercent90_USED_ACCEPTABLE_SHIPPING_lte': int``
-            - ``'deltaPercent90_USED_ACCEPTABLE_SHIPPING_gte': int``
-            - ``'deltaPercent90_USED_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent90_USED_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent90_USED_NEW_SHIPPING_lte': int``
-            - ``'deltaPercent90_USED_NEW_SHIPPING_gte': int``
-            - ``'deltaPercent90_USED_VERY_GOOD_SHIPPING_lte': int``
-            - ``'deltaPercent90_USED_VERY_GOOD_SHIPPING_gte': int``
-            - ``'deltaPercent90_WAREHOUSE_lte': int``
-            - ``'deltaPercent90_WAREHOUSE_gte': int``
-            - ``'department': str``
-            - ``'edition': str``
-            - ``'fbaFees_lte': int``
-            - ``'fbaFees_gte': int``
-            - ``'format': str``
-            - ``'genre': str``
-            - ``'hasParentASIN': bool``
-            - ``'hasReviews': bool``
-            - ``'hazardousMaterialType_lte': int``
-            - ``'hazardousMaterialType_gte': int``
-            - ``'isAdultProduct': bool``
-            - ``'isEligibleForSuperSaverShipping': bool``
-            - ``'isEligibleForTradeIn': bool``
-            - ``'isHighestOffer': bool``
-            - ``'isHighest_AMAZON': bool``
-            - ``'isHighest_BUY_BOX_SHIPPING': bool``
-            - ``'isHighest_COLLECTIBLE': bool``
-            - ``'isHighest_COUNT_COLLECTIBLE': bool``
-            - ``'isHighest_COUNT_NEW': bool``
-            - ``'isHighest_COUNT_REFURBISHED': bool``
-            - ``'isHighest_COUNT_REVIEWS': bool``
-            - ``'isHighest_COUNT_USED': bool``
-            - ``'isHighest_EBAY_NEW_SHIPPING': bool``
-            - ``'isHighest_EBAY_USED_SHIPPING': bool``
-            - ``'isHighest_LIGHTNING_DEAL': bool``
-            - ``'isHighest_LISTPRICE': bool``
-            - ``'isHighest_NEW': bool``
-            - ``'isHighest_NEW_FBA': bool``
-            - ``'isHighest_NEW_FBM_SHIPPING': bool``
-            - ``'isHighest_RATING': bool``
-            - ``'isHighest_REFURBISHED': bool``
-            - ``'isHighest_REFURBISHED_SHIPPING': bool``
-            - ``'isHighest_RENT': bool``
-            - ``'isHighest_SALES': bool``
-            - ``'isHighest_TRADE_IN': bool``
-            - ``'isHighest_USED': bool``
-            - ``'isHighest_USED_ACCEPTABLE_SHIPPING': bool``
-            - ``'isHighest_USED_GOOD_SHIPPING': bool``
-            - ``'isHighest_USED_NEW_SHIPPING': bool``
-            - ``'isHighest_USED_VERY_GOOD_SHIPPING': bool``
-            - ``'isHighest_WAREHOUSE': bool``
-            - ``'isLowestOffer': bool``
-            - ``'isLowest_AMAZON': bool``
-            - ``'isLowest_BUY_BOX_SHIPPING': bool``
-            - ``'isLowest_COLLECTIBLE': bool``
-            - ``'isLowest_COUNT_COLLECTIBLE': bool``
-            - ``'isLowest_COUNT_NEW': bool``
-            - ``'isLowest_COUNT_REFURBISHED': bool``
-            - ``'isLowest_COUNT_REVIEWS': bool``
-            - ``'isLowest_COUNT_USED': bool``
-            - ``'isLowest_EBAY_NEW_SHIPPING': bool``
-            - ``'isLowest_EBAY_USED_SHIPPING': bool``
-            - ``'isLowest_LIGHTNING_DEAL': bool``
-            - ``'isLowest_LISTPRICE': bool``
-            - ``'isLowest_NEW': bool``
-            - ``'isLowest_NEW_FBA': bool``
-            - ``'isLowest_NEW_FBM_SHIPPING': bool``
-            - ``'isLowest_RATING': bool``
-            - ``'isLowest_REFURBISHED': bool``
-            - ``'isLowest_REFURBISHED_SHIPPING': bool``
-            - ``'isLowest_RENT': bool``
-            - ``'isLowest_SALES': bool``
-            - ``'isLowest_TRADE_IN': bool``
-            - ``'isLowest_USED': bool``
-            - ``'isLowest_USED_ACCEPTABLE_SHIPPING': bool``
-            - ``'isLowest_USED_GOOD_SHIPPING': bool``
-            - ``'isLowest_USED_NEW_SHIPPING': bool``
-            - ``'isLowest_USED_VERY_GOOD_SHIPPING': bool``
-            - ``'isLowest_WAREHOUSE': bool``
-            - ``'isPrimeExclusive': bool``
-            - ``'isSNS': bool``
-            - ``'label': str``
-            - ``'languages': str``
-            - ``'lastOffersUpdate_lte': int``
-            - ``'lastOffersUpdate_gte': int``
-            - ``'lastPriceChange_lte': int``
-            - ``'lastPriceChange_gte': int``
-            - ``'lastRatingUpdate_lte': int``
-            - ``'lastRatingUpdate_gte': int``
-            - ``'lastUpdate_lte': int``
-            - ``'lastUpdate_gte': int``
-            - ``'lightningEnd_lte': int``
-            - ``'lightningEnd_gte': int``
-            - ``'lightningStart_lte': int``
-            - ``'lightningStart_gte': int``
-            - ``'listedSince_lte': int``
-            - ``'listedSince_gte': int``
-            - ``'manufacturer': str``
-            - ``'model': str``
-            - ``'newPriceIsMAP': bool``
-            - ``'nextUpdate_lte': int``
-            - ``'nextUpdate_gte': int``
-            - ``'numberOfItems_lte': int``
-            - ``'numberOfItems_gte': int``
-            - ``'numberOfPages_lte': int``
-            - ``'numberOfPages_gte': int``
-            - ``'numberOfTrackings_lte': int``
-            - ``'numberOfTrackings_gte': int``
-            - ``'offerCountFBA_lte': int``
-            - ``'offerCountFBA_gte': int``
-            - ``'offerCountFBM_lte': int``
-            - ``'offerCountFBM_gte': int``
-            - ``'outOfStockPercentageInInterval_lte': int``
-            - ``'outOfStockPercentageInInterval_gte': int``
-            - ``'packageDimension_lte': int``
-            - ``'packageDimension_gte': int``
-            - ``'packageHeight_lte': int``
-            - ``'packageHeight_gte': int``
-            - ``'packageLength_lte': int``
-            - ``'packageLength_gte': int``
-            - ``'packageQuantity_lte': int``
-            - ``'packageQuantity_gte': int``
-            - ``'packageWeight_lte': int``
-            - ``'packageWeight_gte': int``
-            - ``'packageWidth_lte': int``
-            - ``'packageWidth_gte': int``
-            - ``'partNumber': str``
-            - ``'platform': str``
-            - ``'productGroup': str``
-            - ``'productType': int``
-            - ``'promotions': int``
-            - ``'publicationDate_lte': int``
-            - ``'publicationDate_gte': int``
-            - ``'publisher': str``
-            - ``'releaseDate_lte': int``
-            - ``'releaseDate_gte': int``
-            - ``'rootCategory': int``
-            - ``'sellerIds': str``
-            - ``'sellerIdsLowestFBA': str``
-            - ``'sellerIdsLowestFBM': str``
-            - ``'size': str``
-            - ``'salesRankDrops180_lte': int``
-            - ``'salesRankDrops180_gte': int``
-            - ``'salesRankDrops90_lte': int``
-            - ``'salesRankDrops90_gte': int``
-            - ``'salesRankDrops30_lte': int``
-            - ``'salesRankDrops30_gte': int``
-            - ``'sort': list``
-            - ``'stockAmazon_lte': int``
-            - ``'stockAmazon_gte': int``
-            - ``'stockBuyBox_lte': int``
-            - ``'stockBuyBox_gte': int``
-            - ``'studio': str``
-            - ``'title': str``
-            - ``'title_flag': str``
-            - ``'trackingSince_lte': int``
-            - ``'trackingSince_gte': int``
-            - ``'type': str``
-            - ``'mpn': str``
-            - ``'outOfStockPercentage90_lte': int``
-            - ``'outOfStockPercentage90_gte': int``
-            - ``'categories_include': int``
-            - ``'categories_exclude': int``
-
-        domain : str, default: 'US'
-            One of the following Amazon domains: RESERVED, US, GB, DE,
-            FR, JP, CA, CN, IT, ES, IN, MX.
-
+        product_parms : dict, ProductParams
+            Dictionary or :class:`keepa.ProductParams`.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
             Wait available token before doing effective query.
-
-        n_products : int, default 50
+        n_products : int, default: 50
             Maximum number of matching products returned by keepa.
 
         Returns
         -------
-        list
+        list[str]
             List of ASINs matching the product parameters.
 
         Notes
@@ -2397,6 +1411,14 @@ class Keepa:
          '0133235750',
          'B01MXXLJPZ']
 
+        Alternatively, use the :class:`keepa.ProductParams`:
+
+        >>> product_parms = keepa.ProductParams(
+        ...     author="jim butcher",
+        ...     sort=["current_SALES", "asc"],
+        ... )
+        >>> asins = api.product_finder(product_parms, n_products=100)
+
         Query for all of Jim Butcher's books using the asynchronous
         ``keepa.AsyncKeepa`` class.
 
@@ -2419,25 +1441,21 @@ class Keepa:
          'B01MXXLJPZ']
 
         """
-        # verify valid keys
-        for key in product_parms:
-            if key not in PRODUCT_REQUEST_KEYS:
-                raise ValueError(f'Invalid key "{key}"')
-
-            # verify json type
-            key_type = PRODUCT_REQUEST_KEYS[key]
-            product_parms[key] = key_type(product_parms[key])
-
+        if isinstance(product_parms, dict):
+            product_parms_valid = ProductParams(**product_parms)
+        else:
+            product_parms_valid = product_parms
+        product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
-            "selection": json.dumps({**product_parms, **{"perPage": n_products}}),
+            "domain": _domain_to_dcode(domain),
+            "selection": json.dumps({**product_parms_dict, **{"perPage": n_products}}),
         }
 
         response = self._request("query", payload, wait=wait)
         return response["asinList"]
 
-    def deals(self, deal_parms, domain="US", wait=True) -> dict:
+    def deals(self, deal_parms, domain: Union[str, Domain] = "US", wait=True) -> dict:
         """Query the Keepa API for product deals.
 
         You can find products that recently changed and match your
@@ -2476,9 +1494,8 @@ class Keepa:
             - ``"sortType"``: int
             - ``"dateRange"``: int
 
-        domain : str, optional
-            One of the following Amazon domains: RESERVED, US, GB, DE,
-            FR, JP, CA, CN, IT, ES, IN, MX Defaults to US.
+        domain : str | keepa.Domain, default: 'US'
+            A valid Amazon domain. See :class:`keepa.Domain`.
 
         wait : bool, optional
             Wait available token before doing effective query, Defaults to ``True``.
@@ -2559,7 +1576,7 @@ class Keepa:
 
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "selection": json.dumps(deal_parms),
         }
 
@@ -2568,8 +1585,8 @@ class Keepa:
     def _request(self, request_type, payload, wait=True, raw_response=False):
         """Query keepa api server.
 
-        Parses raw response from keepa into a json format.  Handles
-        errors and waits for available tokens if allowed.
+        Parses raw response from keepa into a json format. Handles errors and
+        waits for available tokens if allowed.
         """
         if wait:
             self.wait_for_tokens()
@@ -2714,30 +1731,30 @@ class AsyncKeepa:
         # Wait if no tokens available
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
-            log.warning("Waiting %.0f seconds for additional tokens" % tdelay)
+            log.warning("Waiting %.0f seconds for additional tokens", tdelay)
             await asyncio.sleep(tdelay)
             await self.update_status()
 
     @is_documented_by(Keepa.query)
     async def query(
         self,
-        items,
-        stats=None,
-        domain="US",
-        history=True,
-        offers=None,
-        update=None,
-        to_datetime=True,
-        rating=False,
-        out_of_stock_as_nan=True,
-        stock=False,
-        product_code_is_asin=True,
-        progress_bar=True,
-        buybox=False,
-        wait=True,
-        days=None,
-        only_live_offers=None,
-        raw=False,
+        items: Union[str, Sequence[str]],
+        stats: Optional[Union[int]] = None,
+        domain: str = "US",
+        history: bool = True,
+        offers: Optional[int] = None,
+        update: Optional[int] = None,
+        to_datetime: bool = True,
+        rating: bool = False,
+        out_of_stock_as_nan: bool = True,
+        stock: bool = False,
+        product_code_is_asin: bool = True,
+        progress_bar: bool = True,
+        buybox: bool = False,
+        wait: bool = True,
+        days: Optional[int] = None,
+        only_live_offers: Optional[bool] = None,
+        raw: bool = False,
     ):
         """Documented in Keepa.query."""
         if raw:
@@ -2834,7 +1851,7 @@ class AsyncKeepa:
             kwargs["code"] = ",".join(items)
 
         kwargs["key"] = self.accesskey
-        kwargs["domain"] = DCODES.index(kwargs["domain"])
+        kwargs["domain"] = _domain_to_dcode(kwargs["domain"])
 
         # Convert bool values to 0 and 1.
         kwargs["stock"] = int(kwargs["stock"])
@@ -2888,16 +1905,13 @@ class AsyncKeepa:
         return response
 
     @is_documented_by(Keepa.best_sellers_query)
-    async def best_sellers_query(self, category, rank_avg_range=0, domain="US", wait=True):
+    async def best_sellers_query(
+        self, category, rank_avg_range=0, domain: Union[str, Domain] = "US", wait=True
+    ):
         """Documented by Keepa.best_sellers_query."""
-        if domain not in DCODES:
-            raise ValueError(
-                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
-            )
-
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "category": category,
             "range": rank_avg_range,
         }
@@ -2909,16 +1923,11 @@ class AsyncKeepa:
             log.info("Best sellers search results not yet available")
 
     @is_documented_by(Keepa.search_for_categories)
-    async def search_for_categories(self, searchterm, domain="US", wait=True):
+    async def search_for_categories(self, searchterm, domain: Union[str, Domain] = "US", wait=True):
         """Documented by Keepa.search_for_categories."""
-        if domain not in DCODES:
-            raise ValueError(
-                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
-            )
-
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "type": "category",
             "term": searchterm,
         }
@@ -2932,16 +1941,13 @@ class AsyncKeepa:
             return response["categories"]
 
     @is_documented_by(Keepa.category_lookup)
-    async def category_lookup(self, category_id, domain="US", include_parents=0, wait=True):
+    async def category_lookup(
+        self, category_id, domain: Union[str, Domain] = "US", include_parents=0, wait=True
+    ):
         """Documented by Keepa.category_lookup."""
-        if domain not in DCODES:
-            raise ValueError(
-                f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}"
-            )
-
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "category": category_id,
             "parents": include_parents,
         }
@@ -2956,7 +1962,7 @@ class AsyncKeepa:
     async def seller_query(
         self,
         seller_id,
-        domain="US",
+        domain: Union[str, Domain] = "US",
         to_datetime=True,
         storefront=False,
         update=None,
@@ -2973,7 +1979,7 @@ class AsyncKeepa:
 
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "seller": seller,
         }
 
@@ -2986,28 +1992,30 @@ class AsyncKeepa:
         return _parse_seller(response["sellers"], to_datetime)
 
     @is_documented_by(Keepa.product_finder)
-    async def product_finder(self, product_parms, domain="US", wait=True):
+    async def product_finder(
+        self,
+        product_parms: Union[Dict[str, Any], ProductParams],
+        domain: Union[str, Domain] = "US",
+        wait=True,
+        n_products=50,
+    ) -> List[str]:
         """Documented by Keepa.product_finder."""
-        # verify valid keys
-        for key in product_parms:
-            if key not in PRODUCT_REQUEST_KEYS:
-                raise RuntimeError('Invalid key "%s"' % key)
-
-            # verify json type
-            key_type = PRODUCT_REQUEST_KEYS[key]
-            product_parms[key] = key_type(product_parms[key])
-
+        if isinstance(product_parms, dict):
+            product_parms_valid = ProductParams(**product_parms)
+        else:
+            product_parms_valid = product_parms
+        product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
-            "selection": json.dumps(product_parms),
+            "domain": _domain_to_dcode(domain),
+            "selection": json.dumps({**product_parms_dict, **{"perPage": n_products}}),
         }
 
         response = await self._request("query", payload, wait=wait)
         return response["asinList"]
 
     @is_documented_by(Keepa.deals)
-    async def deals(self, deal_parms, domain="US", wait=True):
+    async def deals(self, deal_parms, domain: Union[str, Domain] = "US", wait=True):
         """Documented in Keepa.deals."""
         # verify valid keys
         for key in deal_parms:
@@ -3022,7 +2030,7 @@ class AsyncKeepa:
 
         payload = {
             "key": self.accesskey,
-            "domain": DCODES.index(domain),
+            "domain": _domain_to_dcode(domain),
             "selection": json.dumps(deal_parms),
         }
 
