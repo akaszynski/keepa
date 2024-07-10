@@ -9,14 +9,14 @@ repos:
   - id: blackdoc
     files: '\.py$'
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.3.5
+  rev: v0.5.1
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix]
       exclude: ^(docs/|tests)
     - id: ruff-format
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.6
+  rev: v2.3.0
   hooks:
   - id: codespell
     args: [-S ./docs/\*]
@@ -27,7 +27,7 @@ repos:
     additional_dependencies: [toml]
     exclude: "tests/"
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.15.2
+  rev: v3.16.0
   hooks:
   - id: pyupgrade
     args: [--py38-plus, --keep-runtime-typing]

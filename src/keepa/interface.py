@@ -5,7 +5,7 @@ import datetime
 import json
 import logging
 import time
-from typing import List
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import aiohttp
 import numpy as np
@@ -51,46 +51,46 @@ DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN"
 # https://github.com/keepacom/api_backend
 # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
 # [index in csv, key name, isfloat(is price or rating)]
-csv_indices = [
-    [0, "AMAZON", True],
-    [1, "NEW", True],
-    [2, "USED", True],
-    [3, "SALES", False],
-    [4, "LISTPRICE", True],
-    [5, "COLLECTIBLE", True],
-    [6, "REFURBISHED", True],
-    [7, "NEW_FBM_SHIPPING", True],
-    [8, "LIGHTNING_DEAL", True],
-    [9, "WAREHOUSE", True],
-    [10, "NEW_FBA", True],
-    [11, "COUNT_NEW", False],
-    [12, "COUNT_USED", False],
-    [13, "COUNT_REFURBISHED", False],
-    [14, "CollectableOffers", False],
-    [15, "EXTRA_INFO_UPDATES", False],
-    [16, "RATING", True],
-    [17, "COUNT_REVIEWS", False],
-    [18, "BUY_BOX_SHIPPING", True],
-    [19, "USED_NEW_SHIPPING", True],
-    [20, "USED_VERY_GOOD_SHIPPING", True],
-    [21, "USED_GOOD_SHIPPING", True],
-    [22, "USED_ACCEPTABLE_SHIPPING", True],
-    [23, "COLLECTIBLE_NEW_SHIPPING", True],
-    [24, "COLLECTIBLE_VERY_GOOD_SHIPPING", True],
-    [25, "COLLECTIBLE_GOOD_SHIPPING", True],
-    [26, "COLLECTIBLE_ACCEPTABLE_SHIPPING", True],
-    [27, "REFURBISHED_SHIPPING", True],
-    [28, "EBAY_NEW_SHIPPING", True],
-    [29, "EBAY_USED_SHIPPING", True],
-    [30, "TRADE_IN", True],
-    [31, "RENT", False],
+csv_indices: List[Tuple[int, str, bool]] = [
+    (0, "AMAZON", True),
+    (1, "NEW", True),
+    (2, "USED", True),
+    (3, "SALES", False),
+    (4, "LISTPRICE", True),
+    (5, "COLLECTIBLE", True),
+    (6, "REFURBISHED", True),
+    (7, "NEW_FBM_SHIPPING", True),
+    (8, "LIGHTNING_DEAL", True),
+    (9, "WAREHOUSE", True),
+    (10, "NEW_FBA", True),
+    (11, "COUNT_NEW", False),
+    (12, "COUNT_USED", False),
+    (13, "COUNT_REFURBISHED", False),
+    (14, "CollectableOffers", False),
+    (15, "EXTRA_INFO_UPDATES", False),
+    (16, "RATING", True),
+    (17, "COUNT_REVIEWS", False),
+    (18, "BUY_BOX_SHIPPING", True),
+    (19, "USED_NEW_SHIPPING", True),
+    (20, "USED_VERY_GOOD_SHIPPING", True),
+    (21, "USED_GOOD_SHIPPING", True),
+    (22, "USED_ACCEPTABLE_SHIPPING", True),
+    (23, "COLLECTIBLE_NEW_SHIPPING", True),
+    (24, "COLLECTIBLE_VERY_GOOD_SHIPPING", True),
+    (25, "COLLECTIBLE_GOOD_SHIPPING", True),
+    (26, "COLLECTIBLE_ACCEPTABLE_SHIPPING", True),
+    (27, "REFURBISHED_SHIPPING", True),
+    (28, "EBAY_NEW_SHIPPING", True),
+    (29, "EBAY_USED_SHIPPING", True),
+    (30, "TRADE_IN", True),
+    (31, "RENT", False),
 ]
 
 
-def _parse_stats(stats, to_datetime):
+def _parse_stats(stats: Dict[str, Union[None, int, List[int]]], to_datetime: bool):
     """Parse numeric stats object.
 
-    There is no need to parse strings or list of strings.  Keepa stats object
+    There is no need to parse strings or list of strings. Keepa stats object
     response documentation:
     https://keepa.com/#!discuss/t/statistics-object/1308
     """
@@ -348,14 +348,12 @@ class Keepa:
     ----------
     accesskey : str
         64 character access key string.
-
     timeout : float, optional
         Default timeout when issuing any request.  This is not a time
         limit on the entire response download; rather, an exception is
         raised if the server has not issued a response for timeout
         seconds.  Setting this to 0 disables the timeout, but will
         cause any request to hang indefiantly should keepa.com be down
-
     logging_level: string, optional
         Logging level to use.  Default is 'DEBUG'.  Other options are
         'INFO', 'WARNING', 'ERROR', and 'CRITICAL'.
@@ -392,10 +390,9 @@ class Keepa:
 
     """
 
-    def __init__(self, accesskey, timeout=10, logging_level="DEBUG"):
+    def __init__(self, accesskey: str, timeout: float = 10.0, logging_level: str = "DEBUG"):
         """Initialize server connection."""
         self.accesskey = accesskey
-        self.status = None
         self.tokens_left = 0
         self._timeout = timeout
 
@@ -406,7 +403,7 @@ class Keepa:
         log.setLevel(logging_level)
         # Store user's available tokens
         log.info("Connecting to keepa using key ending in %s", accesskey[-6:])
-        self.update_status()
+        self.status = self.update_status()
         log.info("%d tokens remain", self.tokens_left)
 
     @property
@@ -441,11 +438,13 @@ class Keepa:
         # Return value in seconds
         return timetorefil / 1000.0
 
-    def update_status(self):
+    def update_status(self) -> Dict[str, Any]:
         """Update available tokens."""
-        self.status = self._request("token", {"key": self.accesskey}, wait=False)
+        status = self._request("token", {"key": self.accesskey}, wait=False)
+        self.status = status
+        return status
 
-    def wait_for_tokens(self):
+    def wait_for_tokens(self) -> None:
         """Check if there are any remaining tokens and waits if none are available."""
         self.update_status()
 
@@ -458,24 +457,24 @@ class Keepa:
 
     def query(
         self,
-        items,
-        stats=None,
-        domain="US",
-        history=True,
-        offers=None,
-        update=None,
-        to_datetime=True,
-        rating=False,
-        out_of_stock_as_nan=True,
-        stock=False,
-        product_code_is_asin=True,
-        progress_bar=True,
-        buybox=False,
-        wait=True,
-        days=None,
-        only_live_offers=None,
-        raw=False,
-    ):
+        items: Union[str, Sequence[str]],
+        stats: Optional[Union[int]] = None,
+        domain: str = "US",
+        history: bool = True,
+        offers: Optional[int] = None,
+        update: Optional[int] = None,
+        to_datetime: bool = True,
+        rating: bool = False,
+        out_of_stock_as_nan: bool = True,
+        stock: bool = False,
+        product_code_is_asin: bool = True,
+        progress_bar: bool = True,
+        buybox: bool = False,
+        wait: bool = True,
+        days: Optional[int] = None,
+        only_live_offers: Optional[bool] = None,
+        raw: bool = False,
+    ) -> List[Dict[str, Any]]:
         """Perform a product query of a list, array, or single ASIN.
 
         Returns a list of product data with one entry for each
@@ -483,12 +482,12 @@ class Keepa:
 
         Parameters
         ----------
-        items : str, list, np.ndarray
-            A list, array, or single asin, UPC, EAN, or ISBN-13
-            identifying a product.  ASINs should be 10 characters and
-            match a product on Amazon.  Items not matching Amazon
-            product or duplicate Items will return no data.  When
-            using non-ASIN items, set product_code_is_asin to False
+        items : str, Sequence[str]
+            A list, array, or single asin, UPC, EAN, or ISBN-13 identifying a
+            product. ASINs should be 10 characters and match a product on
+            Amazon. Items not matching Amazon product or duplicate Items will
+            return no data. When using non-ASIN items, set
+            ``product_code_is_asin`` to ``False``.
 
         stats : int or date, optional
             No extra token cost. If specified the product object will
@@ -510,34 +509,32 @@ class Keepa:
             One of the following Amazon domains: RESERVED, US, GB, DE,
             FR, JP, CA, CN, IT, ES, IN, MX, BR.
 
-        offers : int, optional
-            Adds available offers to product data. Default 0.  Must be between
-            20 and 100. Enabling this also enables the ``"buyBoxUsedHistory"``.
-
-        update : int, optional
-            if data is older than the input integer, keepa will
-            update their database and return live data.  If set to 0
-            (live data), request may cost an additional token.
-            Default None
-
         history : bool, optional
             When set to True includes the price, sales, and offer
             history of a product.  Set to False to reduce request time
             if data is not required.  Default True
 
-        rating : bool, optional
-            When set to to True, includes the existing RATING and
-            COUNT_REVIEWS history of the csv field.  Default False
+        offers : int, optional
+            Adds available offers to product data. Default 0. Must be between
+            20 and 100. Enabling this also enables the ``"buyBoxUsedHistory"``.
 
-        to_datetime : bool, optional
+        update : int, optional
+            If data is older than the input integer, keepa will update their
+            database and return live data. If set to 0 (live data), request may
+            cost an additional token. Default (``None``) will not update.
+
+        to_datetime : bool, default: True
             Modifies numpy minutes to datetime.datetime values.
-            Default True.
 
-        out_of_stock_as_nan : bool, optional
+        rating : bool, default: False
+            When set to to True, includes the existing RATING and
+            COUNT_REVIEWS history of the csv field.
+
+        out_of_stock_as_nan : bool, default: True
             When True, prices are NAN when price category is out of
-            stock.  When False, prices are -0.01 Default True
+            stock.  When False, prices are -0.01.
 
-        stock : bool, optional
+        stock : bool, default: False
             Can only be used if the offers parameter is also True. If
             True, the stock will be collected for all retrieved live
             offers. Note: We can only determine stock up 10 qty. Stock
@@ -545,14 +542,13 @@ class Keepa:
             take longer. Existing stock history will be included
             whether or not the stock parameter is used.
 
-        product_code_is_asin : bool, optional
+        product_code_is_asin : bool, default: True
             The type of product code you are requesting. True when
             product code is an ASIN, an Amazon standard identification
             number, or 'code', for UPC, EAN, or ISBN-13 codes.
 
-        progress_bar : bool, optional
-            Display a progress bar using ``tqdm``.  Defaults to
-            ``True``.
+        progress_bar : bool, default: True
+            Display a progress bar using ``tqdm``.
 
         buybox : bool, optional
             Additional token cost: 2 per product). When true the
@@ -569,35 +565,32 @@ class Keepa:
             data. To access the statistics object the stats parameter is
             required.
 
-        wait : bool, optional
-            Wait available token before doing effective query,
-            Defaults to ``True``.
+        wait : bool, default: True
+            Wait available token before doing effective query.
 
         only_live_offers : bool, optional
             If set to True, the product object will only include live
             marketplace offers (when used in combination with the
-            offers parameter).  If you do not need historical offers
+            offers parameter). If you do not need historical offers
             use this to have them removed from the response. This can
             improve processing time and considerably decrease the size
-            of the response.  Default None
+            of the response.
 
         days : int, optional
-            Any positive integer value. If specified and has positive
-            value X the product object will limit all historical data
-            to the recent X days.  This includes the csv,
-            buyBoxSellerIdHistory, salesRanks, offers and
-            offers.offerCSV fields. If you do not need old historical
-            data use this to have it removed from the response. This
-            can improve processing time and considerably decrease the
-            size of the response.  The parameter does not use calendar
-            days - so 1 day equals the last 24 hours.  The oldest data
-            point of each field may have a date value which is out of
-            the specified range. This means the value of the field has
-            not changed since that date and is still active.  Default
-            ``None``
+            Any positive integer value. If specified and has positive value X
+            the product object will limit all historical data to the recent X
+            days.  This includes the csv, buyBoxSellerIdHistory, salesRanks,
+            offers and offers.offerCSV fields. If you do not need old
+            historical data use this to have it removed from the response. This
+            can improve processing time and considerably decrease the size of
+            the response.  The parameter does not use calendar days - so 1 day
+            equals the last 24 hours.  The oldest data point of each field may
+            have a date value which is out of the specified range. This means
+            the value of the field has not changed since that date and is still
+            active.
 
-        raw : bool, optional
-            When ``True``, return the raw request response.  This is
+        raw : bool, default; False
+            When ``True``, return the raw request response. This is
             only available in the non-async class.
 
         Returns
@@ -2568,8 +2561,8 @@ class Keepa:
     def _request(self, request_type, payload, wait=True, raw_response=False):
         """Query keepa api server.
 
-        Parses raw response from keepa into a json format.  Handles
-        errors and waits for available tokens if allowed.
+        Parses raw response from keepa into a json format. Handles errors and
+        waits for available tokens if allowed.
         """
         if wait:
             self.wait_for_tokens()
@@ -2714,30 +2707,30 @@ class AsyncKeepa:
         # Wait if no tokens available
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
-            log.warning("Waiting %.0f seconds for additional tokens" % tdelay)
+            log.warning("Waiting %.0f seconds for additional tokens", tdelay)
             await asyncio.sleep(tdelay)
             await self.update_status()
 
     @is_documented_by(Keepa.query)
     async def query(
         self,
-        items,
-        stats=None,
-        domain="US",
-        history=True,
-        offers=None,
-        update=None,
-        to_datetime=True,
-        rating=False,
-        out_of_stock_as_nan=True,
-        stock=False,
-        product_code_is_asin=True,
-        progress_bar=True,
-        buybox=False,
-        wait=True,
-        days=None,
-        only_live_offers=None,
-        raw=False,
+        items: Union[str, Sequence[str]],
+        stats: Optional[Union[int]] = None,
+        domain: str = "US",
+        history: bool = True,
+        offers: Optional[int] = None,
+        update: Optional[int] = None,
+        to_datetime: bool = True,
+        rating: bool = False,
+        out_of_stock_as_nan: bool = True,
+        stock: bool = False,
+        product_code_is_asin: bool = True,
+        progress_bar: bool = True,
+        buybox: bool = False,
+        wait: bool = True,
+        days: Optional[int] = None,
+        only_live_offers: Optional[bool] = None,
+        raw: bool = False,
     ):
         """Documented in Keepa.query."""
         if raw:

@@ -29,8 +29,9 @@ else:
     TESTINGKEY = os.environ["KEEPAKEY"]
     WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
-# The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
-PRODUCT_ASIN = "B09X6JCFF5"
+# Dead Man's Hand (The Unorthodox Chronicles)
+# just need an active product with a buybox
+PRODUCT_ASIN = "0593440412"
 HARD_DRIVE_PRODUCT_ASIN = "B0088PUEPK"
 
 # ASINs of a bunch of chairs generated with
@@ -178,7 +179,7 @@ def test_isbn13(api):
     api.query(isbn13, product_code_is_asin=False, history=False)
 
 
-def test_buybox(api):
+def test_buybox(api: keepa.Keepa) -> None:
     request = api.query(PRODUCT_ASIN, history=True, buybox=True)
     product = request[0]
     assert "BUY_BOX_SHIPPING" in product["data"]
