@@ -26,8 +26,9 @@ else:
     TESTINGKEY = os.environ["KEEPAKEY"]
     WEAKTESTINGKEY = os.environ["WEAKKEEPAKEY"]
 
-# The Great Gatsby: The Original 1925 Edition (F. Scott Fitzgerald Classics)
-PRODUCT_ASIN = "B09X6JCFF5"
+# Dead Man's Hand (The Unorthodox Chronicles)
+# just need an active product with a buybox
+PRODUCT_ASIN = "0593440412"
 HARD_DRIVE_PRODUCT_ASIN = "B0088PUEPK"
 
 # ASINs of a bunch of chairs
