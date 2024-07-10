@@ -122,6 +122,16 @@ async def test_product_finder_query(api):
     asins = await api.product_finder(product_parms)
     assert asins
 
+    # using ProductParams
+    product_parms = keepa.ProductParams(
+        author="jim butcher",
+        page=1,
+        perPage=50,
+        categories_exclude=["1055398"],
+    )
+    asins = api.product_finder(product_parms)
+    assert asins
+
 
 # def test_throttling(api):
 #     api = keepa.Keepa(WEAKTESTINGKEY)

@@ -1,20 +1,20 @@
 # Integration with GitHub Actions
 # See https://pre-commit.ci/
 ci:
-    autofix_prs: true
+  autofix_prs: true
 repos:
 - repo: https://github.com/keewis/blackdoc
   rev: v0.3.9
   hooks:
   - id: blackdoc
-    files: '\.py$'
+    files: \.py$
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.5.1
   hooks:
-    - id: ruff
-      args: [--fix, --exit-non-zero-on-fix]
-      exclude: ^(docs/|tests)
-    - id: ruff-format
+  - id: ruff
+    args: [--fix, --exit-non-zero-on-fix]
+    exclude: ^(docs/|tests)
+  - id: ruff-format
 - repo: https://github.com/codespell-project/codespell
   rev: v2.3.0
   hooks:
@@ -25,7 +25,7 @@ repos:
   hooks:
   - id: pydocstyle
     additional_dependencies: [toml]
-    exclude: "tests/"
+    exclude: tests/
 - repo: https://github.com/asottile/pyupgrade
   rev: v3.16.0
   hooks:
@@ -39,3 +39,10 @@ repos:
   - id: no-commit-to-branch
     args: [--branch, main]
   - id: requirements-txt-fixer
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: v2.13.0
+  hooks:
+  - id: pretty-format-toml
+    args: [--autofix]
+  - id: pretty-format-yaml
+    args: [--autofix, --indent, '2']
