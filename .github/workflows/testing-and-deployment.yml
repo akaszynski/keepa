@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
 
     env:
       KEEPAKEY: ${{ secrets.KEEPAKEY }}
@@ -44,17 +44,17 @@ jobs:
         pytest -v --cov keepa --cov-report xml
 
     - uses: codecov/codecov-action@v4
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.13'
       name: Upload coverage to codecov
 
     - name: Build wheel
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.13'
       run: |
         pip install build --disable-pip-version-check
         python -m build
 
     - name: Upload wheel
-      if: matrix.python-version == '3.12'
+      if: matrix.python-version == '3.13'
       uses: actions/upload-artifact@v4
       with:
         name: keepa-wheel
