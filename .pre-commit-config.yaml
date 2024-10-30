@@ -2,6 +2,7 @@
 # See https://pre-commit.ci/
 ci:
   autofix_prs: true
+  autoupdate_schedule: quarterly
 repos:
 - repo: https://github.com/keewis/blackdoc
   rev: v0.3.9
@@ -9,7 +10,7 @@ repos:
   - id: blackdoc
     files: \.py$
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.5.1
+  rev: v0.7.1
   hooks:
   - id: ruff
     args: [--fix, --exit-non-zero-on-fix]
@@ -27,12 +28,12 @@ repos:
     additional_dependencies: [toml]
     exclude: tests/
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.16.0
+  rev: v3.19.0
   hooks:
   - id: pyupgrade
     args: [--py38-plus, --keep-runtime-typing]
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.6.0
+  rev: v5.0.0
   hooks:
   - id: check-merge-conflict
   - id: debug-statements
@@ -40,7 +41,7 @@ repos:
     args: [--branch, main]
   - id: requirements-txt-fixer
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.13.0
+  rev: v2.14.0
   hooks:
   - id: pretty-format-toml
     args: [--autofix]
