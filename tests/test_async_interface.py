@@ -179,6 +179,7 @@ async def test_isbn13(api):
 
 
 @pytest.mark.asyncio
+@pytest.mark.xfail  # will fail if not run in a while due to timeout
 async def test_buybox(api):
     request = await api.query(PRODUCT_ASIN, history=True, buybox=True)
     product = request[0]
@@ -245,7 +246,7 @@ async def test_productquery_offers_multiple(api):
 
     asins = np.unique([product["asin"] for product in products])
     assert len(asins) == len(PRODUCT_ASINS)
-    assert np.in1d(asins, PRODUCT_ASINS).all()
+    assert np.isin(asins, PRODUCT_ASINS).all()
 
 
 @pytest.mark.asyncio

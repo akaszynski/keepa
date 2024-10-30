@@ -318,7 +318,7 @@ def test_productquery_offers_multiple(api):
 
     asins = np.unique([product["asin"] for product in products])
     assert len(asins) == len(PRODUCT_ASINS)
-    assert np.in1d(asins, PRODUCT_ASINS).all()
+    assert np.isin(asins, PRODUCT_ASINS).all()
 
 
 def test_domain(api):
@@ -341,6 +341,7 @@ def test_bestsellers(api):
     assert len(asins) == valid_asins.size
 
 
+@pytest.mark.xfail  # will fail if not run in a while due to timeout
 def test_buybox_used(api):
     request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
     df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
