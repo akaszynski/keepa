@@ -514,6 +514,7 @@ class Keepa:
         days: Optional[int] = None,
         only_live_offers: Optional[bool] = None,
         raw: bool = False,
+        videos: bool = False,
     ) -> List[Dict[str, Any]]:
         """Perform a product query of a list, array, or single ASIN.
 
@@ -629,8 +630,17 @@ class Keepa:
             active.
 
         raw : bool, default; False
-            When ``True``, return the raw request response. This is
-            only available in the non-async class.
+            When ``True``, return the raw request response. This is only
+            available in the non-async class.
+
+        videos : bool, optional
+            Token Cost: No extra token cost
+
+            If ``True``, the videos metadata will be provided when
+            available. Using this parameter does not trigger an update to the
+            videos data; it only gives access to our existing data if
+            available. If you need up-to-date data, you have to use the offers
+            parameter.
 
         Returns
         -------
@@ -816,6 +826,14 @@ class Keepa:
         118 2023-10-27 08:14:00  A1U9HDFCZO1A84   Used - Like New  False
         119 2023-10-27 12:34:00   AYUGEV9WZ4X5O   Used - Like New  False
 
+        Query a video with the "videos" metadata.
+
+        >>> response = api.query("B00UFMKSDW", history=False, videos=True)
+        >>> product = response[0]
+        >>> "videos" in product
+        True
+
+
         """
         # Format items into numpy array
         try:
@@ -889,6 +907,7 @@ class Keepa:
                 days=days,
                 only_live_offers=only_live_offers,
                 raw=raw,
+                videos=videos,
             )
             idx += nrequest
             if raw:
@@ -973,6 +992,7 @@ class Keepa:
         kwargs["history"] = int(kwargs["history"])
         kwargs["rating"] = int(kwargs["rating"])
         kwargs["buybox"] = int(kwargs["buybox"])
+        kwargs["videos"] = int(kwargs["videos"])
 
         if kwargs["update"] is None:
             del kwargs["update"]
@@ -1176,7 +1196,7 @@ class Keepa:
         response = self._request("search", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise RuntimeError(
-                "Categories search results not yet available " "or no search terms found."
+                "Categories search results not yet available or no search terms found."
             )
         return response["categories"]
 
@@ -1755,6 +1775,7 @@ class AsyncKeepa:
         days: Optional[int] = None,
         only_live_offers: Optional[bool] = None,
         raw: bool = False,
+        videos: bool = False,
     ):
         """Documented in Keepa.query."""
         if raw:
