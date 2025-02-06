@@ -33,6 +33,7 @@ else:
 # just need an active product with a buybox
 PRODUCT_ASIN = "0593440412"
 HARD_DRIVE_PRODUCT_ASIN = "B0088PUEPK"
+VIDEO_ASIN = "B0060CU5DE"
 
 # ASINs of a bunch of chairs generated with
 # categories = API.search_for_categories('chairs')
@@ -115,7 +116,7 @@ def test_invalidkey():
 def test_deadkey():
     with pytest.raises(Exception):
         # this key returns "payment required"
-        deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud" "47p686ekr7vgr9qtj1t1tle15fffkkm"
+        deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm"
         keepa.Api(deadkey)
 
 
@@ -343,7 +344,7 @@ def test_bestsellers(api):
 
 @pytest.mark.xfail  # will fail if not run in a while due to timeout
 def test_buybox_used(api):
-    request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
+    request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=True, offers=20)
     df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
     assert isinstance(df, pd.DataFrame)
 
@@ -422,3 +423,14 @@ def test_seller_query_long_list(api):
     seller_id = ["A2L77EE7U53NWQ"] * 200
     with pytest.raises(RuntimeError):
         api.seller_query(seller_id)
+
+
+def test_video_query(api) -> None:
+    """Test if the videos query parameter works."""
+    response = api.query("B00UFMKSDW", history=False, videos=False)
+    product = response[0]
+    assert "videos" not in product
+
+    response = api.query("B00UFMKSDW", history=False, videos=True)
+    product = response[0]
+    assert "videos" in product
