@@ -1381,8 +1381,8 @@ class Keepa:
         self,
         product_parms: Union[Dict[str, Any], ProductParams],
         domain: Union[str, Domain] = "US",
-        wait=True,
-        n_products=50,
+        wait: bool = True,
+        n_products: int = 50,
     ) -> List[str]:
         """Query the keepa product database to find products matching criteria.
 
@@ -1397,7 +1397,8 @@ class Keepa:
         wait : bool, default: True
             Wait available token before doing effective query.
         n_products : int, default: 50
-            Maximum number of matching products returned by keepa.
+            Maximum number of matching products returned by keepa. This can be
+            overridden by the 'perPage' key in ``product_parms``.
 
         Returns
         -------
@@ -1466,10 +1467,11 @@ class Keepa:
         else:
             product_parms_valid = product_parms
         product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
+        product_parms_dict.setdefault("perPage", n_products)
         payload = {
             "key": self.accesskey,
             "domain": _domain_to_dcode(domain),
-            "selection": json.dumps({**product_parms_dict, **{"perPage": n_products}}),
+            "selection": json.dumps(product_parms_dict),
         }
 
         response = self._request("query", payload, wait=wait)
@@ -2017,8 +2019,8 @@ class AsyncKeepa:
         self,
         product_parms: Union[Dict[str, Any], ProductParams],
         domain: Union[str, Domain] = "US",
-        wait=True,
-        n_products=50,
+        wait: bool = True,
+        n_products: int = 50,
     ) -> List[str]:
         """Documented by Keepa.product_finder."""
         if isinstance(product_parms, dict):
@@ -2026,10 +2028,11 @@ class AsyncKeepa:
         else:
             product_parms_valid = product_parms
         product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
+        product_parms_dict.setdefault("perPage", n_products)
         payload = {
             "key": self.accesskey,
             "domain": _domain_to_dcode(domain),
-            "selection": json.dumps({**product_parms_dict, **{"perPage": n_products}}),
+            "selection": json.dumps(product_parms_dict),
         }
 
         response = await self._request("query", payload, wait=wait)
