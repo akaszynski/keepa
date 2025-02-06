@@ -630,17 +630,17 @@ class Keepa:
             active.
 
         raw : bool, default; False
-            When ``True``, return the raw request response. This is
-            only available in the non-async class.
+            When ``True``, return the raw request response. This is only
+            available in the non-async class.
 
         videos : bool, optional
             Token Cost: No extra token cost
 
-            Boolean value (0 = false, 1 = true). If specified and set to 1, the
-            videos metadata will be provided when available. Using this
-            parameter does not trigger an update to the videos data; it only
-            gives access to our existing data if available. If you need
-            up-to-date data, you have to use the offers parameter.
+            If ``True``, the videos metadata will be provided when
+            available. Using this parameter does not trigger an update to the
+            videos data; it only gives access to our existing data if
+            available. If you need up-to-date data, you have to use the offers
+            parameter.
 
         Returns
         -------
@@ -825,6 +825,14 @@ class Keepa:
         117 2023-10-26 04:08:00   AYUGEV9WZ4X5O   Used - Like New  False
         118 2023-10-27 08:14:00  A1U9HDFCZO1A84   Used - Like New  False
         119 2023-10-27 12:34:00   AYUGEV9WZ4X5O   Used - Like New  False
+
+        Query a video with the "videos" metadata.
+
+        >>> response = api.query("B00UFMKSDW", history=False, videos=True)
+        >>> product = response[0]
+        >>> "videos" in product
+        True
+
 
         """
         # Format items into numpy array
@@ -1767,6 +1775,7 @@ class AsyncKeepa:
         days: Optional[int] = None,
         only_live_offers: Optional[bool] = None,
         raw: bool = False,
+        videos: bool = False,
     ):
         """Documented in Keepa.query."""
         if raw:
