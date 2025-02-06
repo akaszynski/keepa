@@ -1188,7 +1188,7 @@ class Keepa:
         response = self._request("search", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise RuntimeError(
-                "Categories search results not yet available " "or no search terms found."
+                "Categories search results not yet available or no search terms found."
             )
         return response["categories"]
 

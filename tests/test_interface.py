@@ -115,7 +115,7 @@ def test_invalidkey():
 def test_deadkey():
     with pytest.raises(Exception):
         # this key returns "payment required"
-        deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud" "47p686ekr7vgr9qtj1t1tle15fffkkm"
+        deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm"
         keepa.Api(deadkey)
 
 
