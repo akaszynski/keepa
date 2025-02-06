@@ -55,6 +55,7 @@ Source = "https://github.com/akaszynski/keepa"
 
 [tool.pytest.ini_options]
 addopts = "--cov=keepa --cov-fail-under=85"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = 'tests'
 
 [tool.ruff]
