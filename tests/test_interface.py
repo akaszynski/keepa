@@ -343,7 +343,7 @@ def test_bestsellers(api):
 
 @pytest.mark.xfail  # will fail if not run in a while due to timeout
 def test_buybox_used(api):
-    request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
+    request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=True, offers=20)
     df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
     assert isinstance(df, pd.DataFrame)
 

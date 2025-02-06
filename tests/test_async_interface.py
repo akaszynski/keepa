@@ -272,8 +272,10 @@ async def test_bestsellers(api):
 
 
 @pytest.mark.asyncio
+@pytest.mark.xfail  # will fail if not run in a while due to timeout
 async def test_buybox_used(api):
-    request = await api.query(HARD_DRIVE_PRODUCT_ASIN, history=False, offers=20)
+    # history must be true to get used buybox
+    request = await api.query(HARD_DRIVE_PRODUCT_ASIN, history=True, offers=20)
     df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
     assert isinstance(df, pd.DataFrame)
 
