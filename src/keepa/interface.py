@@ -515,6 +515,7 @@ class Keepa:
         only_live_offers: Optional[bool] = None,
         raw: bool = False,
         videos: bool = False,
+        aplus: bool = False,
     ) -> List[Dict[str, Any]]:
         """Perform a product query of a list, array, or single ASIN.
 
@@ -641,6 +642,15 @@ class Keepa:
             videos data; it only gives access to our existing data if
             available. If you need up-to-date data, you have to use the offers
             parameter.
+
+        aplus : bool, optional
+            Token Cost: No extra token cost
+            
+            Boolean value (0 = false, 1 = true). If specified and set to 1,
+            the A+ content will be provided when available. Using this parameter
+            does not trigger an update to the A+ content; it only gives access
+            to our existing data if available. If you need up-to-date data,
+            you have to use the offers parameter.
 
         Returns
         -------
@@ -908,6 +918,7 @@ class Keepa:
                 only_live_offers=only_live_offers,
                 raw=raw,
                 videos=videos,
+                aplus=aplus
             )
             idx += nrequest
             if raw:
@@ -951,10 +962,6 @@ class Keepa:
             history of a product.  Set to False to reduce request time
             if data is not required.
 
-        as_asin : bool, optional
-            Queries keepa using asin codes.  Otherwise, queries using
-            the code key.
-
         Returns
         -------
         products : list
@@ -993,6 +1000,7 @@ class Keepa:
         kwargs["rating"] = int(kwargs["rating"])
         kwargs["buybox"] = int(kwargs["buybox"])
         kwargs["videos"] = int(kwargs["videos"])
+        kwargs["aplus"] = int(kwargs["aplus"])
 
         if kwargs["update"] is None:
             del kwargs["update"]
