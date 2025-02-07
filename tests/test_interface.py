@@ -425,7 +425,7 @@ def test_seller_query_long_list(api):
         api.seller_query(seller_id)
 
 
-def test_video_query(api) -> None:
+def test_video_query(api: keepa.Keepa) -> None:
     """Test if the videos query parameter works."""
     response = api.query("B00UFMKSDW", history=False, videos=False)
     product = response[0]
@@ -434,3 +434,10 @@ def test_video_query(api) -> None:
     response = api.query("B00UFMKSDW", history=False, videos=True)
     product = response[0]
     assert "videos" in product
+
+
+def test_aplus(api: keepa.Keepa) -> None:
+    product_nominal = api.query("B0DDDD8WD6", history=False, aplus=False)[0]
+    assert "aPlus" not in product_nominal
+    product_aplus = api.query("B0DDDD8WD6", history=False, aplus=True)[0]
+    assert "aPlus" in product_aplus
