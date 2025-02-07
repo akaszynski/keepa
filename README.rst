@@ -20,17 +20,17 @@ Python keepa Client Library
 
 This Python library allows you to interface with the API at `Keepa
 <https://keepa.com/>`_ to query for Amazon product information and
-history.  It also contains a plotting module to allow for plotting of
+history. It also contains a plotting module to allow for plotting of
 a product.
 
-See API pricing at `Keepa API <https://keepa.com/#!api>`_.
+Sign up for `Keepa Data Access <https://get.keepa.com/d7vrq>`_.
 
-Documentation can be found on readthedocs at `keepa Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
+Documentation can be found at`keepa Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
 
 
 Requirements
 ------------
-This library is compatible with Python >= 3.8 and requires:
+This library is compatible with Python >= 3.9 and requires:
 
 - ``numpy``
 - ``aiohttp``
@@ -64,11 +64,11 @@ Brief Example
 .. code:: python
 
     import keepa
-    accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
+    accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here from https://get.keepa.com/d7vrq
     api = keepa.Keepa(accesskey)
 
     # Single ASIN query
-    products = api.query('B0088PUEPK') # returns list of product data
+    products = api.query('B0088PUEPK')  # returns list of product data
 
     # Plot result (requires matplotlib)
     keepa.plot_product(products[0])
