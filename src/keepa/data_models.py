@@ -1129,3 +1129,4 @@ class ProductParams(BaseModel):
     buyBoxStatsSellerCount365_lte: Optional[int] = None
     buyBoxStatsSellerCount365_gte: Optional[int] = None
     isHazMat: Optional[bool] = None
+    perPage: Optional[int] = None
