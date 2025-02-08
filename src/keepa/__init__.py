@@ -1,6 +1,6 @@
 """Keepaapi module."""
 
-__version__ = "1.3.13"
+__version__ = "1.3.14"
 from keepa.data_models import ProductParams
 from keepa.interface import (
     DCODES,
