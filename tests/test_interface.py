@@ -126,25 +126,18 @@ def test_product_finder_categories(api):
     assert products
 
 
-def test_product_finder_query(api):
+def test_product_finder_query(api: keepa.Keepa) -> None:
+    """Test product finder and ensure perPage overrides n_products."""
+    per_page_n_products = 50
     product_parms = {
         "author": "jim butcher",
         "page": 1,
-        "perPage": 50,
+        "perPage": per_page_n_products,
         "categories_exclude": ["1055398"],
     }
-    asins = api.product_finder(product_parms)
+    asins = api.product_finder(product_parms, n_products=100)
     assert asins
-
-    # using ProductParams
-    product_parms = keepa.ProductParams(
-        author="jim butcher",
-        page=1,
-        perPage=50,
-        categories_exclude=["1055398"],
-    )
-    asins = api.product_finder(product_parms)
-    assert asins
+    assert len(asins) == per_page_n_products
 
 
 # def test_throttling(api):
