@@ -126,25 +126,18 @@ def test_product_finder_categories(api):
     assert products
 
 
-def test_product_finder_query(api):
+def test_product_finder_query(api: keepa.Keepa) -> None:
+    """Test product finder and ensure perPage overrides n_products."""
+    per_page_n_products = 50
     product_parms = {
         "author": "jim butcher",
         "page": 1,
-        "perPage": 50,
+        "perPage": per_page_n_products,
         "categories_exclude": ["1055398"],
     }
-    asins = api.product_finder(product_parms)
+    asins = api.product_finder(product_parms, n_products=100)
     assert asins
-
-    # using ProductParams
-    product_parms = keepa.ProductParams(
-        author="jim butcher",
-        page=1,
-        perPage=50,
-        categories_exclude=["1055398"],
-    )
-    asins = api.product_finder(product_parms)
-    assert asins
+    assert len(asins) == per_page_n_products
 
 
 # def test_throttling(api):
@@ -425,7 +418,7 @@ def test_seller_query_long_list(api):
         api.seller_query(seller_id)
 
 
-def test_video_query(api) -> None:
+def test_video_query(api: keepa.Keepa) -> None:
     """Test if the videos query parameter works."""
     response = api.query("B00UFMKSDW", history=False, videos=False)
     product = response[0]
@@ -434,3 +427,10 @@ def test_video_query(api) -> None:
     response = api.query("B00UFMKSDW", history=False, videos=True)
     product = response[0]
     assert "videos" in product
+
+
+def test_aplus(api: keepa.Keepa) -> None:
+    product_nominal = api.query("B0DDDD8WD6", history=False, aplus=False)[0]
+    assert "aPlus" not in product_nominal
+    product_aplus = api.query("B0DDDD8WD6", history=False, aplus=True)[0]
+    assert "aPlus" in product_aplus
