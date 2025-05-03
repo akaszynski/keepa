@@ -516,6 +516,7 @@ class Keepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
+        extra_params: Dict[str, Any] = {},
     ) -> List[Dict[str, Any]]:
         """Perform a product query of a list, array, or single ASIN.
 
@@ -651,6 +652,14 @@ class Keepa:
             A+ content; it only gives access to our existing data if
             available. If you need up-to-date data, you have to use the offers
             parameter.
+
+        extra_params : dict, default: {}
+            Dictionary of parameters that are not specifically called out in
+            the api. For example, a new parameters might be added to
+            `Request.java
+            <https://github.com/keepacom/api_backend/blob/master/src/main/java/com/keepa/api/backend/KeepaAPI.java>`_
+            and not yet supported in this function. For example,
+            `extra_params={'rental': 1}`.
 
         Returns
         -------
@@ -919,6 +928,7 @@ class Keepa:
                 raw=raw,
                 videos=videos,
                 aplus=aplus,
+                **extra_params,
             )
             idx += nrequest
             if raw:
@@ -1787,6 +1797,7 @@ class AsyncKeepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
+        extra_params: Dict[str, Any] = {},
     ):
         """Documented in Keepa.query."""
         if raw:
@@ -1862,6 +1873,9 @@ class AsyncKeepa:
                 wait=wait,
                 days=days,
                 only_live_offers=only_live_offers,
+                videos=videos,
+                aplus=aplus,
+                **extra_params,
             )
             idx += nrequest
             products.extend(response["products"])
