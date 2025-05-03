@@ -112,6 +112,14 @@ async def test_product_finder_categories(api):
 
 
 @pytest.mark.asyncio
+async def test_extra_params(api):
+    # simply ensure that extra parameters are passed. Since this is a duplicate
+    # parameter, it's expected to fail.
+    with pytest.raises(TypeError):
+        await api.query("B0DJHC1PL8", extra_params={"rating": 1})
+
+
+@pytest.mark.asyncio
 async def test_product_finder_query(api):
     product_parms = {
         "author": "jim butcher",

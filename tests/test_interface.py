@@ -120,6 +120,13 @@ def test_deadkey():
         keepa.Api(deadkey)
 
 
+def test_extra_params(api: keepa.Keepa) -> None:
+    # simply ensure that extra parameters are passed. Since this is a duplicate
+    # parameter, it's expected to fail.
+    with pytest.raises(TypeError):
+        api.query("B0DJHC1PL8", extra_params={"rating": 1})
+
+
 def test_product_finder_categories(api):
     product_parms = {"categories_include": ["1055398"]}
     products = api.product_finder(product_parms)
