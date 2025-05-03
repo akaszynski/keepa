@@ -1930,6 +1930,10 @@ class AsyncKeepa:
         if kwargs["stats"] is None:
             del kwargs["stats"]
 
+        # videos and aplus must be ints
+        kwargs["videos"] = int(kwargs["videos"])
+        kwargs["aplus"] = int(kwargs["aplus"])
+
         out_of_stock_as_nan = kwargs.pop("out_of_stock_as_nan", True)
         to_datetime = kwargs.pop("to_datetime", True)
 
