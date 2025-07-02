@@ -29,11 +29,11 @@ dependencies = [
   "pydantic"
 ]
 description = "Interfaces with keepa.com's API."
-dynamic = ["version"]
 keywords = ["keepa"]
 name = "keepa"
 readme = "README.rst"
 requires-python = ">=3.9"
+version = "1.4.dev0"
 
 [project.optional-dependencies]
 doc = [

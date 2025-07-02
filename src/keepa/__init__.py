@@ -1,6 +1,12 @@
-"""Keepaapi module."""
+"""Keepa module."""
 
-__version__ = "1.4.dev0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("keepa")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
 from keepa.data_models import ProductParams
 from keepa.interface import (
     DCODES,
@@ -35,4 +41,5 @@ __all__ = [
     "process_used_buybox",
     "run_and_get",
     "plot_product",
+    "__version__",
 ]
