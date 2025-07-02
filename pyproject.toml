@@ -46,7 +46,8 @@ test = [
   "pandas",
   "pytest-asyncio",
   "pytest-cov",
-  "pytest"
+  "pytest",
+  "pytest-rerunfailures"
 ]
 
 [project.urls]

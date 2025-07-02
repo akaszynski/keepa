@@ -31,7 +31,7 @@ repos:
   rev: v3.19.1
   hooks:
   - id: pyupgrade
-    args: [--py38-plus, --keep-runtime-typing]
+    args: [--py39-plus, --keep-runtime-typing]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:

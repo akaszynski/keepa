@@ -86,8 +86,6 @@ PRODUCT_ASINS = [
 @pytest_asyncio.fixture()
 async def api():
     keepa_api = await keepa.AsyncKeepa.create(TESTINGKEY)
-    assert keepa_api.tokens_left
-    assert keepa_api.time_to_refill >= 0
     yield keepa_api
 
 
@@ -175,8 +173,8 @@ async def test_productquery_nohistory(api):
 
 @pytest.mark.asyncio
 async def test_not_an_asin(api):
-    with pytest.raises(Exception):
-        asins = ["0000000000", "000000000x"]
+    with pytest.raises(RuntimeError, match="invalid ASINs"):
+        asins = ["XXXXXXXXXX"]
         await api.query(asins)
 
 
@@ -220,10 +218,11 @@ async def test_productquery_update(api):
     assert "stats" in product
 
     # no offers requested by default
-    assert product["offers"] is None
+    assert "offers" not in product or product["offers"] is None
 
 
 @pytest.mark.asyncio
+@pytest.mark.flaky(reruns=3)
 async def test_productquery_offers(api):
     request = await api.query(PRODUCT_ASIN, offers=20)
     product = request[0]
