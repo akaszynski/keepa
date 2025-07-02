@@ -5,8 +5,9 @@ import datetime
 import json
 import logging
 import time
+from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Union
 
 import aiohttp
 import numpy as np
@@ -53,7 +54,7 @@ DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN"
 # https://github.com/keepacom/api_backend
 # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
 # [index in csv, key name, isfloat(is price or rating)]
-csv_indices: List[Tuple[int, str, bool]] = [
+csv_indices: list[tuple[int, str, bool]] = [
     (0, "AMAZON", True),
     (1, "NEW", True),
     (2, "USED", True),
@@ -88,79 +89,88 @@ csv_indices: List[Tuple[int, str, bool]] = [
     (31, "RENT", False),
 ]
 
+_SELLER_TIME_DATA_KEYS = ["trackedSince", "lastUpdate"]
 
-def _parse_stats(stats: Dict[str, Union[None, int, List[int]]], to_datetime: bool):
+
+def _normalize_value(v: int, isfloat: bool, key: str) -> Optional[float]:
+    """Normalize a single value based on its type and key context."""
+    if v < 0:
+        return None
+    if isfloat:
+        v = float(v) / 100
+        if key == "RATING":
+            v *= 10
+    return v
+
+
+def _is_stat_value_skippable(key: str, value: Any) -> bool:
+    """Determine if the stat value is skippable."""
+    if key in {
+        "buyBoxSellerId",
+        "sellerIdsLowestFBA",
+        "sellerIdsLowestFBM",
+        "buyBoxShippingCountry",
+        "buyBoxAvailabilityMessage",
+    }:
+        return True
+
+    # -1 or -2 --> not exist
+    if isinstance(value, int) and value < 0:
+        return True
+
+    return False
+
+
+def _parse_stat_value_list(
+    value_list: list, to_datetime: bool
+) -> dict[str, Union[float, tuple[Any, float]]]:
+    """Parse a list of stat values into a structured dict."""
+    convert_time = any(isinstance(v, list) for v in value_list if v is not None)
+    result = {}
+
+    for ind, key, isfloat in csv_indices:
+        item = value_list[ind] if ind < len(value_list) else None
+        if item is None:
+            continue
+
+        if convert_time:
+            ts, val = item
+            val = _normalize_value(val, isfloat, key)
+            if val is not None:
+                ts = keepa_minutes_to_time([ts], to_datetime)[0]
+                result[key] = (ts, val)
+        else:
+            val = _normalize_value(item, isfloat, key)
+            if val is not None:
+                result[key] = val
+
+    return result
+
+
+def _parse_stats(stats: dict[str, Union[None, int, list[int]]], to_datetime: bool):
     """Parse numeric stats object.
 
     There is no need to parse strings or list of strings. Keepa stats object
     response documentation:
     https://keepa.com/#!discuss/t/statistics-object/1308
     """
-    stats_keys_parse_not_required = {
-        "buyBoxSellerId",
-        "sellerIdsLowestFBA",
-        "sellerIdsLowestFBM",
-        "buyBoxShippingCountry",
-        "buyBoxAvailabilityMessage",
-    }
     stats_parsed = {}
 
     for stat_key, stat_value in stats.items():
-        if stat_key in stats_keys_parse_not_required:
-            stat_value = None
-
-        elif (
-            isinstance(stat_value, int) and stat_value < 0
-        ):  # -1 or -2 means not exist. 0 doesn't mean not exist.
-            stat_value = None
+        if _is_stat_value_skippable(stat_key, stat_value):
+            continue
 
         if stat_value is not None:
             if stat_key == "lastOffersUpdate":
                 stats_parsed[stat_key] = keepa_minutes_to_time([stat_value], to_datetime)[0]
             elif isinstance(stat_value, list) and len(stat_value) > 0:
-                stat_value_dict = {}
-                convert_time_in_value_pair = any(
-                    map(lambda v: v is not None and isinstance(v, list), stat_value)
-                )
-
-                for ind, key, isfloat in csv_indices:
-                    stat_value_item = stat_value[ind] if ind < len(stat_value) else None
-
-                    def normalize_value(v):
-                        if v < 0:
-                            return None
-
-                        if isfloat:
-                            v = float(v) / 100
-                            if key == "RATING":
-                                v = v * 10
-
-                        return v
-
-                    if stat_value_item is not None:
-                        if convert_time_in_value_pair:
-                            stat_value_time, stat_value_item = stat_value_item
-                            stat_value_item = normalize_value(stat_value_item)
-                            if stat_value_item is not None:
-                                stat_value_time = keepa_minutes_to_time(
-                                    [stat_value_time], to_datetime
-                                )[0]
-                                stat_value_item = (stat_value_time, stat_value_item)
-                        else:
-                            stat_value_item = normalize_value(stat_value_item)
-
-                    if stat_value_item is not None:
-                        stat_value_dict[key] = stat_value_item
-
-                if len(stat_value_dict) > 0:
+                stat_value_dict = _parse_stat_value_list(stat_value, to_datetime)
+                if stat_value_dict:
                     stats_parsed[stat_key] = stat_value_dict
             else:
                 stats_parsed[stat_key] = stat_value
 
     return stats_parsed
-
-
-_seller_time_data_keys = ["trackedSince", "lastUpdate"]
 
 
 def _parse_seller(seller_raw_response, to_datetime):
@@ -175,7 +185,7 @@ def _parse_seller(seller_raw_response, to_datetime):
                 return None
 
         seller.update(
-            filter(lambda p: p is not None, map(convert_time_data, _seller_time_data_keys))
+            filter(lambda p: p is not None, map(convert_time_data, _SELLER_TIME_DATA_KEYS))
         )
 
     return dict(map(lambda seller: (seller["sellerId"], seller), sellers))
@@ -441,10 +451,10 @@ class Keepa:
         if logging_level not in levels:
             raise TypeError("logging_level must be one of: " + ", ".join(levels))
         log.setLevel(logging_level)
-        # Store user's available tokens
-        log.info("Connecting to keepa using key ending in %s", accesskey[-6:])
-        self.status = self.update_status()
-        log.info("%d tokens remain", self.tokens_left)
+
+        # Don't check available tokens on init
+        log.info("Using key ending in %s", accesskey[-6:])
+        self.status = {"tokensLeft": None, "refillIn": None, "refillRate": None, "timestamp": None}
 
     @property
     def time_to_refill(self) -> float:
@@ -478,7 +488,7 @@ class Keepa:
         # Return value in seconds
         return timetorefil / 1000.0
 
-    def update_status(self) -> Dict[str, Any]:
+    def update_status(self) -> dict[str, Any]:
         """Update available tokens."""
         status = self._request("token", {"key": self.accesskey}, wait=False)
         self.status = status
@@ -516,8 +526,8 @@ class Keepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
-        extra_params: Dict[str, Any] = {},
-    ) -> List[Dict[str, Any]]:
+        extra_params: dict[str, Any] = {},
+    ) -> list[dict[str, Any]]:
         """Perform a product query of a list, array, or single ASIN.
 
         Returns a list of product data with one entry for each
@@ -877,18 +887,19 @@ class Keepa:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
 
         # Report time to completion
-        tcomplete = (
-            float(nitems - self.tokens_left) / self.status["refillRate"]
-            - (60000 - self.status["refillIn"]) / 60000.0
-        )
-        if tcomplete < 0.0:
-            tcomplete = 0.5
-        log.debug(
-            "Estimated time to complete %d request(s) is %.2f minutes",
-            nitems,
-            tcomplete,
-        )
-        log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
+        if self.status["refillRate"] is not None:
+            tcomplete = (
+                float(nitems - self.tokens_left) / self.status["refillRate"]
+                - (60000 - self.status["refillIn"]) / 60000.0
+            )
+            if tcomplete < 0.0:
+                tcomplete = 0.5
+            log.debug(
+                "Estimated time to complete %d request(s) is %.2f minutes",
+                nitems,
+                tcomplete,
+            )
+            log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
 
         # product list
         products = []
@@ -1046,6 +1057,9 @@ class Keepa:
         response = self._request("product", kwargs, wait=wait, raw_response=raw_response)
 
         if kwargs["history"] and not raw_response:
+            if "products" not in response:
+                raise RuntimeError("No products in response. Possibly invalid ASINs")
+
             for product in response["products"]:
                 if product["csv"]:  # if data exists
                     product["data"] = parse_csv(product["csv"], to_datetime, out_of_stock_as_nan)
@@ -1397,11 +1411,11 @@ class Keepa:
 
     def product_finder(
         self,
-        product_parms: Union[Dict[str, Any], ProductParams],
+        product_parms: Union[dict[str, Any], ProductParams],
         domain: Union[str, Domain] = "US",
         wait: bool = True,
         n_products: int = 50,
-    ) -> List[str]:
+    ) -> list[str]:
         """Query the keepa product database to find products matching criteria.
 
         Almost all product fields can be searched for and sorted.
@@ -1622,15 +1636,12 @@ class Keepa:
 
         return self._request("deal", payload, wait=wait)["deals"]
 
-    def _request(self, request_type, payload, wait=True, raw_response=False):
+    def _request(self, request_type, payload, wait: bool = True, raw_response: bool = False):
         """Query keepa api server.
 
         Parses raw response from keepa into a json format. Handles errors and
         waits for available tokens if allowed.
         """
-        if wait:
-            self.wait_for_tokens()
-
         while True:
             raw = requests.get(
                 f"https://api.keepa.com/{request_type}/?",
@@ -1638,33 +1649,36 @@ class Keepa:
                 timeout=self._timeout,
             )
             status_code = str(raw.status_code)
-            if status_code != "200":
-                if status_code in SCODES:
-                    if status_code == "429" and wait:
-                        print("Response from server: %s" % SCODES[status_code])
-                        self.wait_for_tokens()
-                        continue
-                    else:
-                        raise RuntimeError(SCODES[status_code])
-                else:
-                    raise RuntimeError(f"REQUEST_FAILED: {status_code}")
-            break
 
-        response = raw.json()
+            try:
+                response = raw.json()
+            except Exception:
+                raise RuntimeError(f"Invalid JSON from Keepa API (status {status_code})")
 
-        if "tokensConsumed" in response:
-            log.debug("%d tokens consumed", response["tokensConsumed"])
+            # user status is always returned
+            if "tokensLeft" in response:
+                self.tokens_left = response["tokensLeft"]
+                self.status["tokensLeft"] = self.tokens_left
+                log.info("%d tokens remain", self.tokens_left)
+            for key in ["refillIn", "refillRate", "timestamp"]:
+                if key in response:
+                    self.status[key] = response[key]
 
-        if "error" in response:
-            if response["error"]:
-                raise Exception(response["error"]["message"])
+            if status_code == "200":
+                if raw_response:
+                    return raw
+                return response
 
-        # always update tokens
-        self.tokens_left = response["tokensLeft"]
+            if status_code == "429" and wait:
+                tdelay = self.time_to_refill
+                log.warning("Waiting %.0f seconds for additional tokens", tdelay)
+                time.sleep(tdelay)
+                continue
 
-        if raw_response:
-            return raw
-        return response
+            # otherwise, it's an error code
+            if status_code in SCODES:
+                raise RuntimeError(SCODES[status_code])
+            raise RuntimeError(f"REQUEST_FAILED. Status code: {status_code}")
 
 
 class AsyncKeepa:
@@ -1731,14 +1745,11 @@ class AsyncKeepa:
         """Create the async object."""
         self = AsyncKeepa()
         self.accesskey = accesskey
-        self.status = None
         self.tokens_left = 0
         self._timeout = timeout
 
-        # Store user's available tokens
-        log.info("Connecting to keepa using key ending in %s", accesskey[-6:])
-        await self.update_status()
-        log.info("%d tokens remain", self.tokens_left)
+        # don't update the user status on init
+        self.status = {"tokensLeft": None, "refillIn": None, "refillRate": None, "timestamp": None}
         return self
 
     @property
@@ -1797,7 +1808,7 @@ class AsyncKeepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
-        extra_params: Dict[str, Any] = {},
+        extra_params: dict[str, Any] = {},
     ):
         """Documented in Keepa.query."""
         if raw:
@@ -1825,18 +1836,19 @@ class AsyncKeepa:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
 
         # Report time to completion
-        tcomplete = (
-            float(nitems - self.tokens_left) / self.status["refillRate"]
-            - (60000 - self.status["refillIn"]) / 60000.0
-        )
-        if tcomplete < 0.0:
-            tcomplete = 0.5
-        log.debug(
-            "Estimated time to complete %d request(s) is %.2f minutes",
-            nitems,
-            tcomplete,
-        )
-        log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
+        if self.status["refillRate"] is not None:
+            tcomplete = (
+                float(nitems - self.tokens_left) / self.status["refillRate"]
+                - (60000 - self.status["refillIn"]) / 60000.0
+            )
+            if tcomplete < 0.0:
+                tcomplete = 0.5
+            log.debug(
+                "Estimated time to complete %d request(s) is %.2f minutes",
+                nitems,
+                tcomplete,
+            )
+            log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
 
         # product list
         products = []
@@ -1920,7 +1932,7 @@ class AsyncKeepa:
         else:
             kwargs["only-live-offers"] = int(kwargs.pop("only_live_offers"))
             # Keepa's param actually doesn't use snake_case.
-            # I believe using snake case throughout the Keepa interface is better.
+            # Keeping with snake case for consistency
 
         if kwargs["days"] is None:
             del kwargs["days"]
@@ -1940,8 +1952,13 @@ class AsyncKeepa:
         # Query and replace csv with parsed data if history enabled
         wait = kwargs.get("wait")
         kwargs.pop("wait", None)
-        response = await self._request("product", kwargs, wait=wait)
+
+        raw_response = kwargs.pop("raw", False)
+        response = await self._request("product", kwargs, wait=wait, raw_response=raw_response)
         if kwargs["history"]:
+            if "products" not in response:
+                raise RuntimeError("No products in response. Possibly invalid ASINs")
+
             for product in response["products"]:
                 if product["csv"]:  # if data exists
                     product["data"] = parse_csv(product["csv"], to_datetime, out_of_stock_as_nan)
@@ -2044,11 +2061,11 @@ class AsyncKeepa:
     @is_documented_by(Keepa.product_finder)
     async def product_finder(
         self,
-        product_parms: Union[Dict[str, Any], ProductParams],
+        product_parms: Union[dict[str, Any], ProductParams],
         domain: Union[str, Domain] = "US",
         wait: bool = True,
         n_products: int = 50,
-    ) -> List[str]:
+    ) -> list[str]:
         """Documented by Keepa.product_finder."""
         if isinstance(product_parms, dict):
             product_parms_valid = ProductParams(**product_parms)
@@ -2088,7 +2105,7 @@ class AsyncKeepa:
         deals = await self._request("deal", payload, wait=wait)
         return deals["deals"]
 
-    async def _request(self, request_type, payload, wait=True):
+    async def _request(self, request_type, payload, wait: bool = True, raw_response: bool = False):
         """Documented in Keepa._request."""
         while True:
             async with aiohttp.ClientSession() as session:
@@ -2098,26 +2115,36 @@ class AsyncKeepa:
                     timeout=self._timeout,
                 ) as raw:
                     status_code = str(raw.status)
-                    if status_code != "200":
-                        if status_code in SCODES:
-                            if status_code == "429" and wait:
-                                await self.wait_for_tokens()
-                                continue
-                            else:
-                                raise Exception(SCODES[status_code])
-                        else:
-                            raise Exception("REQUEST_FAILED")
 
-                    response = await raw.json()
+                    try:
+                        response = await raw.json()
+                    except Exception:
+                        raise RuntimeError(f"Invalid JSON from Keepa API (status {status_code})")
 
-                    if "error" in response:
-                        if response["error"]:
-                            raise Exception(response["error"]["message"])
+                    # user status is always returned
+                    if "tokensLeft" in response:
+                        self.tokens_left = response["tokensLeft"]
+                        self.status["tokensLeft"] = self.tokens_left
+                        log.info("%d tokens remain", self.tokens_left)
+                    for key in ["refillIn", "refillRate", "timestamp"]:
+                        if key in response:
+                            self.status[key] = response[key]
 
-                    # always update tokens
-                    self.tokens_left = response["tokensLeft"]
-                    return response
-            break
+                    if status_code == "200":
+                        if raw_response:
+                            return raw
+                        return response
+
+                    if status_code == "429" and wait:
+                        tdelay = self.time_to_refill
+                        log.warning("Waiting %.0f seconds for additional tokens", tdelay)
+                        time.sleep(tdelay)
+                        continue
+
+                    # otherwise, it's an error code
+                    if status_code in SCODES:
+                        raise RuntimeError(SCODES[status_code])
+                    raise RuntimeError(f"REQUEST_FAILED. Status code: {status_code}")
 
 
 def convert_offer_history(csv, to_datetime=True):
@@ -2159,7 +2186,7 @@ def _str_to_bool(string: str):
     return False
 
 
-def process_used_buybox(buybox_info: List[str]) -> pd.DataFrame:
+def process_used_buybox(buybox_info: list[str]) -> pd.DataFrame:
     """
     Process used buybox information to create a Pandas DataFrame.
 

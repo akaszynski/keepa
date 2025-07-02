@@ -5,14 +5,14 @@ ci:
   autoupdate_schedule: quarterly
 repos:
 - repo: https://github.com/keewis/blackdoc
-  rev: v0.3.9
+  rev: v0.4.1
   hooks:
   - id: blackdoc
     files: \.py$
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.8
+  rev: v0.12.1
   hooks:
-  - id: ruff
+  - id: ruff-check
     args: [--fix, --exit-non-zero-on-fix]
     exclude: ^(docs/|tests)
   - id: ruff-format
@@ -28,10 +28,10 @@ repos:
     additional_dependencies: [toml]
     exclude: tests/
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.19.1
+  rev: v3.20.0
   hooks:
   - id: pyupgrade
-    args: [--py38-plus, --keep-runtime-typing]
+    args: [--py39-plus, --keep-runtime-typing]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:
@@ -41,7 +41,7 @@ repos:
     args: [--branch, main]
   - id: requirements-txt-fixer
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.14.0
+  rev: v2.15.0
   hooks:
   - id: pretty-format-toml
     args: [--autofix]
