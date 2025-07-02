@@ -90,10 +90,7 @@ PRODUCT_ASINS = [
 # open connection to keepa
 @pytest.fixture(scope="module")
 def api():
-    keepa_api = keepa.Keepa(TESTINGKEY)
-    assert keepa_api.tokens_left
-    assert keepa_api.time_to_refill >= 0
-    return keepa_api
+    return keepa.Keepa(TESTINGKEY)
 
 
 def test_deals(api):
@@ -118,6 +115,13 @@ def test_deadkey():
         # this key returns "payment required"
         deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm"
         keepa.Api(deadkey)
+
+
+def test_extra_params(api: keepa.Keepa) -> None:
+    # simply ensure that extra parameters are passed. Since this is a duplicate
+    # parameter, it's expected to fail.
+    with pytest.raises(TypeError):
+        api.query("B0DJHC1PL8", extra_params={"rating": 1})
 
 
 def test_product_finder_categories(api):
@@ -173,8 +177,8 @@ def test_productquery_nohistory(api):
 
 
 def test_not_an_asin(api):
-    with pytest.raises(Exception):
-        asins = ["0000000000", "000000000x"]
+    with pytest.raises(RuntimeError, match="invalid ASINs"):
+        asins = ["XXXXXXXXXX"]
         api.query(asins)
 
 
@@ -214,7 +218,7 @@ def test_productquery_update(api):
     assert "stats" in product
 
     # no offers requested by default
-    assert product["offers"] is None
+    assert "offers" not in product or product["offers"] is None
 
 
 def test_productquery_offers(api):

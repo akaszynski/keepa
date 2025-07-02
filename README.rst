@@ -25,7 +25,7 @@ a product.
 
 Sign up for `Keepa Data Access <https://get.keepa.com/d7vrq>`_.
 
-Documentation can be found at`keepa Documentation <https://keepaapi.readthedocs.io/en/latest/>`_.
+Documentation can be found at `Keepa Documentation <https://keepaapi.readthedocs.io>`_.
 
 
 Requirements

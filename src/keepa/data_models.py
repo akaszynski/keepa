@@ -1,6 +1,6 @@
 """Contains the data models for keepa requests."""
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from pydantic import BaseModel
 
@@ -32,7 +32,7 @@ class ProductParams(BaseModel):
 
     """
 
-    author: Optional[Union[List[str], str]] = None
+    author: Optional[Union[list[str], str]] = None
     availabilityAmazon: Optional[int] = None
     avg180_AMAZON_lte: Optional[int] = None
     avg180_AMAZON_gte: Optional[int] = None
@@ -353,19 +353,19 @@ class ProductParams(BaseModel):
     backInStock_USED_NEW_SHIPPING: Optional[bool] = None
     backInStock_USED_VERY_GOOD_SHIPPING: Optional[bool] = None
     backInStock_WAREHOUSE: Optional[bool] = None
-    binding: Optional[Union[List[str], str]] = None
-    brand: Optional[Union[List[str], str]] = None
+    binding: Optional[Union[list[str], str]] = None
+    brand: Optional[Union[list[str], str]] = None
     buyBoxIsAmazon: Optional[bool] = None
     buyBoxIsFBA: Optional[bool] = None
     buyBoxIsUnqualified: Optional[bool] = None
-    buyBoxSellerId: Optional[Union[List[str], str]] = None
+    buyBoxSellerId: Optional[Union[list[str], str]] = None
     buyBoxUsedCondition_lte: Optional[int] = None
     buyBoxUsedCondition_gte: Optional[int] = None
     buyBoxUsedIsFBA: Optional[bool] = None
     buyBoxUsedSellerId: Optional[str] = None
-    categories_include: Optional[Union[List[int], int]] = None
-    categories_exclude: Optional[Union[List[int], int]] = None
-    color: Optional[Union[List[str], str]] = None
+    categories_include: Optional[Union[list[int], int]] = None
+    categories_exclude: Optional[Union[list[int], int]] = None
+    color: Optional[Union[list[str], str]] = None
     couponOneTimeAbsolute_lte: Optional[int] = None
     couponOneTimeAbsolute_gte: Optional[int] = None
     couponOneTimePercent_lte: Optional[int] = None
@@ -952,11 +952,11 @@ class ProductParams(BaseModel):
     deltaPercent90_USED_VERY_GOOD_SHIPPING_gte: Optional[int] = None
     deltaPercent90_WAREHOUSE_lte: Optional[int] = None
     deltaPercent90_WAREHOUSE_gte: Optional[int] = None
-    edition: Optional[Union[List[str], str]] = None
+    edition: Optional[Union[list[str], str]] = None
     fbaFees_lte: Optional[int] = None
     fbaFees_gte: Optional[int] = None
-    format: Optional[Union[List[str], str]] = None
-    genre: Optional[Union[List[str], str]] = None
+    format: Optional[Union[list[str], str]] = None
+    genre: Optional[Union[list[str], str]] = None
     hasParentASIN: Optional[bool] = None
     hasReviews: Optional[bool] = None
     isAdultProduct: Optional[bool] = None
@@ -1005,8 +1005,8 @@ class ProductParams(BaseModel):
     itemWeight_gte: Optional[int] = None
     itemWidth_lte: Optional[int] = None
     itemWidth_gte: Optional[int] = None
-    label: Optional[Union[List[str], str]] = None
-    languages: Optional[Union[List[str], str]] = None
+    label: Optional[Union[list[str], str]] = None
+    languages: Optional[Union[list[str], str]] = None
     lastOffersUpdate_lte: Optional[int] = None
     lastOffersUpdate_gte: Optional[int] = None
     lastPriceChange_lte: Optional[int] = None
@@ -1021,8 +1021,8 @@ class ProductParams(BaseModel):
     lightningStart_gte: Optional[int] = None
     listedSince_lte: Optional[int] = None
     listedSince_gte: Optional[int] = None
-    manufacturer: Optional[Union[List[str], str]] = None
-    model: Optional[Union[List[str], str]] = None
+    manufacturer: Optional[Union[list[str], str]] = None
+    model: Optional[Union[list[str], str]] = None
     newPriceIsMAP: Optional[bool] = None
     nextUpdate_lte: Optional[int] = None
     nextUpdate_gte: Optional[int] = None
@@ -1058,13 +1058,13 @@ class ProductParams(BaseModel):
     packageWeight_gte: Optional[int] = None
     packageWidth_lte: Optional[int] = None
     packageWidth_gte: Optional[int] = None
-    partNumber: Optional[Union[List[str], str]] = None
-    platform: Optional[Union[List[str], str]] = None
-    productGroup: Optional[Union[List[str], str]] = None
+    partNumber: Optional[Union[list[str], str]] = None
+    platform: Optional[Union[list[str], str]] = None
+    productGroup: Optional[Union[list[str], str]] = None
     productType: Optional[int] = None
     publicationDate_lte: Optional[int] = None
     publicationDate_gte: Optional[int] = None
-    publisher: Optional[Union[List[str], str]] = None
+    publisher: Optional[Union[list[str], str]] = None
     releaseDate_lte: Optional[int] = None
     releaseDate_gte: Optional[int] = None
     rootCategory: Optional[int] = None
@@ -1079,11 +1079,11 @@ class ProductParams(BaseModel):
     salesRankReference: Optional[int] = None
     salesRankTopPct_lte: Optional[int] = None
     salesRankTopPct_gte: Optional[int] = None
-    sellerIds: Optional[Union[List[str], str]] = None
-    sellerIdsLowestFBA: Optional[Union[List[str], str]] = None
-    sellerIdsLowestFBM: Optional[Union[List[str], str]] = None
-    size: Optional[Union[List[str], str]] = None
-    studio: Optional[Union[List[str], str]] = None
+    sellerIds: Optional[Union[list[str], str]] = None
+    sellerIdsLowestFBA: Optional[Union[list[str], str]] = None
+    sellerIdsLowestFBM: Optional[Union[list[str], str]] = None
+    size: Optional[Union[list[str], str]] = None
+    studio: Optional[Union[list[str], str]] = None
     title: Optional[str] = None
     title_flag: Optional[str] = None
     totalOfferCount_lte: Optional[int] = None
@@ -1095,7 +1095,7 @@ class ProductParams(BaseModel):
     buyBoxIsPreorder: Optional[bool] = None
     buyBoxIsBackorder: Optional[bool] = None
     buyBoxIsPrimeExclusive: Optional[bool] = None
-    type: Optional[Union[List[str], str]] = None
+    type: Optional[Union[list[str], str]] = None
     warehouseCondition: Optional[int] = None
     singleVariation: Optional[bool] = None
     outOfStockPercentage90_lte: Optional[int] = None
