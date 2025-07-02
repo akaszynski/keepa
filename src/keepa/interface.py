@@ -89,6 +89,63 @@ csv_indices: list[tuple[int, str, bool]] = [
     (31, "RENT", False),
 ]
 
+_SELLER_TIME_DATA_KEYS = ["trackedSince", "lastUpdate"]
+
+
+def _normalize_value(v: int, isfloat: bool, key: str) -> Optional[float]:
+    """Normalize a single value based on its type and key context."""
+    if v < 0:
+        return None
+    if isfloat:
+        v = float(v) / 100
+        if key == "RATING":
+            v *= 10
+    return v
+
+
+def _is_stat_value_skippable(key: str, value: Any) -> bool:
+    """Determine if the stat value is skippable."""
+    if key in {
+        "buyBoxSellerId",
+        "sellerIdsLowestFBA",
+        "sellerIdsLowestFBM",
+        "buyBoxShippingCountry",
+        "buyBoxAvailabilityMessage",
+    }:
+        return True
+
+    # -1 or -2 --> not exist
+    if isinstance(value, int) and value < 0:
+        return True
+
+    return False
+
+
+def _parse_stat_value_list(
+    value_list: list, to_datetime: bool
+) -> dict[str, Union[float, tuple[Any, float]]]:
+    """Parse a list of stat values into a structured dict."""
+    convert_time = any(isinstance(v, list) for v in value_list if v is not None)
+    result = {}
+
+    for ind, key, isfloat in csv_indices:
+        item = value_list[ind] if ind < len(value_list) else None
+        if item is None:
+            continue
+
+        if convert_time:
+            ts, val = item
+            val = _normalize_value(val, isfloat, key)
+            if val is not None:
+                ts = keepa_minutes_to_time([ts], to_datetime)[0]
+                result[key] = (ts, val)
+        else:
+            val = _normalize_value(item, isfloat, key)
+            if val is not None:
+                result[key] = val
+
+    return result
+
 
 def _parse_stats(stats: dict[str, Union[None, int, list[int]]], to_datetime: bool):
     """Parse numeric stats object.
@@ -97,71 +154,23 @@ def _parse_stats(stats: dict[str, Union[None, int, list[int]]], to_datetime: boo
     response documentation:
     https://keepa.com/#!discuss/t/statistics-object/1308
     """
-    stats_keys_parse_not_required = {
-        "buyBoxSellerId",
-        "sellerIdsLowestFBA",
-        "sellerIdsLowestFBM",
-        "buyBoxShippingCountry",
-        "buyBoxAvailabilityMessage",
-    }
     stats_parsed = {}
 
     for stat_key, stat_value in stats.items():
-        if stat_key in stats_keys_parse_not_required:
-            stat_value = None
-
-        elif (
-            isinstance(stat_value, int) and stat_value < 0
-        ):  # -1 or -2 means not exist. 0 doesn't mean not exist.
-            stat_value = None
+        if _is_stat_value_skippable(stat_key, stat_value):
+            continue
 
         if stat_value is not None:
             if stat_key == "lastOffersUpdate":
                 stats_parsed[stat_key] = keepa_minutes_to_time([stat_value], to_datetime)[0]
             elif isinstance(stat_value, list) and len(stat_value) > 0:
-                stat_value_dict = {}
-                convert_time_in_value_pair = any(
-                    map(lambda v: v is not None and isinstance(v, list), stat_value)
-                )
-
-                for ind, key, isfloat in csv_indices:
-                    stat_value_item = stat_value[ind] if ind < len(stat_value) else None
-
-                    def normalize_value(v):
-                        if v < 0:
-                            return None
-
-                        if isfloat:
-                            v = float(v) / 100
-                            if key == "RATING":
-                                v = v * 10
-
-                        return v
-
-                    if stat_value_item is not None:
-                        if convert_time_in_value_pair:
-                            stat_value_time, stat_value_item = stat_value_item
-                            stat_value_item = normalize_value(stat_value_item)
-                            if stat_value_item is not None:
-                                stat_value_time = keepa_minutes_to_time(
-                                    [stat_value_time], to_datetime
-                                )[0]
-                                stat_value_item = (stat_value_time, stat_value_item)
-                        else:
-                            stat_value_item = normalize_value(stat_value_item)
-
-                    if stat_value_item is not None:
-                        stat_value_dict[key] = stat_value_item
-
-                if len(stat_value_dict) > 0:
+                stat_value_dict = _parse_stat_value_list(stat_value, to_datetime)
+                if stat_value_dict:
                     stats_parsed[stat_key] = stat_value_dict
             else:
                 stats_parsed[stat_key] = stat_value
 
     return stats_parsed
-
-
-_seller_time_data_keys = ["trackedSince", "lastUpdate"]
 
 
 def _parse_seller(seller_raw_response, to_datetime):
@@ -176,7 +185,7 @@ def _parse_seller(seller_raw_response, to_datetime):
                 return None
 
         seller.update(
-            filter(lambda p: p is not None, map(convert_time_data, _seller_time_data_keys))
+            filter(lambda p: p is not None, map(convert_time_data, _SELLER_TIME_DATA_KEYS))
         )
 
     return dict(map(lambda seller: (seller["sellerId"], seller), sellers))
