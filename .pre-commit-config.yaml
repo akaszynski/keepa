@@ -5,12 +5,12 @@ ci:
   autoupdate_schedule: quarterly
 repos:
 - repo: https://github.com/keewis/blackdoc
-  rev: v0.4.1
+  rev: v0.4.3
   hooks:
   - id: blackdoc
     files: \.py$
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.12.2
+  rev: v0.13.3
   hooks:
   - id: ruff-check
     args: [--fix, --exit-non-zero-on-fix]
@@ -33,7 +33,7 @@ repos:
   - id: pyupgrade
     args: [--py39-plus, --keep-runtime-typing]
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v5.0.0
+  rev: v6.0.0
   hooks:
   - id: check-merge-conflict
   - id: debug-statements
