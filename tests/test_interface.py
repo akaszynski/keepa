@@ -13,7 +13,7 @@ from keepa import keepa_minutes_to_time
 
 # reduce the request limit for testing
 
-keepa.interface.REQLIM = 2
+keepa.keepa_sync.REQLIM = 2
 
 path = os.path.dirname(os.path.realpath(__file__))
 keyfile = os.path.join(path, "key")

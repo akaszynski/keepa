@@ -8,14 +8,14 @@ try:
 except PackageNotFoundError:
     __version__ = "unknown"
 
+from keepa.constants import KEEPA_ST_ORDINAL, SCODES
 from keepa.data_models import ProductParams
-from keepa.interface import (
+from keepa.domain import Domain
+from keepa.keepa_async import AsyncKeepa
+from keepa.keepa_sync import Keepa
+from keepa.plotting import plot_product
+from keepa.utils import (
     DCODES,
-    KEEPA_ST_ORDINAL,
-    SCODES,
-    AsyncKeepa,
-    Domain,
-    Keepa,
     convert_offer_history,
     csv_indices,
     format_items,
@@ -24,7 +24,6 @@ from keepa.interface import (
     process_used_buybox,
     run_and_get,
 )
-from keepa.plotting import plot_product
 
 __all__ = [
     "AsyncKeepa",
