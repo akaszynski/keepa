@@ -1,3 +1,8 @@
+"""
+Test the asynchronous interface to the keepa backend.
+"""
+
+from pathlib import Path
 import datetime
 import os
 import warnings
@@ -337,6 +342,15 @@ async def test_to_datetime_parm(api):
     product = request[0]
     times = product["data"]["AMAZON_time"]
     assert times[0].dtype == "<M8[m]"
+
+
+@pytest.mark.asyncio
+async def test_download_graph_image(api, tmp_path: Path) -> None:
+    filename = tmp_path / "out.png"
+    await api.download_graph_image(PRODUCT_ASIN, filename)
+
+    data = filename.read_bytes()
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
 
 
 @pytest.mark.asyncio
