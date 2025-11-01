@@ -576,7 +576,11 @@ class Keepa:
             cost an additional token. Default (``None``) will not update.
 
         to_datetime : bool, default: True
-            Modifies numpy minutes to datetime.datetime values.
+            When ``True`` casts the time values of the product data
+            (e.g. ``"AMAZON_TIME"``) to ``datetime.datetime``. For example
+            ``datetime.datetime(2025, 10, 24, 10, 40)``. When ``False``, the
+            values are represented as ``numpy`` ``"<M8[m]"``. This has no
+            effect on pandas dataframes (e.g. ``"df_AMAZON"``).
 
         rating : bool, default: False
             When set to to True, includes the existing RATING and
@@ -674,14 +678,13 @@ class Keepa:
         Returns
         -------
         list
-            List of products when ``raw=False``.  Each product
-            within the list is a dictionary.  The keys of each item
-            may vary, so see the keys within each product for further
-            details.
+            List of products when ``raw=False``. Each product within the list
+            is a dictionary. The keys of each item may vary, so see the keys
+            within each product for further details.
 
-            Each product should contain at a minimum a "data" key
-            containing a formatted dictionary.  For the available
-            fields see the notes section
+            Each product should contain at a minimum a "data" key containing a
+            formatted dictionary. For the available fields see the notes
+            section.
 
             When ``raw=True``, a list of unparsed responses are
             returned as :class:`requests.models.Response`.
@@ -703,7 +706,7 @@ class Keepa:
             Amazon has the overall lowest new (!) price, the
             marketplace new price in the corresponding time interval
             will be identical to the Amazon price (except if there is
-            only one marketplace offer).  Shipping and Handling costs
+            only one marketplace offer). Shipping and Handling costs
             not included!
 
         USED
