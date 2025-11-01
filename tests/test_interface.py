@@ -1,3 +1,8 @@
+"""
+Test the synchronous interface to the keepa backend.
+"""
+
+from pathlib import Path
 import datetime
 from itertools import chain
 import os
@@ -388,7 +393,7 @@ def test_keepatime(api):
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
 
 
-def test_to_datetime_parm(api: Keepa):
+def test_to_datetime_parm(api: Keepa) -> None:
     product = api.query(PRODUCT_ASIN, to_datetime=True)[0]
     times = product["data"]["AMAZON_time"]
     assert isinstance(times[0], datetime.datetime)
@@ -398,7 +403,15 @@ def test_to_datetime_parm(api: Keepa):
     assert times[0].dtype == "<M8[m]"
 
 
-def test_plotting(api):
+def test_download_graph_image(api: Keepa, tmp_path: Path) -> None:
+    filename = tmp_path / "out.png"
+    api.download_graph_image(PRODUCT_ASIN, filename)
+
+    data = filename.read_bytes()
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_plotting(api: Keepa) -> None:
     request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]
     keepa.plot_product(product, show=False)
