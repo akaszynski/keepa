@@ -10,9 +10,9 @@ import requests
 
 import keepa
 from keepa import keepa_minutes_to_time
+from keepa import Keepa
 
 # reduce the request limit for testing
-
 keepa.interface.REQLIM = 2
 
 path = os.path.dirname(os.path.realpath(__file__))
@@ -89,11 +89,11 @@ PRODUCT_ASINS = [
 
 # open connection to keepa
 @pytest.fixture(scope="module")
-def api():
-    return keepa.Keepa(TESTINGKEY)
+def api() -> Keepa:
+    return Keepa(TESTINGKEY)
 
 
-def test_deals(api):
+def test_deals(api: Keepa) -> None:
     deal_parms = {
         "page": 0,
         "domainId": 1,
@@ -319,16 +319,17 @@ def test_productquery_offers_multiple(api):
     assert np.isin(asins, PRODUCT_ASINS).all()
 
 
-def test_domain(api):
-    asin = "0394800028"
-    request = api.query(asin, history=False, domain="BR")
+def test_domain(api: Keepa) -> None:
+    """A domain different than the default."""
+    asin = "3492704794"
+    request = api.query(asin, history=False, domain=keepa.Domain.DE)
     product = request[0]
     assert product["asin"] == asin
 
 
 def test_invalid_domain(api):
     with pytest.raises(ValueError):
-        api.query(PRODUCT_ASIN, history=False, domain="XX")
+        api.query(PRODUCT_ASIN, domain="XX")
 
 
 def test_bestsellers(api):
