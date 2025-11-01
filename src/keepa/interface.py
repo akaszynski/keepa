@@ -544,6 +544,46 @@ class Keepa:
         invalidates if any parameter changes. Submitting the exact same request
         within this time frame will not consume any tokens.
 
+        Examples
+        --------
+        Download a keepa graph image showing the current Amazon price, new
+        price, and the sales rank of a product with ASIN ``"B09YNQCQKR"``.
+
+        >>> from keepa import Keepa
+        >>> api = Keepa("<YOUR_API_KEY>")
+        >>> api.download_graph_image(
+        ...     asin="B09YNQCQKR",
+        ...     filename="product_graph.png",
+        ...     amazon=1,
+        ...     new=1,
+        ...     salesrank=1,
+        ... )
+
+        Show Amazon price, new and used graphs, buy box and FBA, for last 365
+        days, with custom width/height and custom colors. See
+        <https://keepa.com/#!discuss/t/graph-image-api/7928>`_ for more
+        details.
+
+        api.download_graph_image(
+            asin="B09YNQCQKR",
+            filename="product_graph_365.png",
+            domain="US",
+            amazon=1,
+            new=1,
+            used=1,
+            bb=1,
+            fba=1,
+            range=365,
+            width=800,
+            height=400,
+            cBackground="ffffff",
+            cAmazon="FFA500",
+            cNew="8888dd",
+            cUsed="444444",
+            cBB="ff00b4",
+            cFBA="ff5722"
+        )
+
         """
         payload = {"asin": asin, "key": self.accesskey, "domain": _domain_to_dcode(domain)}
         payload.update(graph_kwargs)
@@ -1730,13 +1770,14 @@ class Keepa:
 
     def _request(
         self,
-        request_type,
-        payload,
+        request_type: str,
+        payload: dict[str, Any],
         wait: bool = True,
         raw_response: bool = False,
         is_json: bool = True,
     ):
-        """Query keepa api server.
+        """
+        Query keepa api server.
 
         Parses raw response from keepa into a json format. Handles errors and
         waits for available tokens if allowed.
@@ -2250,7 +2291,12 @@ class AsyncKeepa:
                         f.write(chunk)
 
     async def _request(
-        self, request_type, payload, wait: bool = True, raw_response: bool = False, is_json=False
+        self,
+        request_type: str,
+        payload: dict[str, Any],
+        wait: bool = True,
+        raw_response: bool = False,
+        is_json: bool = True,
     ):
         """Documented in Keepa._request."""
         while True:

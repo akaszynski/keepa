@@ -405,7 +405,25 @@ def test_to_datetime_parm(api: Keepa) -> None:
 
 def test_download_graph_image(api: Keepa, tmp_path: Path) -> None:
     filename = tmp_path / "out.png"
-    api.download_graph_image(PRODUCT_ASIN, filename)
+    api.download_graph_image(
+        asin=PRODUCT_ASIN,
+        filename=filename,
+        domain="US",
+        amazon=1,
+        new=1,
+        used=1,
+        bb=1,
+        fba=1,
+        range=365,
+        width=800,
+        height=400,
+        cBackground="ffffff",
+        cAmazon="FFA500",
+        cNew="8888dd",
+        cUsed="444444",
+        cBB="ff00b4",
+        cFBA="ff5722",
+    )
 
     data = filename.read_bytes()
     assert data.startswith(b"\x89PNG\r\n\x1a\n")
