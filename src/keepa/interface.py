@@ -375,14 +375,14 @@ class Domain(Enum):
     BR = "BR"
 
 
-def _domain_to_dcode(domain: Union[str, Domain]) -> int:
+def _domain_to_dcode(domain: str | Domain) -> int:
     """Convert a domain to a domain code."""
     if isinstance(domain, Domain):
         domain_str = domain.value
     else:
         domain_str = domain
 
-    if domain not in DCODES:
+    if domain_str not in DCODES:
         raise ValueError(f"Invalid domain code {domain}. Should be one of the following:\n{DCODES}")
     return DCODES.index(domain_str)
 
