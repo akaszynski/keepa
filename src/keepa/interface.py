@@ -2134,8 +2134,7 @@ class AsyncKeepa:
             "range": rank_avg_range,
         }
 
-        response = self._request("bestsellers", payload, wait=wait)
-
+        response = await self._request("bestsellers", payload, wait=wait)
         if "bestSellersList" not in response:
             raise RuntimeError(f"Best sellers search results for {category} not yet available")
         return response["bestSellersList"]["asinList"]
