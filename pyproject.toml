@@ -32,7 +32,7 @@ description = "Interfaces with keepa.com's API."
 keywords = ["keepa"]
 name = "keepa"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 version = "1.4.dev0"
 
 [project.optional-dependencies]

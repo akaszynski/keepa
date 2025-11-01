@@ -327,10 +327,16 @@ async def test_stock(api):
 
 
 @pytest.mark.asyncio
-async def test_keepatime(api):
-    keepa_st_ordinal = datetime.datetime(2011, 1, 1)
-    assert keepa_st_ordinal == keepa.keepa_minutes_to_time(0)
-    assert keepa.keepa_minutes_to_time(0, to_datetime=False)
+async def test_to_datetime_parm(api):
+    request = await api.query(PRODUCT_ASIN, to_datetime=True)
+    product = request[0]
+    times = product["data"]["AMAZON_time"]
+    assert isinstance(times[0], datetime.datetime)
+
+    request = await api.query(PRODUCT_ASIN, to_datetime=False)
+    product = request[0]
+    times = product["data"]["AMAZON_time"]
+    assert times[0].dtype == "<M8[m]"
 
 
 @pytest.mark.asyncio

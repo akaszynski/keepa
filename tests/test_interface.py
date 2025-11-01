@@ -388,6 +388,16 @@ def test_keepatime(api):
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
 
 
+def test_to_datetime_parm(api: Keepa):
+    product = api.query(PRODUCT_ASIN, to_datetime=True)[0]
+    times = product["data"]["AMAZON_time"]
+    assert isinstance(times[0], datetime.datetime)
+
+    product = api.query(PRODUCT_ASIN, to_datetime=False)[0]
+    times = product["data"]["AMAZON_time"]
+    assert times[0].dtype == "<M8[m]"
+
+
 def test_plotting(api):
     request = api.query(PRODUCT_ASIN, history=True)
     product = request[0]

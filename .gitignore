@@ -20,7 +20,7 @@ dist/
 keepa/__pycache__/
 
 # testing
-Testing/
+test-scripts/
 test.sh
 .pytest_cache/
 tests/.coverage

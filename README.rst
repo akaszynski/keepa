@@ -30,7 +30,7 @@ Documentation can be found at `Keepa Documentation <https://keepaapi.readthedocs
 
 Requirements
 ------------
-This library is compatible with Python >= 3.9 and requires:
+This library is compatible with Python >= 3.10 and requires:
 
 - ``numpy``
 - ``aiohttp``
