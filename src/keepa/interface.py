@@ -7,7 +7,7 @@ import logging
 import time
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Literal
 
 import aiohttp
 import numpy as np
@@ -49,6 +49,7 @@ SCODES = {
 # Valid values: [ 1: com | 2: co.uk | 3: de | 4: fr | 5:
 #                 co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx | 12: com.br ]
 DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN", "MX", "BR"]
+# developer note: appears like CN (China) has changed to RESERVED2
 
 # csv indices. used when parsing csv and stats fields.
 # https://github.com/keepacom/api_backend
@@ -92,7 +93,7 @@ csv_indices: list[tuple[int, str, bool]] = [
 _SELLER_TIME_DATA_KEYS = ["trackedSince", "lastUpdate"]
 
 
-def _normalize_value(v: int, isfloat: bool, key: str) -> Optional[float]:
+def _normalize_value(v: int, isfloat: bool, key: str) -> float | None:
     """Normalize a single value based on its type and key context."""
     if v < 0:
         return None
@@ -123,7 +124,7 @@ def _is_stat_value_skippable(key: str, value: Any) -> bool:
 
 def _parse_stat_value_list(
     value_list: list, to_datetime: bool
-) -> dict[str, Union[float, tuple[Any, float]]]:
+) -> dict[str, float | tuple[Any, float]]:
     """Parse a list of stat values into a structured dict."""
     convert_time = any(isinstance(v, list) for v in value_list if v is not None)
     result = {}
@@ -147,7 +148,7 @@ def _parse_stat_value_list(
     return result
 
 
-def _parse_stats(stats: dict[str, Union[None, int, list[int]]], to_datetime: bool):
+def _parse_stats(stats: dict[str, None, int, list[int]], to_datetime: bool):
     """Parse numeric stats object.
 
     There is no need to parse strings or list of strings. Keepa stats object
@@ -191,18 +192,17 @@ def _parse_seller(seller_raw_response, to_datetime):
     return dict(map(lambda seller: (seller["sellerId"], seller), sellers))
 
 
-def parse_csv(csv, to_datetime=True, out_of_stock_as_nan=True):
-    """Parse csv list from keepa into a python dictionary.
+def parse_csv(csv, to_datetime: bool = True, out_of_stock_as_nan: bool = True) -> dict[str, Any]:
+    """
+    Parse csv list from keepa into a python dictionary.
 
     Parameters
     ----------
     csv : list
         csv list from keepa
-
-    to_datetime : bool, optional
+    to_datetime : bool, default: True
         Modifies numpy minutes to datetime.datetime values.
         Default True.
-
     out_of_stock_as_nan : bool, optional
         When True, prices are NAN when price category is out of stock.
         When False, prices are -0.01
@@ -388,25 +388,26 @@ def _domain_to_dcode(domain: str | Domain) -> int:
 
 
 class Keepa:
-    r"""Support a synchronous Python interface to keepa server.
+    r"""
+    Synchronous Python interface to keepa data backend.
 
-    Initializes API with access key.  Access key can be obtained by
-    signing up for a reoccurring or one time plan at:
-    https://keepa.com/#!api
+    Initializes API with access key. Access key can be obtained by signing up
+    for a reoccurring or one time plan. To obtain a key, sign up for one at
+    `Keepa Data <https://get.keepa.com/d7vrq>`_
 
     Parameters
     ----------
     accesskey : str
         64 character access key string.
-    timeout : float, optional
-        Default timeout when issuing any request.  This is not a time
-        limit on the entire response download; rather, an exception is
-        raised if the server has not issued a response for timeout
-        seconds.  Setting this to 0 disables the timeout, but will
-        cause any request to hang indefiantly should keepa.com be down
-    logging_level: string, optional
-        Logging level to use.  Default is 'DEBUG'.  Other options are
-        'INFO', 'WARNING', 'ERROR', and 'CRITICAL'.
+    timeout : float, default: 10.0
+        Default timeout when issuing any request. This is not a time limit on
+        the entire response download; rather, an exception is raised if the
+        server has not issued a response for timeout seconds. Setting this to
+        0.0 disables the timeout, but will cause any request to hang
+        indefiantly should keepa.com be down
+    logging_level: string, default: "DEBUG"
+        Logging level to use. Default is "DEBUG". Other options are "INFO",
+        "WARNING", "ERROR", and "CRITICAL".
 
     Examples
     --------
@@ -458,7 +459,8 @@ class Keepa:
 
     @property
     def time_to_refill(self) -> float:
-        """Return the time to refill in seconds.
+        """
+        Return the time to refill in seconds.
 
         Examples
         --------
@@ -507,12 +509,12 @@ class Keepa:
 
     def query(
         self,
-        items: Union[str, Sequence[str]],
-        stats: Optional[Union[int]] = None,
+        items: str | Sequence[str],
+        stats: int | None = None,
         domain: str = "US",
         history: bool = True,
-        offers: Optional[int] = None,
-        update: Optional[int] = None,
+        offers: int | None = None,
+        update: int | None = None,
         to_datetime: bool = True,
         rating: bool = False,
         out_of_stock_as_nan: bool = True,
@@ -521,17 +523,17 @@ class Keepa:
         progress_bar: bool = True,
         buybox: bool = False,
         wait: bool = True,
-        days: Optional[int] = None,
-        only_live_offers: Optional[bool] = None,
+        days: int | None = None,
+        only_live_offers: bool | None = None,
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
         extra_params: dict[str, Any] = {},
     ) -> list[dict[str, Any]]:
-        """Perform a product query of a list, array, or single ASIN.
+        """
+        Perform a product query of a list, array, or single ASIN.
 
-        Returns a list of product data with one entry for each
-        product.
+        Returns a list of product data with one entry for each product.
 
         Parameters
         ----------
@@ -622,7 +624,7 @@ class Keepa:
             required.
 
         wait : bool, default: True
-            Wait available token before doing effective query.
+            Wait for available tokens before querying the keepa backend.
 
         only_live_offers : bool, optional
             If set to True, the product object will only include live
@@ -1076,50 +1078,82 @@ class Keepa:
         return response
 
     def best_sellers_query(
-        self, category, rank_avg_range=0, domain: Union[str, Domain] = "US", wait=True
+        self,
+        category: str,
+        rank_avg_range: Literal[0, 30, 90, 180] = 0,
+        variations: bool = False,
+        sublist: bool = False,
+        domain: str | Domain = "US",
+        wait: bool = True,
     ):
-        """Retrieve an ASIN list of the most popular products.
+        """
+        Retrieve an ASIN list of the most popular products.
 
-        This is based on sales in a specific category or product group.  See
+        This is based on sales in a specific category or product group. See
         "search_for_categories" for information on how to get a category.
 
-        Root category lists (e.g. "Home & Kitchen") or product group
-        lists contain up to 100,000 ASINs.
+        Root category lists (e.g. "Home & Kitchen") or product group lists
+        contain up to 100,000 ASINs.
 
-        Sub-category lists (e.g. "Home Entertainment Furniture")
-        contain up to 3,000 ASINs. As we only have access to the
-        product's primary sales rank and not the ones of all
-        categories it is listed in, the sub-category lists are created
-        by us based on the product's primary sales rank and do not
-        reflect the actual ordering on Amazon.
+        Sub-category lists (e.g. "Home Entertainment Furniture") contain up to
+        3,000 ASINs. As we only have access to the product's primary sales rank
+        and not the ones of all categories it is listed in, the sub-category
+        lists are created by us based on the product's primary sales rank and
+        do not reflect the actual ordering on Amazon.
 
         Lists are ordered, starting with the best selling product.
 
-        Lists are updated daily.  If a product does not have an
-        accessible sales rank it will not be included in the
-        lists. This in particular affects many products in the
-        Clothing and Sports & Outdoors categories.
+        Lists are updated daily. If a product does not have an accessible
+        sales rank it will not be included in the lists. This in particular
+        affects many products in the Clothing and Sports & Outdoors categories.
 
-        We can not correctly identify the sales rank reference
-        category in all cases, so some products may be misplaced.
+        We can not correctly identify the sales rank reference category in all
+        cases, so some products may be misplaced.
+
+        See the keepa documentation at `Request Best Sellers
+        <https://keepa.com/#!discuss/t/best-sellers/1298>`_ for additional
+        details.
 
         Parameters
         ----------
         category : str
             The category node id of the category you want to request
             the best sellers list for. You can find category node ids
-            via the category search "search_for_categories".
+            via the category search :meth:`Keepa.search_for_categories`.
+        rank_avg_range : int, default: 0
+            Optionally specify to retrieve a best seller list based on a sales
+            rank average instead of the current sales rank. Valid values:
 
+            * 0: Use current rank
+            * 30: 30-day average
+            * 90: 90-day average
+            * 180: 180-day average
+        variations : bool, default: False
+            Restrict list entries to a single variation for items with multiple
+            variations. The variation returned will be the one with the highest
+            monthly units sold (if that data point is available). When
+            ``False`` (default), do not include variations. When ``True``,
+            return all variations.
+
+            By default we return one variation per parent. If the variations
+            share the same sales rank, the representative is the variation with
+            the highest monthly units sold. If monthly sold data is missing or
+            tied, the representative falls back to randomly picked one.
+        sublist : bool, default: False
+            By default (``False``), the best seller list for sub-categories is created
+            based on the product’s primary sales rank, if available. To request
+            a best seller list based on the sub-category sales rank
+            (classification rank), set this parameter to ``True``. Note that
+            not all products have a primary sales rank or a sub-category sales
+            rank and not all sub-category levels have sales ranks.
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
-
-        wait : bool, optional
-            Wait available token before doing effective query.
-            Defaults to ``True``.
+        wait : bool, default: True
+            Wait for available tokens before querying the keepa backend.
 
         Returns
         -------
-        best_sellers : list
+        list
             List of best seller ASINs
 
         Examples
@@ -1167,37 +1201,37 @@ class Keepa:
         payload = {
             "key": self.accesskey,
             "domain": _domain_to_dcode(domain),
+            "variations": int(variations),
+            "sublist": int(sublist),
             "category": category,
             "range": rank_avg_range,
         }
 
         response = self._request("bestsellers", payload, wait=wait)
-        if "bestSellersList" in response:
-            return response["bestSellersList"]["asinList"]
-        else:  # pragma: no cover
-            log.info("Best sellers search results not yet available")
+        if "bestSellersList" not in response:
+            raise RuntimeError(f"Best sellers search results for {category} not yet available")
+
+        return response["bestSellersList"]["asinList"]
 
     def search_for_categories(
-        self, searchterm, domain: Union[str, Domain] = "US", wait=True
+        self, searchterm: str, domain: str | Domain = "US", wait: bool = True
     ) -> list:
-        """Search for categories from Amazon.
+        """
+        Search for categories from Amazon.
 
         Parameters
         ----------
         searchterm : str
             Input search term.
-
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
-
         wait : bool, default: True
-            Wait available token before doing effective query.
-            Defaults to ``True``.
+            Wait for available tokens before querying the keepa backend.
 
         Returns
         -------
-        list
-            The response contains a categories list with all matching
+        dict[str, Any]
+            The response contains a categories dictionary with all matching
             categories.
 
         Examples
@@ -1236,29 +1270,30 @@ class Keepa:
         return response["categories"]
 
     def category_lookup(
-        self, category_id, domain: Union[str, Domain] = "US", include_parents=False, wait=True
-    ):
-        """Return root categories given a categoryId.
+        self,
+        category_id: int,
+        domain: str | Domain = "US",
+        include_parents=False,
+        wait: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Return root categories given a categoryId.
 
         Parameters
         ----------
         category_id : int
-            ID for specific category or 0 to return a list of root
-            categories.
-
+            ID for specific category or 0 to return a list of root categories.
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
-
         include_parents : bool, default: False
             Include parents.
-
         wait : bool, default: True
-            Wait available token before doing effective query.
+            Wait for available tokens before querying the keepa backend.
 
         Returns
         -------
-        list
-            Output format is the same as search_for_categories.
+        dict[str, Any]
+            Output format is the same as :meth:`Keepa.`search_for_categories`.
 
         Examples
         --------
@@ -1307,14 +1342,15 @@ class Keepa:
 
     def seller_query(
         self,
-        seller_id,
-        domain: Union[str, Domain] = "US",
-        to_datetime=True,
-        storefront=False,
-        update=None,
-        wait=True,
+        seller_id: str | list[str],
+        domain: str | Domain = "US",
+        to_datetime: bool = True,
+        storefront: bool = False,
+        update: int | None = None,
+        wait: bool = True,
     ):
-        """Receive seller information for a given seller id.
+        """
+        Receive seller information for a given seller id or ids.
 
         If a seller is not found no tokens will be consumed.
 
@@ -1322,31 +1358,30 @@ class Keepa:
 
         Parameters
         ----------
-        seller_id : str or list
-            The seller id of the merchant you want to request. For
-            batch requests, you may submit a list of 100 seller_ids.
-            The seller id can also be found on Amazon on seller
-            profile pages in the seller parameter of the URL as well
-            as in the offers results from a product query.
-
+        seller_id : str or list[str]
+            The seller id of the merchant you want to request. For batch
+            requests, you may submit a list of 100 seller_ids.  The seller id
+            can also be found on Amazon on seller profile pages in the seller
+            parameter of the URL as well as in the offers results from a
+            product query.
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
-
-        storefront : bool, optional
-            If specified the seller object will contain additional
-            information about what items the seller is listing on Amazon.
-            This includes a list of ASINs as well as the total amount of
-            items the seller has listed. The following seller object
-            fields will be set if data is available: asinList,
-            asinListLastSeen, totalStorefrontAsinsCSV. If no data is
-            available no additional tokens will be consumed. The ASIN
-            list can contain up to 100,000 items. As using the storefront
-            parameter does not trigger any new collection it does not
-            increase the processing time of the request, though the
-            response may be much bigger in size. The total storefront
-            ASIN count will not be updated, only historical data will
-            be provided (when available).
-
+        to_datetime : bool, default: True
+            When ``True`` casts the time values to ``datetime.datetime``. For
+            example ``datetime.datetime(2025, 10, 24, 10, 40)``. When
+            ``False``, the values are represented as ``numpy`` ``"<M8[m]"``.
+        storefront : bool, default: False
+            If specified the seller object will contain additional information
+            about what items the seller is listing on Amazon.  This includes a
+            list of ASINs as well as the total amount of items the seller has
+            listed. The following seller object fields will be set if data is
+            available: asinList, asinListLastSeen, totalStorefrontAsinsCSV. If
+            no data is available no additional tokens will be consumed. The
+            ASIN list can contain up to 100,000 items. As using the storefront
+            parameter does not trigger any new collection it does not increase
+            the processing time of the request, though the response may be much
+            bigger in size. The total storefront ASIN count will not be
+            updated, only historical data will be provided (when available).
         update : int, optional
             Positive integer value. If the last live data collection from
             the Amazon storefront page is older than update hours force a
@@ -1364,10 +1399,8 @@ class Keepa:
             - Retrieve the total number of listings of this seller:
               the totalStorefrontAsinsCSV field of the seller object
               will be updated.
-
-        wait : bool, optional
-            Wait available token before doing effective query.
-            Defaults to ``True``.
+        wait : bool, default: True
+            Wait for available tokens before querying the keepa backend.
 
         Returns
         -------
@@ -1414,12 +1447,13 @@ class Keepa:
 
     def product_finder(
         self,
-        product_parms: Union[dict[str, Any], ProductParams],
-        domain: Union[str, Domain] = "US",
+        product_parms: dict[str, Any] | ProductParams,
+        domain: str | Domain = "US",
         wait: bool = True,
         n_products: int = 50,
     ) -> list[str]:
-        """Query the keepa product database to find products matching criteria.
+        """
+        Query the keepa product database to find products matching criteria.
 
         Almost all product fields can be searched for and sorted.
 
@@ -1430,7 +1464,7 @@ class Keepa:
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
-            Wait available token before doing effective query.
+            Wait for available tokens before querying the keepa backend.
         n_products : int, default: 50
             Maximum number of matching products returned by keepa. This can be
             overridden by the 'perPage' key in ``product_parms``.
@@ -1512,7 +1546,9 @@ class Keepa:
         response = self._request("query", payload, wait=wait)
         return response["asinList"]
 
-    def deals(self, deal_parms, domain: Union[str, Domain] = "US", wait=True) -> dict:
+    def deals(
+        self, deal_parms: dict[str, Any], domain: str | Domain = "US", wait: bool = True
+    ) -> dict[str, Any]:
         """Query the Keepa API for product deals.
 
         You can find products that recently changed and match your
@@ -1550,12 +1586,10 @@ class Keepa:
             - ``"filterErotic"``: bool
             - ``"sortType"``: int
             - ``"dateRange"``: int
-
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
-
-        wait : bool, optional
-            Wait available token before doing effective query, Defaults to ``True``.
+        wait : bool, default: True
+            Wait for available tokens before querying the keepa backend.
 
         Returns
         -------
@@ -1685,22 +1719,22 @@ class Keepa:
 
 
 class AsyncKeepa:
-    r"""Class to support an asynchronous Python interface to keepa server.
+    r"""
+    Asynchronous Python interface to keepa backend.
 
-    Initializes API with access key.  Access key can be obtained by
-    signing up for a reoccurring or one time plan at:
-    https://keepa.com/#!api
+    Initializes API with access key. Access key can be obtained by signing up
+    for a reoccurring or one time plan. To obtain a key, sign up for one at
+    `Keepa Data <https://get.keepa.com/d7vrq>`_
 
     Parameters
     ----------
     accesskey : str
         64 character access key string.
-
-    timeout : float, optional
+    timeout : float, default: 10.0
         Default timeout when issuing any request.  This is not a time
         limit on the entire response download; rather, an exception is
         raised if the server has not issued a response for timeout
-        seconds.  Setting this to 0 disables the timeout, but will
+        seconds.  Setting this to 0.0 disables the timeout, but will
         cause any request to hang indefiantly should keepa.com be down
 
     Examples
@@ -1744,7 +1778,7 @@ class AsyncKeepa:
     """
 
     @classmethod
-    async def create(cls, accesskey, timeout=10):
+    async def create(cls, accesskey: str, timeout: float = 10.0):
         """Create the async object."""
         self = AsyncKeepa()
         self.accesskey = accesskey
@@ -1756,7 +1790,7 @@ class AsyncKeepa:
         return self
 
     @property
-    def time_to_refill(self):
+    def time_to_refill(self) -> float:
         """Return the time to refill in seconds."""
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
@@ -1774,11 +1808,11 @@ class AsyncKeepa:
         # Return value in seconds
         return timetorefil / 1000.0
 
-    async def update_status(self):
+    async def update_status(self) -> None:
         """Update available tokens."""
         self.status = await self._request("token", {"key": self.accesskey}, wait=False)
 
-    async def wait_for_tokens(self):
+    async def wait_for_tokens(self) -> None:
         """Check if there are any remaining tokens and waits if none are available."""
         await self.update_status()
 
@@ -1792,12 +1826,12 @@ class AsyncKeepa:
     @is_documented_by(Keepa.query)
     async def query(
         self,
-        items: Union[str, Sequence[str]],
-        stats: Optional[Union[int]] = None,
+        items: str | Sequence[str],
+        stats: int | None = None,
         domain: str = "US",
         history: bool = True,
-        offers: Optional[int] = None,
-        update: Optional[int] = None,
+        offers: int | None = None,
+        update: int | None = None,
         to_datetime: bool = True,
         rating: bool = False,
         out_of_stock_as_nan: bool = True,
@@ -1806,8 +1840,8 @@ class AsyncKeepa:
         progress_bar: bool = True,
         buybox: bool = False,
         wait: bool = True,
-        days: Optional[int] = None,
-        only_live_offers: Optional[bool] = None,
+        days: int | None = None,
+        only_live_offers: bool | None = None,
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
@@ -1976,7 +2010,7 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa.best_sellers_query)
     async def best_sellers_query(
-        self, category, rank_avg_range=0, domain: Union[str, Domain] = "US", wait=True
+        self, category, rank_avg_range=0, domain: str | Domain = "US", wait: bool = True
     ):
         """Documented by Keepa.best_sellers_query."""
         payload = {
@@ -1993,7 +2027,9 @@ class AsyncKeepa:
             log.info("Best sellers search results not yet available")
 
     @is_documented_by(Keepa.search_for_categories)
-    async def search_for_categories(self, searchterm, domain: Union[str, Domain] = "US", wait=True):
+    async def search_for_categories(
+        self, searchterm, domain: str | Domain = "US", wait: bool = True
+    ):
         """Documented by Keepa.search_for_categories."""
         payload = {
             "key": self.accesskey,
@@ -2012,7 +2048,7 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa.category_lookup)
     async def category_lookup(
-        self, category_id, domain: Union[str, Domain] = "US", include_parents=0, wait=True
+        self, category_id, domain: str | Domain = "US", include_parents=0, wait: bool = True
     ):
         """Documented by Keepa.category_lookup."""
         payload = {
@@ -2032,11 +2068,11 @@ class AsyncKeepa:
     async def seller_query(
         self,
         seller_id,
-        domain: Union[str, Domain] = "US",
+        domain: str | Domain = "US",
         to_datetime=True,
         storefront=False,
         update=None,
-        wait=True,
+        wait: bool = True,
     ):
         """Documented by Keepa.sellerer_query."""
         if isinstance(seller_id, list):
@@ -2064,8 +2100,8 @@ class AsyncKeepa:
     @is_documented_by(Keepa.product_finder)
     async def product_finder(
         self,
-        product_parms: Union[dict[str, Any], ProductParams],
-        domain: Union[str, Domain] = "US",
+        product_parms: dict[str, Any] | ProductParams,
+        domain: str | Domain = "US",
         wait: bool = True,
         n_products: int = 50,
     ) -> list[str]:
@@ -2086,7 +2122,7 @@ class AsyncKeepa:
         return response["asinList"]
 
     @is_documented_by(Keepa.deals)
-    async def deals(self, deal_parms, domain: Union[str, Domain] = "US", wait=True):
+    async def deals(self, deal_parms, domain: str | Domain = "US", wait: bool = True):
         """Documented in Keepa.deals."""
         # verify valid keys
         for key in deal_parms:
@@ -2183,7 +2219,7 @@ def convert_offer_history(csv, to_datetime=True):
     return times, prices
 
 
-def _str_to_bool(string: str):
+def _str_to_bool(string: str) -> bool:
     if string:
         return bool(int(string))
     return False
