@@ -33,7 +33,7 @@ keywords = ["keepa"]
 name = "keepa"
 readme = "README.rst"
 requires-python = ">=3.10"
-version = "1.5.dev0"
+version = "1.4.0"
 
 [project.optional-dependencies]
 doc = [
