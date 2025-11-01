@@ -327,13 +327,13 @@ async def test_stock(api):
 
 
 @pytest.mark.asyncio
-def test_to_datetime_parm(api):
+async def test_to_datetime_parm(api):
     request = await api.query(PRODUCT_ASIN, to_datetime=True)
     product = request[0]
     times = product["data"]["AMAZON_time"]
     assert isinstance(times[0], datetime.datetime)
 
-    request = await api.query(PRODUCT_ASIN, to_datetime=True)
+    request = await api.query(PRODUCT_ASIN, to_datetime=False)
     product = request[0]
     times = product["data"]["AMAZON_time"]
     assert times[0].dtype == "<M8[m]"
