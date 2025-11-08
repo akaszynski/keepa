@@ -8,7 +8,6 @@ try:
 except PackageNotFoundError:
     __version__ = "unknown"
 
-from keepa.data_models import ProductParams
 from keepa.interface import (
     DCODES,
     KEEPA_ST_ORDINAL,
@@ -24,6 +23,7 @@ from keepa.interface import (
     process_used_buybox,
     run_and_get,
 )
+from keepa.models.product_params import ProductParams
 from keepa.plotting import plot_product
 
 __all__ = [

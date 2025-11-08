@@ -16,7 +16,7 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-from keepa.data_models import ProductParams
+from keepa.models.product_params import ProductParams
 from keepa.query_keys import DEAL_REQUEST_KEYS
 
 
