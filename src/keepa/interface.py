@@ -17,6 +17,7 @@ import requests
 from tqdm import tqdm
 
 from keepa.models.product_params import ProductParams
+from keepa.models.status import Status
 from keepa.query_keys import DEAL_REQUEST_KEYS
 
 
@@ -49,7 +50,21 @@ SCODES = {
 # domain codes
 # Valid values: [ 1: com | 2: co.uk | 3: de | 4: fr | 5:
 #                 co.jp | 6: ca | 7: cn | 8: it | 9: es | 10: in | 11: com.mx | 12: com.br ]
-DCODES = ["RESERVED", "US", "GB", "DE", "FR", "JP", "CA", "CN", "IT", "ES", "IN", "MX", "BR"]
+DCODES = [
+    "RESERVED",
+    "US",
+    "GB",
+    "DE",
+    "FR",
+    "JP",
+    "CA",
+    "CN",
+    "IT",
+    "ES",
+    "IN",
+    "MX",
+    "BR",
+]
 # developer note: appears like CN (China) has changed to RESERVED2
 
 # csv indices. used when parsing csv and stats fields.
@@ -442,7 +457,12 @@ class Keepa:
 
     """
 
-    def __init__(self, accesskey: str, timeout: float = 10.0, logging_level: str = "DEBUG"):
+    accesskey: str
+    tokens_left: int
+    status: Status
+    _timeout: float
+
+    def __init__(self, accesskey: str, timeout: float = 10.0, logging_level: str = "DEBUG") -> None:
         """Initialize server connection."""
         self.accesskey = accesskey
         self.tokens_left = 0
@@ -456,7 +476,7 @@ class Keepa:
 
         # Don't check available tokens on init
         log.info("Using key ending in %s", accesskey[-6:])
-        self.status = {"tokensLeft": None, "refillIn": None, "refillRate": None, "timestamp": None}
+        self.status = Status()
 
     @property
     def time_to_refill(self) -> float:
@@ -477,7 +497,7 @@ class Keepa:
         """
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
-        time_at_refill = self.status["timestamp"] + self.status["refillIn"]
+        time_at_refill = self.status.timestamp + self.status.refillIn
 
         # wait plus one second fudge factor
         time_to_refill = time_at_refill - now + 1000
@@ -486,7 +506,7 @@ class Keepa:
 
         # Account for negative tokens left
         if self.tokens_left < 0:
-            time_to_refill += (abs(self.tokens_left) / self.status["refillRate"]) * 60000
+            time_to_refill += (abs(self.tokens_left) / self.status.refillRate) * 60000
 
         # Return value in seconds
         return time_to_refill / 1000.0
@@ -585,7 +605,11 @@ class Keepa:
         )
 
         """
-        payload = {"asin": asin, "key": self.accesskey, "domain": _domain_to_dcode(domain)}
+        payload = {
+            "asin": asin,
+            "key": self.accesskey,
+            "domain": _domain_to_dcode(domain),
+        }
         payload.update(graph_kwargs)
 
         resp = self._request("graphimage", payload, wait=wait, is_json=False)
@@ -987,10 +1011,10 @@ class Keepa:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
 
         # Report time to completion
-        if self.status["refillRate"] is not None:
+        if self.status.refillRate is not None:
             tcomplete = (
-                float(nitems - self.tokens_left) / self.status["refillRate"]
-                - (60000 - self.status["refillIn"]) / 60000.0
+                float(nitems - self.tokens_left) / self.status.refillRate
+                - (60000 - self.status.refillIn) / 60000.0
             )
             if tcomplete < 0.0:
                 tcomplete = 0.5
@@ -999,7 +1023,7 @@ class Keepa:
                 nitems,
                 tcomplete,
             )
-            log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
+            log.debug("\twith a refill rate of %d token(s) per minute", self.status.refillRate)
 
         # product list
         products = []
@@ -1801,11 +1825,11 @@ class Keepa:
             # user status is always returned
             if "tokensLeft" in response:
                 self.tokens_left = response["tokensLeft"]
-                self.status["tokensLeft"] = self.tokens_left
+                self.status.tokensLeft = self.tokens_left
                 log.info("%d tokens remain", self.tokens_left)
             for key in ["refillIn", "refillRate", "timestamp"]:
                 if key in response:
-                    self.status[key] = response[key]
+                    setattr(self.status, key, response[key])
 
             if status_code == "200":
                 if raw_response:
@@ -1883,8 +1907,13 @@ class AsyncKeepa:
 
     """
 
+    accesskey: str
+    tokens_left: int
+    status: Status
+    _timeout: float
+
     @classmethod
-    async def create(cls, accesskey: str, timeout: float = 10.0):
+    async def create(cls, accesskey: str, timeout: float = 10.0) -> "AsyncKeepa":
         """Create the async object."""
         self = AsyncKeepa()
         self.accesskey = accesskey
@@ -1892,7 +1921,7 @@ class AsyncKeepa:
         self._timeout = timeout
 
         # don't update the user status on init
-        self.status = {"tokensLeft": None, "refillIn": None, "refillRate": None, "timestamp": None}
+        self.status = Status()
         return self
 
     @property
@@ -1900,7 +1929,7 @@ class AsyncKeepa:
         """Return the time to refill in seconds."""
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
-        time_at_refill = self.status["timestamp"] + self.status["refillIn"]
+        time_at_refill = self.status.timestamp + self.status.refillIn
 
         # wait plus one second fudge factor
         time_to_refill = time_at_refill - now + 1000
@@ -1909,7 +1938,7 @@ class AsyncKeepa:
 
         # Account for negative tokens left
         if self.tokens_left < 0:
-            time_to_refill += (abs(self.tokens_left) / self.status["refillRate"]) * 60000
+            time_to_refill += (abs(self.tokens_left) / self.status.refillRate) * 60000
 
         # Return value in seconds
         return time_to_refill / 1000.0
@@ -1979,10 +2008,10 @@ class AsyncKeepa:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
 
         # Report time to completion
-        if self.status["refillRate"] is not None:
+        if self.status.refillRate is not None and self.status.refillIn is not None:
             tcomplete = (
-                float(nitems - self.tokens_left) / self.status["refillRate"]
-                - (60000 - self.status["refillIn"]) / 60000.0
+                float(nitems - self.tokens_left) / self.status.refillRate
+                - (60000 - self.status.refillIn) / 60000.0
             )
             if tcomplete < 0.0:
                 tcomplete = 0.5
@@ -1991,7 +2020,7 @@ class AsyncKeepa:
                 nitems,
                 tcomplete,
             )
-            log.debug("\twith a refill rate of %d token(s) per minute", self.status["refillRate"])
+            log.debug("\twith a refill rate of %d token(s) per minute", self.status.refillRate)
 
         # product list
         products = []
@@ -2161,7 +2190,11 @@ class AsyncKeepa:
 
     @is_documented_by(Keepa.category_lookup)
     async def category_lookup(
-        self, category_id, domain: str | Domain = "US", include_parents=0, wait: bool = True
+        self,
+        category_id,
+        domain: str | Domain = "US",
+        include_parents=0,
+        wait: bool = True,
     ):
         """Documented by Keepa.category_lookup."""
         payload = {
@@ -2267,7 +2300,11 @@ class AsyncKeepa:
         **graph_kwargs: dict[str, Any],
     ) -> None:
         """Documented in Keepa.download_graph_image."""
-        payload = {"asin": asin, "key": self.accesskey, "domain": _domain_to_dcode(domain)}
+        payload = {
+            "asin": asin,
+            "key": self.accesskey,
+            "domain": _domain_to_dcode(domain),
+        }
         payload.update(graph_kwargs)
 
         async with aiohttp.ClientSession() as session:
@@ -2318,11 +2355,11 @@ class AsyncKeepa:
                     # user status is always returned
                     if "tokensLeft" in response:
                         self.tokens_left = response["tokensLeft"]
-                        self.status["tokensLeft"] = self.tokens_left
+                        self.status.tokensLeft = self.tokens_left
                         log.info("%d tokens remain", self.tokens_left)
                     for key in ["refillIn", "refillRate", "timestamp"]:
                         if key in response:
-                            self.status[key] = response[key]
+                            setattr(self.status, key, response[key])
 
                     if status_code == "200":
                         if raw_response:
