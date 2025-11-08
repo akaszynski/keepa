@@ -1,3 +1,5 @@
+"""Module defining the Domain enumeration for Amazon regions."""
+
 from enum import Enum
 
 
