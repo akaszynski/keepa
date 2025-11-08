@@ -477,19 +477,19 @@ class Keepa:
         """
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
-        timeatrefile = self.status["timestamp"] + self.status["refillIn"]
+        time_at_refill = self.status["timestamp"] + self.status["refillIn"]
 
         # wait plus one second fudge factor
-        timetorefil = timeatrefile - now + 1000
-        if timetorefil < 0:
-            timetorefil = 0
+        time_to_refill = time_at_refill - now + 1000
+        if time_to_refill < 0:
+            time_to_refill = 0
 
         # Account for negative tokens left
         if self.tokens_left < 0:
-            timetorefil += (abs(self.tokens_left) / self.status["refillRate"]) * 60000
+            time_to_refill += (abs(self.tokens_left) / self.status["refillRate"]) * 60000
 
         # Return value in seconds
-        return timetorefil / 1000.0
+        return time_to_refill / 1000.0
 
     def update_status(self) -> dict[str, Any]:
         """Update available tokens."""
@@ -1900,19 +1900,19 @@ class AsyncKeepa:
         """Return the time to refill in seconds."""
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
-        timeatrefile = self.status["timestamp"] + self.status["refillIn"]
+        time_at_refill = self.status["timestamp"] + self.status["refillIn"]
 
         # wait plus one second fudge factor
-        timetorefil = timeatrefile - now + 1000
-        if timetorefil < 0:
-            timetorefil = 0
+        time_to_refill = time_at_refill - now + 1000
+        if time_to_refill < 0:
+            time_to_refill = 0
 
         # Account for negative tokens left
         if self.tokens_left < 0:
-            timetorefil += (abs(self.tokens_left) / self.status["refillRate"]) * 60000
+            time_to_refill += (abs(self.tokens_left) / self.status["refillRate"]) * 60000
 
         # Return value in seconds
-        return timetorefil / 1000.0
+        return time_to_refill / 1000.0
 
     async def update_status(self) -> None:
         """Update available tokens."""
