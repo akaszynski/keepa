@@ -15,7 +15,7 @@ import pytest_asyncio
 import keepa
 
 # reduce the request limit for testing
-keepa.interface.REQLIM = 2
+keepa.keepa_async.REQLIM = 2
 
 path = os.path.dirname(os.path.realpath(__file__))
 keyfile = os.path.join(path, "key")
