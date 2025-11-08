@@ -1,4 +1,4 @@
-"""Interface module to download Amazon product and history data from keepa.com."""
+"""Shared utilities module for ``keepa``."""
 
 import asyncio
 import datetime
