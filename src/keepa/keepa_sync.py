@@ -266,7 +266,7 @@ class Keepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
-        extra_params: dict[str, Any] = {},
+        extra_params: dict[str, Any] | None = {},
     ) -> list[dict[str, Any]]:
         """
         Perform a product query of a list, array, or single ASIN.
@@ -407,7 +407,7 @@ class Keepa:
             available. If you need up-to-date data, you have to use the offers
             parameter.
 
-        extra_params : dict, default: {}
+        extra_params : dict[str, Any], optional
             Dictionary of parameters that are not specifically called out in
             the api. For example, a new parameters might be added to
             `Request.java
@@ -620,6 +620,9 @@ class Keepa:
             log.debug("Executing single product query")
         else:
             log.debug("Executing %d item product query", nitems)
+
+        if extra_params is None:
+            extra_params = {}
 
         # check offer input
         if offers:

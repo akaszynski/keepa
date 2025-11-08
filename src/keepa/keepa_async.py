@@ -165,11 +165,14 @@ class AsyncKeepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
-        extra_params: dict[str, Any] = {},
+        extra_params: dict[str, Any] | None = None,
     ):
         """Documented in Keepa.query."""
         if raw:
             raise ValueError("Raw response is only available in the non-async class")
+
+        if extra_params is None:
+            extra_params = {}
 
         # Format items into numpy array
         try:
