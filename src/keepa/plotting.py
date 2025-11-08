@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from keepa.interface import keepa_minutes_to_time, parse_csv
+from keepa.utils import keepa_minutes_to_time, parse_csv
 
 
 def plot_product(
