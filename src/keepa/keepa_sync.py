@@ -28,7 +28,7 @@ class Keepa:
 
     Initializes API with access key. Access key can be obtained by signing up
     for a reoccurring or one time plan. To obtain a key, sign up for one at
-    `Keepa Data <https://get.keepa.com/d7vrq>`_
+    `Keepa Data <https://get.keepa.com/d7vrq>`_.
 
     Parameters
     ----------
