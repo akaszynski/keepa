@@ -37,9 +37,9 @@ version = "1.4.2"
 
 [project.optional-dependencies]
 doc = [
-  "sphinx==7.3.7",
-  "pydata-sphinx-theme==0.15.4",
-  "numpydoc==1.7.0"
+  "sphinx==9.1.0",
+  "pydata-sphinx-theme==0.16.1",
+  "numpydoc==1.10.0"
 ]
 test = [
   "matplotlib",
