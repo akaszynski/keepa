@@ -308,8 +308,8 @@ found at `keepacom/api_backend <https://github.com/keepacom/api_backend/>`_.
 
 License
 -------
-Apache License, please see license file. Work is credited to both Alex
-Kaszynski and Marius Johann.
+Apache License, please see license file. Work is credited to both Alex Kaszynski
+and Marius Johann.
 
 
 .. _create a pull request: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request
