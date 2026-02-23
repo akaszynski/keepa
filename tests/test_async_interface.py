@@ -95,7 +95,28 @@ async def api():
 
 
 @pytest.mark.asyncio
-async def test_deals(api):
+async def test_update_status(api: keepa.AsyncKeepa) -> None:
+    assert api.status.tokensLeft is None
+    await api.update_status()
+    assert api.status.tokensLeft
+
+
+@pytest.mark.asyncio
+async def test_update_status(api: keepa.AsyncKeepa) -> None:
+    assert api.status.tokensLeft is None
+    await api.update_status()
+    assert api.status.tokensLeft
+
+
+@pytest.mark.asyncio
+async def test_wait_for_tokens(api: keepa.AsyncKeepa) -> None:
+    assert api.status.tokensLeft is None
+    await api.wait_for_tokens()
+    assert api.status.tokensLeft
+
+
+@pytest.mark.asyncio
+async def test_deals(api: keepa.AsyncKeepa) -> None:
     deal_parms = {
         "page": 0,
         "domainId": 1,
@@ -108,14 +129,14 @@ async def test_deals(api):
 
 
 @pytest.mark.asyncio
-async def test_product_finder_categories(api):
+async def test_product_finder_categories(api: keepa.AsyncKeepa) -> None:
     product_parms = {"categories_include": ["1055398"]}
     products = await api.product_finder(product_parms)
     assert products
 
 
 @pytest.mark.asyncio
-async def test_extra_params(api):
+async def test_extra_params(api: keepa.AsyncKeepa) -> None:
     # simply ensure that extra parameters are passed. Since this is a duplicate
     # parameter, it's expected to fail.
     with pytest.raises(TypeError):
@@ -123,7 +144,7 @@ async def test_extra_params(api):
 
 
 @pytest.mark.asyncio
-async def test_product_finder_query(api):
+async def test_product_finder_query(api: keepa.AsyncKeepa) -> None:
     product_parms = {
         "author": "jim butcher",
         "page": 1,
@@ -144,7 +165,7 @@ async def test_product_finder_query(api):
     assert asins
 
 
-# def test_throttling(api):
+# def test_throttling(api: keepa.AsyncKeepa) -> None:
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
 
@@ -160,13 +181,13 @@ async def test_product_finder_query(api):
 
 
 @pytest.mark.asyncio
-async def test_productquery_raw(api):
+async def test_productquery_raw(api: keepa.AsyncKeepa) -> None:
     with pytest.raises(ValueError):
         await api.query(PRODUCT_ASIN, history=False, raw=True)
 
 
 @pytest.mark.asyncio
-async def test_productquery_nohistory(api):
+async def test_productquery_nohistory(api: keepa.AsyncKeepa) -> None:
     pre_update_tokens = api.tokens_left
     request = await api.query(PRODUCT_ASIN, history=False)
     assert api.tokens_left != pre_update_tokens
@@ -177,28 +198,28 @@ async def test_productquery_nohistory(api):
 
 
 @pytest.mark.asyncio
-async def test_not_an_asin(api):
+async def test_not_an_asin(api: keepa.AsyncKeepa) -> None:
     with pytest.raises(RuntimeError, match="invalid ASINs"):
         asins = ["XXXXXXXXXX"]
         await api.query(asins)
 
 
 @pytest.mark.asyncio
-async def test_isbn13(api):
+async def test_isbn13(api: keepa.AsyncKeepa) -> None:
     isbn13 = "9780786222728"
     await api.query(isbn13, product_code_is_asin=False, history=False)
 
 
 @pytest.mark.asyncio
 @pytest.mark.xfail  # will fail if not run in a while due to timeout
-async def test_buybox(api):
+async def test_buybox(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, history=True, buybox=True)
     product = request[0]
     assert "BUY_BOX_SHIPPING" in product["data"]
 
 
 @pytest.mark.asyncio
-async def test_productquery_update(api):
+async def test_productquery_update(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, update=0, stats=90, rating=True)
     product = request[0]
 
@@ -228,7 +249,7 @@ async def test_productquery_update(api):
 
 @pytest.mark.asyncio
 @pytest.mark.flaky(reruns=3)
-async def test_productquery_offers(api):
+async def test_productquery_offers(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, offers=20)
     product = request[0]
 
@@ -247,13 +268,13 @@ async def test_productquery_offers(api):
 
 
 @pytest.mark.asyncio
-async def test_productquery_offers_invalid(api):
+async def test_productquery_offers_invalid(api: keepa.AsyncKeepa) -> None:
     with pytest.raises(ValueError):
         await api.query(PRODUCT_ASIN, offers=2000)
 
 
 @pytest.mark.asyncio
-async def test_productquery_offers_multiple(api):
+async def test_productquery_offers_multiple(api: keepa.AsyncKeepa) -> None:
     products = await api.query(PRODUCT_ASINS)
 
     asins = np.unique([product["asin"] for product in products])
@@ -262,20 +283,20 @@ async def test_productquery_offers_multiple(api):
 
 
 @pytest.mark.asyncio
-async def test_domain(api):
+async def test_domain(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, history=False, domain="DE")
     product = request[0]
     assert product["asin"] == PRODUCT_ASIN
 
 
 @pytest.mark.asyncio
-async def test_invalid_domain(api):
+async def test_invalid_domain(api: keepa.AsyncKeepa) -> None:
     with pytest.raises(ValueError):
         await api.query(PRODUCT_ASIN, history=False, domain="XX")
 
 
 @pytest.mark.asyncio
-async def test_bestsellers(api):
+async def test_bestsellers(api: keepa.AsyncKeepa) -> None:
     categories = await api.search_for_categories("chairs")
     category = list(categories.items())[0][0]
     asins = await api.best_sellers_query(category)
@@ -285,7 +306,7 @@ async def test_bestsellers(api):
 
 @pytest.mark.asyncio
 @pytest.mark.xfail  # will fail if not run in a while due to timeout
-async def test_buybox_used(api):
+async def test_buybox_used(api: keepa.AsyncKeepa) -> None:
     # history must be true to get used buybox
     request = await api.query(HARD_DRIVE_PRODUCT_ASIN, history=True, offers=20)
     df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
@@ -293,7 +314,7 @@ async def test_buybox_used(api):
 
 
 @pytest.mark.asyncio
-async def test_categories(api):
+async def test_categories(api: keepa.AsyncKeepa) -> None:
     categories = await api.search_for_categories("chairs")
     catids = list(categories.keys())
     for catid in catids:
@@ -301,20 +322,20 @@ async def test_categories(api):
 
 
 @pytest.mark.asyncio
-async def test_categorylookup(api):
+async def test_categorylookup(api: keepa.AsyncKeepa) -> None:
     categories = await api.category_lookup(0)
     for cat_id in categories:
         assert categories[cat_id]["name"]
 
 
 @pytest.mark.asyncio
-async def test_invalid_category(api):
+async def test_invalid_category(api: keepa.AsyncKeepa) -> None:
     with pytest.raises(Exception):
         await api.category_lookup(-1)
 
 
 @pytest.mark.asyncio
-async def test_stock(api):
+async def test_stock(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, history=False, stock=True, offers=20)
 
     # all live offers should have stock
@@ -332,7 +353,7 @@ async def test_stock(api):
 
 
 @pytest.mark.asyncio
-async def test_to_datetime_parm(api):
+async def test_to_datetime_parm(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, to_datetime=True)
     product = request[0]
     times = product["data"]["AMAZON_time"]
@@ -354,14 +375,14 @@ async def test_download_graph_image(api, tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_plotting(api):
+async def test_plotting(api: keepa.AsyncKeepa) -> None:
     request = await api.query(PRODUCT_ASIN, history=True)
     product = request[0]
     keepa.plot_product(product, show=False)
 
 
 @pytest.mark.asyncio
-async def test_empty(api):
+async def test_empty(api: keepa.AsyncKeepa) -> None:
     import matplotlib.pyplot as plt
 
     plt.close("all")
@@ -371,7 +392,7 @@ async def test_empty(api):
 
 
 @pytest.mark.asyncio
-async def test_seller_query(api):
+async def test_seller_query(api: keepa.AsyncKeepa) -> None:
     seller_id = "A2L77EE7U53NWQ"
     seller_info = await api.seller_query(seller_id)
     assert len(seller_info) == 1
@@ -379,7 +400,7 @@ async def test_seller_query(api):
 
 
 @pytest.mark.asyncio
-async def test_seller_query_list(api):
+async def test_seller_query_list(api: keepa.AsyncKeepa) -> None:
     seller_id = ["A2L77EE7U53NWQ", "AMMEOJ0MXANX1"]
     seller_info = await api.seller_query(seller_id)
     assert len(seller_info) == len(seller_id)
@@ -387,7 +408,7 @@ async def test_seller_query_list(api):
 
 
 @pytest.mark.asyncio
-async def test_seller_query_long_list(api):
+async def test_seller_query_long_list(api: keepa.AsyncKeepa) -> None:
     seller_id = ["A2L77EE7U53NWQ"] * 200
     with pytest.raises(RuntimeError):
         await api.seller_query(seller_id)
