@@ -40,9 +40,14 @@ class Keepa:
         server has not issued a response for timeout seconds. Setting this to
         0.0 disables the timeout, but will cause any request to hang
         indefiantly should keepa.com be down
-    logging_level: string, default: "DEBUG"
+    logging_level: str, default: "DEBUG"
         Logging level to use. Default is "DEBUG". Other options are "INFO",
         "WARNING", "ERROR", and "CRITICAL".
+    check_key : bool, default: True
+        Check the keepa key on initialization and update the number of
+        available tokens. This is a free check and does not cost any tokens,
+        but does slow down the time to initialize. Disable this to speed up
+        init at the risk of using an invalid key when querying for a product.
 
     Examples
     --------
@@ -81,7 +86,13 @@ class Keepa:
     status: Status
     _timeout: float
 
-    def __init__(self, accesskey: str, timeout: float = 10.0, logging_level: str = "DEBUG") -> None:
+    def __init__(
+        self,
+        accesskey: str,
+        timeout: float = 10.0,
+        logging_level: str = "DEBUG",
+        check_key: bool = False,
+    ) -> None:
         """Initialize server connection."""
         self.accesskey = accesskey
         self.tokens_left = 0
@@ -93,9 +104,11 @@ class Keepa:
             raise TypeError("logging_level must be one of: " + ", ".join(levels))
         log.setLevel(logging_level)
 
-        # Don't check available tokens on init
+        # Check available tokens on init
         log.info("Using key ending in %s", accesskey[-6:])
         self.status = Status()
+        if check_key:
+            self.update_status()
 
     @property
     def time_to_refill(self) -> float:
@@ -114,6 +127,20 @@ class Keepa:
         0.0
 
         """
+        if (
+            self.status.refillRate is None
+            or self.status.refillIn is None
+            or self.status.timestamp is None
+        ):
+            self.update_status()
+
+        if (
+            self.status.refillRate is None
+            or self.status.refillIn is None
+            or self.status.timestamp is None
+        ):
+            raise RuntimeError("Failed to update status")
+
         # Get current timestamp in milliseconds from UNIX epoch
         now = int(time.time() * 1000)
         time_at_refill = self.status.timestamp + self.status.refillIn
@@ -130,11 +157,10 @@ class Keepa:
         # Return value in seconds
         return time_to_refill / 1000.0
 
-    def update_status(self) -> dict[str, Any]:
+    def update_status(self) -> None:
         """Update available tokens."""
-        status = self._request("token", {"key": self.accesskey}, wait=False)
-        self.status = status
-        return status
+        # number of available tokens is always returned
+        self._request("token", {"key": self.accesskey}, wait=False)
 
     def wait_for_tokens(self) -> None:
         """Check if there are any remaining tokens and waits if none are available."""
@@ -143,7 +169,7 @@ class Keepa:
         # Wait if no tokens available
         if self.tokens_left <= 0:
             tdelay = self.time_to_refill
-            log.warning("Waiting %.0f seconds for additional tokens" % tdelay)
+            log.warning("Waiting %.0f seconds for additional tokens", tdelay)
             time.sleep(tdelay)
             self.update_status()
 
@@ -632,6 +658,11 @@ class Keepa:
             if offers > 100 or offers < 20:
                 raise ValueError('Parameter "offers" must be between 20 and 100')
 
+        if self.status.refillRate is None or self.status.refillIn is None:
+            self.update_status()
+        if self.status.refillRate is None or self.status.refillIn is None:
+            raise RuntimeError("Failed to update status")
+
         # Report time to completion
         if self.status.refillRate is not None:
             tcomplete = (
@@ -797,7 +828,7 @@ class Keepa:
         to_datetime = kwargs.pop("to_datetime", True)
 
         # Query and replace csv with parsed data if history enabled
-        wait = kwargs.get("wait")
+        wait = bool(kwargs.get("wait"))
         kwargs.pop("wait", None)
         raw_response = kwargs.pop("raw", False)
         response = self._request("product", kwargs, wait=wait, raw_response=raw_response)
@@ -956,7 +987,7 @@ class Keepa:
 
     def search_for_categories(
         self, searchterm: str, domain: str | Domain = "US", wait: bool = True
-    ) -> list:
+    ) -> dict[str, Any]:
         """
         Search for categories from Amazon.
 

@@ -130,7 +130,7 @@ class AsyncKeepa:
 
     async def update_status(self) -> None:
         """Update available tokens."""
-        self.status = await self._request("token", {"key": self.accesskey}, wait=False)
+        await self._request("token", {"key": self.accesskey}, wait=False)
 
     async def wait_for_tokens(self) -> None:
         """Check if there are any remaining tokens and waits if none are available."""
