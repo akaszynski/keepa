@@ -93,9 +93,9 @@ PRODUCT_ASINS = [
 
 
 # open connection to keepa
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def api() -> Keepa:
-    return Keepa(TESTINGKEY)
+    return Keepa(TESTINGKEY, check_key=False)
 
 
 def test_deals(api: Keepa) -> None:
@@ -110,16 +110,28 @@ def test_deals(api: Keepa) -> None:
     assert isinstance(deals["dr"], list)
 
 
-def test_invalidkey():
-    with pytest.raises(Exception):
-        keepa.Api("thisisnotavalidkey")
+def test_invalidkey() -> None:
+    with pytest.raises(RuntimeError, match="REQUEST_REJECTED"):
+        keepa.Keepa("thisisnotavalidkey", check_key=True)
 
 
-def test_deadkey():
-    with pytest.raises(Exception):
+def test_deadkey() -> None:
+    with pytest.raises(RuntimeError, match="PAYMENT_REQUIRED"):
         # this key returns "payment required"
         deadkey = "8ueigrvvnsp5too0atlb5f11veinerkud47p686ekr7vgr9qtj1t1tle15fffkkm"
-        keepa.Api(deadkey)
+        keepa.Keepa(deadkey, check_key=True)
+
+
+def test_update_status(api: keepa.Keepa) -> None:
+    assert api.status.tokensLeft is None
+    api.update_status()
+    assert api.status.tokensLeft
+
+
+def test_wait_for_tokens(api: keepa.Keepa) -> None:
+    assert api.status.tokensLeft is None
+    api.wait_for_tokens()
+    assert api.status.tokensLeft
 
 
 def test_extra_params(api: keepa.Keepa) -> None:
@@ -129,7 +141,7 @@ def test_extra_params(api: keepa.Keepa) -> None:
         api.query("B0DJHC1PL8", extra_params={"rating": 1})
 
 
-def test_product_finder_categories(api):
+def test_product_finder_categories(api: keepa.Keepa) -> None:
     product_parms = {"categories_include": ["1055398"]}
     products = api.product_finder(product_parms)
     assert products
@@ -149,7 +161,7 @@ def test_product_finder_query(api: keepa.Keepa) -> None:
     assert len(asins) == per_page_n_products
 
 
-# def test_throttling(api):
+# def test_throttling(api: keepa.Keepa) -> None:
 #     api = keepa.Keepa(WEAKTESTINGKEY)
 #     keepa.interface.REQLIM = 20
 
@@ -164,14 +176,14 @@ def test_product_finder_query(api: keepa.Keepa) -> None:
 #     keepa.interface.REQLIM = 2
 
 
-def test_productquery_raw(api):
+def test_productquery_raw(api: keepa.Keepa) -> None:
     request = api.query(PRODUCT_ASIN, history=False, raw=True)
     raw = request[0]
     assert isinstance(raw, requests.Response)
     assert PRODUCT_ASIN in raw.text
 
 
-def test_productquery_nohistory(api):
+def test_productquery_nohistory(api: keepa.Keepa) -> None:
     pre_update_tokens = api.tokens_left
     request = api.query(PRODUCT_ASIN, history=False)
     assert api.tokens_left != pre_update_tokens
@@ -181,13 +193,13 @@ def test_productquery_nohistory(api):
     assert product["asin"] == PRODUCT_ASIN
 
 
-def test_not_an_asin(api):
+def test_not_an_asin(api: keepa.Keepa) -> None:
     with pytest.raises(RuntimeError, match="invalid ASINs"):
         asins = ["XXXXXXXXXX"]
         api.query(asins)
 
 
-def test_isbn13(api):
+def test_isbn13(api: keepa.Keepa) -> None:
     isbn13 = "9780786222728"
     api.query(isbn13, product_code_is_asin=False, history=False)
 
@@ -198,7 +210,7 @@ def test_buybox(api: keepa.Keepa) -> None:
     assert "BUY_BOX_SHIPPING" in product["data"]
 
 
-def test_productquery_update(api):
+def test_productquery_update(api: keepa.Keepa) -> None:
     request = api.query(PRODUCT_ASIN, update=0, stats=90, rating=True)
     product = request[0]
 
@@ -226,7 +238,7 @@ def test_productquery_update(api):
     assert "offers" not in product or product["offers"] is None
 
 
-def test_productquery_offers(api):
+def test_productquery_offers(api: keepa.Keepa) -> None:
     request = api.query(PRODUCT_ASIN, offers=20)
     product = request[0]
 
@@ -244,7 +256,7 @@ def test_productquery_offers(api):
     assert len(prices)
 
 
-def test_productquery_only_live_offers(api):
+def test_productquery_only_live_offers(api: keepa.Keepa) -> None:
     """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
     max_offers = 20
     request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False)
@@ -311,12 +323,12 @@ def test_productquery_days(api, max_days: int = 5):
                 warnings.warn(f'Day "{day}" is older than {max_days} from today')
 
 
-def test_productquery_offers_invalid(api):
+def test_productquery_offers_invalid(api: keepa.Keepa) -> None:
     with pytest.raises(ValueError):
         api.query(PRODUCT_ASIN, offers=2000)
 
 
-def test_productquery_offers_multiple(api):
+def test_productquery_offers_multiple(api: keepa.Keepa) -> None:
     products = api.query(PRODUCT_ASINS)
 
     asins = np.unique([product["asin"] for product in products])
@@ -332,12 +344,12 @@ def test_domain(api: Keepa) -> None:
     assert product["asin"] == asin
 
 
-def test_invalid_domain(api):
+def test_invalid_domain(api: keepa.Keepa) -> None:
     with pytest.raises(ValueError):
         api.query(PRODUCT_ASIN, domain="XX")
 
 
-def test_bestsellers(api):
+def test_bestsellers(api: keepa.Keepa) -> None:
     categories = api.search_for_categories("chairs")
     category = list(categories.items())[0][0]
     asins = api.best_sellers_query(category)
@@ -346,31 +358,31 @@ def test_bestsellers(api):
 
 
 @pytest.mark.xfail  # will fail if not run in a while due to timeout
-def test_buybox_used(api):
+def test_buybox_used(api: keepa.Keepa) -> None:
     request = api.query(HARD_DRIVE_PRODUCT_ASIN, history=True, offers=20)
     df = keepa.process_used_buybox(request[0]["buyBoxUsedHistory"])
     assert isinstance(df, pd.DataFrame)
 
 
-def test_categories(api):
+def test_categories(api: keepa.Keepa) -> None:
     categories = api.search_for_categories("chairs")
     catids = list(categories.keys())
     for catid in catids:
         assert "chairs" in categories[catid]["name"].lower()
 
 
-def test_categorylookup(api):
+def test_categorylookup(api: keepa.Keepa) -> None:
     categories = api.category_lookup(0)
     for cat_id in categories:
         assert categories[cat_id]["name"]
 
 
-def test_invalid_category(api):
+def test_invalid_category(api: keepa.Keepa) -> None:
     with pytest.raises(Exception):
         api.category_lookup(-1)
 
 
-def test_stock(api):
+def test_stock(api: keepa.Keepa) -> None:
     request = api.query(PRODUCT_ASIN, history=False, stock=True, offers=20)
 
     # all live offers must have stock
@@ -387,7 +399,7 @@ def test_stock(api):
         warnings.warn(f"No live offers for {PRODUCT_ASIN}")
 
 
-def test_keepatime(api):
+def test_keepatime(api: keepa.Keepa) -> None:
     keepa_st_ordinal = datetime.datetime(2011, 1, 1)
     assert keepa_st_ordinal == keepa.keepa_minutes_to_time(0)
     assert keepa.keepa_minutes_to_time(0, to_datetime=False)
@@ -435,7 +447,7 @@ def test_plotting(api: Keepa) -> None:
     keepa.plot_product(product, show=False)
 
 
-def test_empty(api):
+def test_empty(api: keepa.Keepa) -> None:
     import matplotlib.pyplot as plt
 
     plt.close("all")
@@ -444,21 +456,21 @@ def test_empty(api):
         keepa.plot_product(products[0], show=False)
 
 
-def test_seller_query(api):
+def test_seller_query(api: keepa.Keepa) -> None:
     seller_id = "A2L77EE7U53NWQ"
     seller_info = api.seller_query(seller_id)
     assert len(seller_info) == 1
     assert seller_id in seller_info
 
 
-def test_seller_query_list(api):
+def test_seller_query_list(api: keepa.Keepa) -> None:
     seller_id = ["A2L77EE7U53NWQ", "AMMEOJ0MXANX1"]
     seller_info = api.seller_query(seller_id)
     assert len(seller_info) == len(seller_id)
     assert set(seller_info).issubset(seller_id)
 
 
-def test_seller_query_long_list(api):
+def test_seller_query_long_list(api: keepa.Keepa) -> None:
     seller_id = ["A2L77EE7U53NWQ"] * 200
     with pytest.raises(RuntimeError):
         api.seller_query(seller_id)

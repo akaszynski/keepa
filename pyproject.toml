@@ -2,9 +2,6 @@
 build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3,<4"]
 
-[mypy]
-plugins = "pydantic.mypy"
-
 [project]
 authors = [
   {name = "Alex Kaszynski", email = "akascap@gmail.com"}
@@ -53,6 +50,9 @@ test = [
 [project.urls]
 Documentation = "https://keepaapi.readthedocs.io/en/latest/"
 Source = "https://github.com/akaszynski/keepa"
+
+[tool.mypy]
+plugins = "pydantic.mypy"
 
 [tool.pytest.ini_options]
 addopts = "--cov=keepa --cov-fail-under=85"
