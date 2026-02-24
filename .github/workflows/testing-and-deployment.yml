@@ -77,10 +77,6 @@ jobs:
     - uses: actions/download-artifact@v7
       with:
         path: dist/
-    - name: Flatten directory structure
-      run: |
-        mv dist/*/* dist/
-        rm -rf dist/keepa-wheel
     - name: Display structure of downloaded files
       run: ls -R
     - name: Publish package distributions to PyPI
