@@ -55,7 +55,7 @@ csv_indices: list[tuple[int, str, bool]] = [
     (11, "COUNT_NEW", False),
     (12, "COUNT_USED", False),
     (13, "COUNT_REFURBISHED", False),
-    (14, "CollectableOffers", False),
+    (14, "COUNT_COLLECTIBLE", False),
     (15, "EXTRA_INFO_UPDATES", False),
     (16, "RATING", True),
     (17, "COUNT_REVIEWS", False),
@@ -72,7 +72,11 @@ csv_indices: list[tuple[int, str, bool]] = [
     (28, "EBAY_NEW_SHIPPING", True),
     (29, "EBAY_USED_SHIPPING", True),
     (30, "TRADE_IN", True),
-    (31, "RENT", False),
+    (31, "RENT", True),
+    (32, "BUY_BOX_USED_SHIPPING", True),
+    (33, "PRIME_EXCL", True),
+    (34, "COUNT_NEW_FBA", False),
+    (35, "COUNT_NEW_FBM", False),
 ]
 
 _SELLER_TIME_DATA_KEYS = ["trackedSince", "lastUpdate"]
