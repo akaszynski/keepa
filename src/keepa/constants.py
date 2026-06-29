@@ -12,8 +12,10 @@ REQUEST_LIMIT = 100
 SCODES = {
     "400": "REQUEST_REJECTED",
     "402": "PAYMENT_REQUIRED",
+    "404": "NOT_FOUND",
     "405": "METHOD_NOT_ALLOWED",
     "429": "NOT_ENOUGH_TOKEN",
+    "500": "INTERNAL_SERVER_ERROR",
 }
 
 # domain codes
@@ -27,15 +29,13 @@ DCODES = [
     "FR",
     "JP",
     "CA",
-    "CN",
+    "RESERVED2",
     "IT",
     "ES",
     "IN",
     "MX",
     "BR",
 ]
-# developer note: appears like CN (China) has changed to RESERVED2
-
 # csv indices. used when parsing csv and stats fields.
 # https://github.com/keepacom/api_backend
 # see api_backend/src/main/java/com/keepa/api/backend/structs/Product.java
@@ -79,4 +79,4 @@ csv_indices: list[tuple[int, str, bool]] = [
     (35, "COUNT_NEW_FBM", False),
 ]
 
-_SELLER_TIME_DATA_KEYS = ["trackedSince", "lastUpdate"]
+_SELLER_TIME_DATA_KEYS = ["trackedSince", "lastUpdate", "lastRatingUpdate"]
