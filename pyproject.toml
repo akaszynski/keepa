@@ -23,7 +23,7 @@ dependencies = [
   "tqdm",
   "aiohttp",
   "pandas <= 3.0",
-  "pydantic"
+  "pydantic >=2"
 ]
 description = "Interfaces with keepa.com's API."
 keywords = ["keepa"]
@@ -34,9 +34,11 @@ version = "1.5.dev0"
 
 [project.optional-dependencies]
 doc = [
-  "sphinx==9.1.0",
+  "sphinx==8.1.3; python_version < '3.12'",
+  "sphinx==9.1.0; python_version >= '3.12'",
   "pydata-sphinx-theme==0.16.1",
-  "numpydoc==1.10.0"
+  "numpydoc==1.10.0",
+  "tomli; python_version < '3.11'"
 ]
 test = [
   "matplotlib",

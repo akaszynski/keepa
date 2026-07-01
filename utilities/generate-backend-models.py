@@ -72,6 +72,7 @@ def main() -> None:
         "from __future__ import annotations",
         "",
         "from enum import Enum",
+        "",
         "from pydantic import BaseModel, ConfigDict, Field",
         "",
         f'BACKEND_COMMIT = "{BACKEND_COMMIT}"',
@@ -94,11 +95,12 @@ def main() -> None:
     lines.extend(
         [
             "",
+            "",
             "__all__ = [",
             *[f'    "{name}",' for name in export_names],
             "]",
             "",
-            "_MODELS = [",
+            "_MODELS: list[type[KeepaBackendModel]] = [",
             *[
                 f"    {declaration.name},"
                 for declaration in sorted(declarations, key=lambda item: item.name)

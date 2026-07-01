@@ -30,7 +30,9 @@ This library is compatible with Python >= 3.10 and requires:
 
 - ``numpy``
 - ``aiohttp``
-- ``matplotlib``
+- ``pandas``
+- ``pydantic >= 2``
+- ``requests``
 - ``tqdm``
 
 Product history can be plotted from the raw data when ``matplotlib``
@@ -78,7 +80,11 @@ Pydantic models while keeping the default dictionary output unchanged.
     product = products[0]
     print(product.asin)
     print(product.title)
-    product_dict = product.model_dump(exclude_none=True)
+    product_dict = product.model_dump(exclude_none=True, by_alias=True)
+
+See the `typed response documentation
+<https://keepaapi.readthedocs.io/en/latest/>`_ Typed Responses page for
+supported methods, complete return shapes, serialization, and async usage.
 
 .. figure:: https://github.com/akaszynski/keepa/raw/main/docs/source/images/Product_Price_Plot.png
     :width: 500pt
@@ -91,10 +97,10 @@ Pydantic models while keeping the default dictionary output unchanged.
     Product Offers Plot
 
 
-Brief Example using async
+Brief Example Using Async
 -------------------------
-Here's an example of obtaining a product and plotting its price and
-offer history using the ``keepa.AsyncKeepa`` class:
+Here's an example of finding product ASINs using the
+``keepa.AsyncKeepa`` class:
 
 .. code:: python
 
@@ -103,7 +109,7 @@ offer history using the ``keepa.AsyncKeepa`` class:
     >>> product_parms = {'author': 'jim butcher'}
     >>> async def main():
     ...     key = '<REAL_KEEPA_KEY>'
-    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     api = await keepa.AsyncKeepa.create(key)
     ...     return await api.product_finder(product_parms)
     >>> asins = asyncio.run(main())
     >>> asins
@@ -124,7 +130,7 @@ keepa interface.
     >>> import keepa
     >>> async def main():
     ...     key = '<REAL_KEEPA_KEY>'
-    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     api = await keepa.AsyncKeepa.create(key)
     ...     return await api.query('B0088PUEPK')
     >>> response = asyncio.run(main())
     >>> response[0]['title']
@@ -152,20 +158,19 @@ Single ASIN query
     # See help(api.query) for available options when querying the API
 
 
-You can use keepa witch async / await too
+The asynchronous client uses the same query interface:
 
 .. code:: python
 
+    import asyncio
     import keepa
-    accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
-    api = await keepa.AsyncKeepa.create(accesskey)
 
+    async def main():
+        accesskey = 'XXXXXXXXXXXXXXXX' # enter real access key here
+        api = await keepa.AsyncKeepa.create(accesskey)
+        return await api.query('059035342X')
 
-Single ASIN query (async)
-
-.. code:: python
-
-    products = await api.query('059035342X')
+    products = asyncio.run(main())
 
 
 Multiple ASIN query from List
@@ -179,10 +184,14 @@ Multiple ASIN query from numpy array
 
 .. code:: python
 
+    import numpy as np
+
     asins = np.asarray(['0022841350', '0022841369', '0022841369', '0022841369'])
     products = api.query(asins)
 
-Products is a list of product data with one entry per successful result from the Keepa server. Each entry is a dictionary containing the same product data available from `Amazon <http://www.amazon.com>`_.
+``products`` is a list with one entry per successful result from the Keepa
+server. By default, each entry is a dictionary containing the available
+Amazon product data.
 
 .. code:: python
 
@@ -193,20 +202,25 @@ Products is a list of product data with one entry per successful result from the
     print('ASIN is ' + products[0]['asin'])
     print('Title is ' + products[0]['title'])
 
-The raw data is contained within each product result. Raw data is stored as a dictionary with each key paired with its associated time history.
+    # Index batch results by ASIN when random access is more convenient
+    products_by_asin = {product['asin']: product for product in products}
+
+When Keepa has history for a product, ``data`` contains arrays paired with
+corresponding ``*_time`` arrays. Individual history types may be absent.
 
 .. code:: python
 
     # Access new price history and associated time data
-    newprice = products[0]['data']['NEW']
-    newpricetime = products[0]['data']['NEW_time']
+    history = products[0].get('data', {})
+    newprice = history.get('NEW', [])
+    newpricetime = history.get('NEW_time', [])
 
     # Can be plotted with matplotlib using:
     import matplotlib.pyplot as plt
     plt.step(newpricetime, newprice, where='pre')
 
     # Keys can be listed by
-    print(products[0]['data'].keys())
+    print(history.keys())
 
 The product history can also be plotted from the module if ``matplotlib`` is installed
 
@@ -248,12 +262,13 @@ You can obtain the offers history for an ASIN (or multiple ASINs) using the ``of
         plt.step(offer_times[i], offer_prices[i])
     plt.show()
 
-If you plan to do a lot of simulatneous query, you might want to speedup query using
-``wait=False`` arguments.
+By default, the client waits for Keepa tokens when necessary. Use ``wait=False``
+only when your application manages token availability itself; it does not make
+the API response faster and may produce a token error.
 
 .. code:: python
 
-    products = await api.query('059035342X', wait=False)
+    products = api.query('059035342X', wait=False)
 
 
 Buy Box Statistics
@@ -308,8 +323,8 @@ Finally, `create a pull request`_ from your fork and I'll be sure to review it.
 
 Credits
 -------
-This Python module, written by Alex Kaszynski and several contribitors, is
-based on Java code written by Marius Johann, CEO Keepa. Java source is can be
+This Python module, written by Alex Kaszynski and several contributors, is
+based on Java code written by Marius Johann, CEO of Keepa. Java source can be
 found at `keepacom/api_backend <https://github.com/keepacom/api_backend/>`_.
 
 

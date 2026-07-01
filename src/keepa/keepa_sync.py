@@ -28,7 +28,7 @@ class Keepa:
     Synchronous Python interface to keepa data backend.
 
     Initializes API with access key. Access key can be obtained by signing up
-    for a reoccurring or one time plan. To obtain a key, sign up for one at
+    for a recurring or one-time plan. To obtain a key, sign up for one at
     `Keepa Data <https://get.keepa.com/d7vrq>`_.
 
     Parameters
@@ -40,7 +40,7 @@ class Keepa:
         the entire response download; rather, an exception is raised if the
         server has not issued a response for timeout seconds. Setting this to
         0.0 disables the timeout, but will cause any request to hang
-        indefiantly should keepa.com be down
+        indefinitely should keepa.com be down
     logging_level: str, default: "DEBUG"
         Logging level to use. Default is "DEBUG". Other options are "INFO",
         "WARNING", "ERROR", and "CRITICAL".
@@ -295,8 +295,8 @@ class Keepa:
         videos: bool = False,
         aplus: bool = False,
         typed: bool = False,
-        extra_params: dict[str, Any] | None = {},
-    ) -> list[dict[str, Any] | Product]:
+        extra_params: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]] | list[Product] | list[requests.Response]:
         """
         Perform a product query of a list, array, or single ASIN.
 
@@ -444,30 +444,31 @@ class Keepa:
 
         extra_params : dict[str, Any], optional
             Dictionary of parameters that are not specifically called out in
-            the api. For example, a new parameters might be added to
+            the API. For example, a new parameter might be added to
             `Request.java
-            <https://github.com/keepacom/api_backend/blob/master/src/main/java/com/keepa/api/backend/KeepaAPI.java>`_
+            <https://github.com/keepacom/api_backend/blob/6e524d13bc25bdbe49be24d59a4b28feb9f98e5d/src/main/java/com/keepa/api/backend/structs/Request.java>`_
             and not yet supported in this function. For example,
             `extra_params={'rental': 1}`.
 
         Returns
         -------
         list
-            List of products when ``raw=False``. Each product within the list
-            is a dictionary. The keys of each item may vary, so see the keys
-            within each product for further details.
+            List of products when ``raw=False``. By default, each product is a
+            dictionary. The keys of each item may vary, so see the keys within
+            each product for further details.
 
-            Each product should contain at a minimum a "data" key containing a
-            formatted dictionary. For the available fields see the notes
-            section.
+            With ``history=True``, products include a ``data`` attribute or
+            key containing parsed history arrays. For the available fields see
+            the notes section.
 
             When ``raw=True``, a list of unparsed responses are
             returned as :class:`requests.models.Response`.
 
             When ``typed=True``, each product is returned as a permissive
             Pydantic model generated from the pinned Keepa backend schema.
-            Use attribute access for known fields and ``model_dump()`` to
-            convert a typed response back to a dictionary.
+            Use attribute access for known fields and
+            ``model_dump(exclude_none=True, by_alias=True)`` to convert a
+            typed response back to backend-compatible field names.
 
             See: https://keepa.com/#!discuss/t/product-object/116
 
@@ -541,11 +542,6 @@ class Keepa:
         COUNT_REVIEWS
             The product's review count history.
 
-        BUY_BOX_SHIPPING
-            The price history of the buy box. If no offer qualified
-            for the buy box the price has the value -1. Including
-            shipping costs.
-
         USED_NEW_SHIPPING
             "Used - Like New" price history including shipping costs.
 
@@ -607,7 +603,7 @@ class Keepa:
         >>> import keepa
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     return await api.query("B0088PUEPK")
         ...
         >>> response = asyncio.run(main())
@@ -973,7 +969,7 @@ class Keepa:
         >>> import keepa
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     categories = await api.search_for_categories("movies")
         ...     category = list(categories.items())[0][0]
         ...     return await api.best_sellers_query(category)
@@ -1010,7 +1006,7 @@ class Keepa:
         domain: str | Domain = "US",
         wait: bool = True,
         typed: bool = False,
-    ) -> dict[str, Any] | dict[str, Category]:
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """
         Search for categories from Amazon.
 
@@ -1029,9 +1025,10 @@ class Keepa:
 
         Returns
         -------
-        dict[str, Any]
-            The response contains a categories dictionary with all matching
-            categories.
+        dict[str, dict[str, Any]] | dict[str, Category]
+            Categories keyed by category ID. Values are dictionaries by
+            default and :class:`keepa.backend_models.Category` models when
+            ``typed=True``.
 
         Examples
         --------
@@ -1077,10 +1074,10 @@ class Keepa:
         self,
         category_id: int,
         domain: str | Domain = "US",
-        include_parents=False,
+        include_parents: bool = False,
         wait: bool = True,
         typed: bool = False,
-    ) -> dict[str, Any] | dict[str, Category]:
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """
         Return root categories given a categoryId.
 
@@ -1101,8 +1098,9 @@ class Keepa:
 
         Returns
         -------
-        dict[str, Any]
-            Output format is the same as :meth:`Keepa.`search_for_categories`.
+        dict[str, dict[str, Any]] | dict[str, Category]
+            Output format is the same as
+            :meth:`Keepa.search_for_categories`.
 
         Examples
         --------
@@ -1163,7 +1161,7 @@ class Keepa:
         update: int | None = None,
         wait: bool = True,
         typed: bool = False,
-    ) -> dict[str, Any] | dict[str, Seller]:
+    ) -> dict[str, dict[str, Any]] | dict[str, Seller]:
         """
         Receive seller information for a given seller id or ids.
 
@@ -1224,8 +1222,10 @@ class Keepa:
 
         Returns
         -------
-        dict
-            Dictionary containing one entry per input ``seller_id``.
+        dict[str, dict[str, Any]] | dict[str, Seller]
+            One entry per input ``seller_id``. Values are dictionaries by
+            default and :class:`keepa.backend_models.Seller` models when
+            ``typed=True``.
 
         Examples
         --------
@@ -1342,7 +1342,7 @@ class Keepa:
         >>> product_parms = {"author": "jim butcher"}
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     return await api.product_finder(product_parms)
         ...
         >>> asins = asyncio.run(main())
@@ -1425,8 +1425,10 @@ class Keepa:
 
         Returns
         -------
-        dict
-            Dictionary containing the deals including the following keys:
+        dict[str, Any] | DealResponse
+            Dictionary containing the deals, or a
+            :class:`keepa.backend_models.DealResponse` when ``typed=True``.
+            The response includes the following fields:
 
             * ``'dr'`` - Ordered array of all deal objects matching your query.
             * ``'categoryIds'`` - Contains all root categoryIds of the matched
@@ -1471,19 +1473,12 @@ class Keepa:
         ... }
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
-        ...     categories = await api.search_for_categories("movies")
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     return await api.deals(deal_parms)
         ...
-        >>> asins = asyncio.run(main())
-        >>> asins
-        ['B0BF3P5XZS',
-         'B08JQN5VDT',
-         'B09SP8JPPK',
-         '0999296345',
-         'B07HPG684T',
-         '1984825577',
-        ...
+        >>> deals = asyncio.run(main())
+        >>> deals["dr"][0]["asin"]
+        'B0BF3P5XZS'
 
         """
         # verify valid keys

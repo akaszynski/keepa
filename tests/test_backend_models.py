@@ -1,5 +1,6 @@
 """Tests for optional Pydantic backend model responses."""
 
+import inspect
 from typing import Any
 
 import pytest
@@ -14,6 +15,19 @@ def _ready_api() -> keepa.Keepa:
     api.status.refillRate = 100
     api.status.refillIn = 0
     return api
+
+
+def test_query_extra_params_default_is_not_mutable() -> None:
+    assert inspect.signature(keepa.Keepa.query).parameters["extra_params"].default is None
+
+
+def test_backend_aliases_round_trip() -> None:
+    image = backend_models.Image.model_validate({"l": "https://example.com/image.jpg"})
+
+    assert image.l_ == "https://example.com/image.jpg"
+    assert image.model_dump(exclude_none=True, by_alias=True) == {
+        "l": "https://example.com/image.jpg"
+    }
 
 
 def test_query_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -149,7 +163,11 @@ async def test_async_category_endpoints_typed_response(
 ) -> None:
     api = await keepa.AsyncKeepa.create("x" * 64)
 
-    async def fake_request(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    async def fake_request(
+        request_type: str, payload: dict[str, Any], **kwargs: Any
+    ) -> dict[str, Any]:
+        if request_type == "category":
+            assert payload["parents"] == 0
         return {"categories": {"1": {"catId": 1, "name": "Root"}}}
 
     monkeypatch.setattr(api, "_request", fake_request)

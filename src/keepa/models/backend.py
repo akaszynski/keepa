@@ -2350,7 +2350,7 @@ __all__ = [
     "Video",
 ]
 
-_MODELS = [
+_MODELS: list[type[KeepaBackendModel]] = [
     APlus,
     APlusModule,
     BestSellers,

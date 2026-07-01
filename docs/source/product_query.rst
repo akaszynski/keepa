@@ -50,11 +50,15 @@ Multiple products can be queried using a list or ``numpy`` array:
 .. code:: python
 
     asins = ['0022841350', '0022841369', '0022841369', '0022841369']
+
+    import numpy as np
     asins = np.asarray(['0022841350', '0022841369', '0022841369', '0022841369'])
     products = api.query(asins)
     product = products[0]
 
-The ``products`` variable is a list of product data with one entry per successful result from the Keepa server. Each entry is a dictionary containing the same product data available from `Amazon <http://www.amazon.com>`_:
+The ``products`` variable contains one entry per successful result from the
+Keepa server. By default, each entry is a dictionary containing the available
+Amazon product data:
 
 .. code:: python
 
@@ -65,21 +69,32 @@ The ``products`` variable is a list of product data with one entry per successfu
     print('ASIN is ' + products[0]['asin'])
     print('Title is ' + products[0]['title'])
 
-When the parameter ``history`` is ``True`` (enabled by default), each
-product contains a The raw data is contained within each product
-result. Raw data is stored as a dictionary with each key paired with
-its associated time history.
+Iterate over batch results or build an ASIN lookup when processing multiple
+products. The return value remains a list for both single and batch queries.
+
+.. code:: python
+
+    for product in products:
+        print(product['asin'], product.get('title'))
+
+    products_by_asin = {product['asin']: product for product in products}
+
+When ``history=True`` (the default) and Keepa has history for a product, the
+result contains a ``data`` dictionary. Every available history key is paired
+with a corresponding ``*_time`` key. Individual history types can be absent;
+use ``get`` when availability is not guaranteed.
 
 .. code:: python
 
     # Access new price history and associated time data
-    newprice = product['data']['NEW']
-    newpricetime = product['data']['NEW_time']
+    history = product.get('data', {})
+    newprice = history.get('NEW', [])
+    newpricetime = history.get('NEW_time', [])
 
     # print the first 10 prices
     print('%20s   %s' % ('Date', 'Price'))
-    for i in range(10):
-        print('%20s   $%.2f' % (newpricetime[i], newprice[i]))
+    for timestamp, price in list(zip(newpricetime, newprice))[:10]:
+        print('%20s   $%.2f' % (timestamp, price))
 
 .. code::
 
@@ -195,8 +210,9 @@ values of each key.  These can be plotted with:
 
     import matplotlib.pyplot as plt
     key = 'TRADE_IN'
-    history = product['data'] 
-    plt.step(history[key], history[key + '_time'], where='pre')
+    history = product.get('data', {})
+    if key in history:
+        plt.step(history[key + '_time'], history[key], where='pre')
 
 Historical data should be plotted as a step plot since the data is
 discontinuous.  Values are unknown between each entry.
@@ -207,6 +223,23 @@ The product history can also be plotted from the module if
 .. code:: python
 
     keepa.plot_product(product)
+
+Named Statistics
+~~~~~~~~~~~~~~~~
+Request statistics with ``stats``. The raw backend arrays remain available in
+``product['stats']`` for compatibility, while ``product['stats_parsed']`` maps
+CSV positions to names such as ``AMAZON``, ``NEW``, and ``SALES``.
+
+.. code:: python
+
+    product = api.query('059035342X', stats=90)[0]
+    stats = product.get('stats_parsed', {})
+    current_amazon_price = stats.get('current', {}).get('AMAZON')
+    minimum_new_price = stats.get('minInInterval', {}).get('NEW')
+
+Minimum and maximum entries are ``(timestamp, value)`` tuples when present.
+See Keepa's `statistics object documentation
+<https://keepa.com/#!discuss/t/statistics-object/1308>`_ for interval semantics.
 
 
 Offer Queries
@@ -281,22 +314,21 @@ example plots the history of active offers for a single Amazon product.
 Category Queries
 ~~~~~~~~~~~~~~~~
 You can retrieve an ASIN list of the most popular products based on
-sales in a specific category or product group.  Here's an example that
-assumes you've already setup your api.
+sales in a specific category or product group. Here's an example that assumes
+you have already set up your API client.
 
 .. code:: python
 
     # get category id numbers for chairs
-    if test_categories:
-        categories = api.search_for_categories('chairs')
-    
-        # print the first 5 catIds
-        catids = list(categories.keys())
-        for catid in catids[:5]:
-            print(catid, categories[catid]['name'])
-    
-        # query the best sellers for "Arm Chairs"
-        bestsellers = api.best_sellers_query('402283011')
+    categories = api.search_for_categories('chairs')
+
+    # print the first 5 catIds
+    catids = list(categories.keys())
+    for catid in catids[:5]:
+        print(catid, categories[catid]['name'])
+
+    # query the best sellers for "Arm Chairs"
+    bestsellers = api.best_sellers_query('402283011')
 
     print('\nBest Sellers:')
     for bestseller in bestsellers:
@@ -325,13 +357,13 @@ assumes you've already setup your api.
 
 Product Search
 ~~~~~~~~~~~~~~
-You can search for products using ``keepa`` using the ``product_finder`` method.  There are many parameters you can search using.  See ``help(api.product_finder)`` or check the description of the function at :ref:`ref_api_methods`.
+Use ``product_finder`` to search for products by backend fields. See
+``help(api.product_finder)`` or :ref:`ref_api_methods` for the available
+parameters. This example finds books by Jim Butcher:
 
 .. code:: python
-
-    Query for all of Jim Butcher's books:
 
     import keepa
     api = keepa.Keepa('ENTER_ACTUAL_KEY_HERE')
     product_parms = {'author': 'jim butcher'}
-    products = api.product_finder(product_parms)
+    asins = api.product_finder(product_parms)

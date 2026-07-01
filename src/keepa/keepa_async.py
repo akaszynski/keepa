@@ -39,7 +39,7 @@ class AsyncKeepa:
     Asynchronous Python interface to keepa backend.
 
     Initializes API with access key. Access key can be obtained by signing up
-    for a reoccurring or one time plan. To obtain a key, sign up for one at
+    for a recurring or one-time plan. To obtain a key, sign up for one at
     `Keepa Data <https://get.keepa.com/d7vrq>`_.
 
     Parameters
@@ -51,7 +51,7 @@ class AsyncKeepa:
         limit on the entire response download; rather, an exception is
         raised if the server has not issued a response for timeout
         seconds.  Setting this to 0.0 disables the timeout, but will
-        cause any request to hang indefiantly should keepa.com be down
+        cause any request to hang indefinitely should keepa.com be down
 
     Examples
     --------
@@ -63,7 +63,7 @@ class AsyncKeepa:
     >>> product_parms = {"author": "jim butcher"}
     >>> async def main():
     ...     key = "<REAL_KEEPA_KEY>"
-    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     api = await keepa.AsyncKeepa.create(key)
     ...     return await api.product_finder(product_parms)
     ...
     >>> asins = asyncio.run(main())
@@ -83,7 +83,7 @@ class AsyncKeepa:
     >>> import keepa
     >>> async def main():
     ...     key = "<REAL_KEEPA_KEY>"
-    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     api = await keepa.AsyncKeepa.create(key)
     ...     return await api.query("B0088PUEPK")
     ...
     >>> response = asyncio.run(main())
@@ -100,7 +100,7 @@ class AsyncKeepa:
 
     @classmethod
     async def create(cls, accesskey: str, timeout: float = 10.0) -> "AsyncKeepa":
-        """Create the async object."""
+        """Create an asynchronous Keepa client without making an API request."""
         self = AsyncKeepa()
         self.accesskey = accesskey
         self.tokens_left = 0
@@ -149,7 +149,7 @@ class AsyncKeepa:
         self,
         items: str | Sequence[str],
         stats: int | None = None,
-        domain: str = "US",
+        domain: str | Domain = "US",
         history: bool = True,
         offers: int | None = None,
         update: int | None = None,
@@ -168,7 +168,7 @@ class AsyncKeepa:
         aplus: bool = False,
         typed: bool = False,
         extra_params: dict[str, Any] | None = None,
-    ):
+    ) -> list[dict[str, Any]] | list[Product]:
         """Documented in Keepa.query."""
         if raw:
             raise ValueError("Raw response is only available in the non-async class")
@@ -364,11 +364,11 @@ class AsyncKeepa:
     @is_documented_by(Keepa.search_for_categories)
     async def search_for_categories(
         self,
-        searchterm,
+        searchterm: str,
         domain: str | Domain = "US",
         wait: bool = True,
         typed: bool = False,
-    ):
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """Documented by Keepa.search_for_categories."""
         payload = {
             "key": self.accesskey,
@@ -394,18 +394,18 @@ class AsyncKeepa:
     @is_documented_by(Keepa.category_lookup)
     async def category_lookup(
         self,
-        category_id,
+        category_id: int,
         domain: str | Domain = "US",
-        include_parents=0,
+        include_parents: bool = False,
         wait: bool = True,
         typed: bool = False,
-    ):
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """Documented by Keepa.category_lookup."""
         payload = {
             "key": self.accesskey,
             "domain": _domain_to_dcode(domain),
             "category": category_id,
-            "parents": include_parents,
+            "parents": int(include_parents),
         }
 
         response = await self._request("category", payload, wait=wait)
@@ -423,14 +423,14 @@ class AsyncKeepa:
     @is_documented_by(Keepa.seller_query)
     async def seller_query(
         self,
-        seller_id,
+        seller_id: str | list[str],
         domain: str | Domain = "US",
-        to_datetime=True,
-        storefront=False,
-        update=None,
+        to_datetime: bool = True,
+        storefront: bool = False,
+        update: int | None = None,
         wait: bool = True,
         typed: bool = False,
-    ):
+    ) -> dict[str, dict[str, Any]] | dict[str, Seller]:
         """Documented by Keepa.sellerer_query."""
         if isinstance(seller_id, list):
             if len(seller_id) > 100:
@@ -486,7 +486,7 @@ class AsyncKeepa:
     @is_documented_by(Keepa.deals)
     async def deals(
         self,
-        deal_parms,
+        deal_parms: dict[str, Any],
         domain: str | Domain = "US",
         wait: bool = True,
         typed: bool = False,
