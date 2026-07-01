@@ -15,6 +15,7 @@ import requests
 
 import keepa
 import keepa.models.product_params
+from keepa import backend_models
 from keepa.constants import _SELLER_TIME_DATA_KEYS, DCODES, SCODES, csv_indices
 from keepa.models.domain import Domain
 from keepa.models.status import Status
@@ -25,6 +26,10 @@ BACKEND_COMMIT = "6e524d13bc25bdbe49be24d59a4b28feb9f98e5d"
 BACKEND_RAW_BASE = (
     "https://raw.githubusercontent.com/keepacom/api_backend"
     f"/{BACKEND_COMMIT}/src/main/java/com/keepa/api/backend"
+)
+BACKEND_CONTENTS_URL = (
+    "https://api.github.com/repos/keepacom/api_backend/contents/"
+    "src/main/java/com/keepa/api/backend/structs"
 )
 BACKEND_SOURCE_DIR_ENV = "KEEPA_BACKEND_SOURCE_DIR"
 
@@ -59,6 +64,25 @@ def _backend_source(filename: str) -> str:
     if response.status_code != 200:
         pytest.skip(f"Could not fetch Keepa backend source {filename}: HTTP {response.status_code}")
     return response.text
+
+
+def _backend_struct_files() -> list[str]:
+    source_dir = os.environ.get(BACKEND_SOURCE_DIR_ENV)
+    if source_dir is not None and _local_backend_checkout_matches_commit():
+        return sorted(path.name for path in (Path(source_dir) / "structs").glob("*.java"))
+
+    try:
+        response = requests.get(
+            BACKEND_CONTENTS_URL,
+            params={"ref": BACKEND_COMMIT},
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        pytest.skip(f"Could not list Keepa backend structs: {exc}")
+
+    if response.status_code != 200:
+        pytest.skip(f"Could not list Keepa backend structs: HTTP {response.status_code}")
+    return sorted(item["name"] for item in response.json() if item["name"].endswith(".java"))
 
 
 def _local_backend_checkout_matches_commit() -> bool:
@@ -105,12 +129,98 @@ def _java_fields(java_source: str) -> dict[str, str]:
     return {name: java_type.strip() for java_type, name in fields}
 
 
+def _java_declarations(java_source: str) -> dict[str, tuple[str, str]]:
+    java_source = _strip_java_comments(java_source)
+    declarations = {}
+    pattern = re.compile(r"public\s+(?:static\s+)?(?:final\s+)?(class|enum)\s+(\w+)")
+    for match in pattern.finditer(java_source):
+        brace_start = java_source.find("{", match.end())
+        if brace_start < 0:
+            continue
+        brace_end = _matching_brace(java_source, brace_start)
+        declarations[match.group(2)] = (
+            match.group(1),
+            java_source[brace_start + 1 : brace_end],
+        )
+    return declarations
+
+
+def _strip_java_comments(java_source: str) -> str:
+    java_source = re.sub(r"/\*.*?\*/", "", java_source, flags=re.S)
+    return re.sub(r"//.*", "", java_source)
+
+
+def _matching_brace(source: str, brace_start: int) -> int:
+    depth = 0
+    for index in range(brace_start, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+    raise AssertionError("Could not find matching Java brace")
+
+
+def _top_level_java_class_fields(class_body: str) -> set[str]:
+    class_body = _remove_nested_java_declarations(class_body)
+    return {
+        match.group(2)
+        for match in re.finditer(
+            r"public\s+(?!(?:static|final|transient)\b)([\w\[\].<>, ?]+)\s+(\w+)"
+            r"(?:\s*=\s*[^;]+)?\s*;",
+            class_body,
+        )
+    }
+
+
+def _remove_nested_java_declarations(class_body: str) -> str:
+    pattern = re.compile(r"public\s+(?:static\s+)?(?:final\s+)?(?:class|enum)\s+\w+")
+    output = []
+    cursor = 0
+    for match in pattern.finditer(class_body):
+        brace_start = class_body.find("{", match.end())
+        if brace_start < 0:
+            continue
+        brace_end = _matching_brace(class_body, brace_start)
+        output.append(class_body[cursor : match.start()])
+        cursor = brace_end + 1
+    output.append(class_body[cursor:])
+    return "".join(output)
+
+
 def _java_enum_values(java_source: str, enum_name: str) -> list[str]:
     match = re.search(rf"public\s+enum\s+{enum_name}\s*\{{(.*?)\}}", java_source, re.S)
     if match is None:
         raise AssertionError(f"Could not find Java enum {enum_name}")
     values_text = re.sub(r"/\*.*?\*/", "", match.group(1), flags=re.S)
     return [value.strip() for value in values_text.split(",") if value.strip()]
+
+
+def _java_enum_values_from_body(enum_body: str) -> list[str]:
+    constants_text = enum_body.split(";", 1)[0]
+    values = []
+    for item in _split_top_level(constants_text, ","):
+        match = re.match(r"\s*([A-Za-z_][A-Za-z0-9_]*)", item)
+        if match is not None:
+            values.append(match.group(1))
+    return values
+
+
+def _split_top_level(text: str, separator: str) -> list[str]:
+    parts = []
+    depth = 0
+    start = 0
+    for index, char in enumerate(text):
+        if char in "(<[":
+            depth += 1
+        elif char in ")>]":
+            depth -= 1
+        elif char == separator and depth == 0:
+            parts.append(text[start:index])
+            start = index + 1
+    parts.append(text[start:])
+    return parts
 
 
 def _response_status_codes(java_source: str) -> dict[str, str]:
@@ -185,6 +295,31 @@ def test_status_codes_match_backend_commit() -> None:
     assert SCODES == backend_status_codes
 
 
+def test_response_status_model_enum_matches_backend_commit() -> None:
+    backend_statuses = _java_enum_values(_backend_source("KeepaAPI.java"), "ResponseStatus")
+
+    assert [status.value for status in backend_models.ResponseStatus] == backend_statuses
+
+
+def test_backend_models_are_generated_from_pinned_backend_commit() -> None:
+    assert backend_models.BACKEND_COMMIT == BACKEND_COMMIT
+
+
+def test_backend_model_exports_are_public_and_complete() -> None:
+    declarations = {}
+    for file_name in _backend_struct_files():
+        declarations.update(_java_declarations(_backend_source(f"structs/{file_name}")))
+
+    expected_exports = {
+        "BACKEND_COMMIT",
+        "KeepaBackendModel",
+        "ResponseStatus",
+        *declarations,
+    }
+
+    assert set(backend_models.__all__) == expected_exports
+
+
 def test_status_model_fields_match_backend_response_token_fields() -> None:
     backend_fields = _java_fields(_backend_source("structs/Response.java"))
     token_status_fields = {"tokensLeft", "refillIn", "refillRate", "timestamp"}
@@ -218,6 +353,36 @@ def test_csv_indices_match_backend_commit() -> None:
     backend_csv_types = _csv_types(_backend_source("structs/Product.java"))
 
     assert csv_indices == backend_csv_types
+
+
+def test_backend_models_cover_all_generated_struct_declarations() -> None:
+    declarations = {}
+    for file_name in _backend_struct_files():
+        declarations.update(_java_declarations(_backend_source(f"structs/{file_name}")))
+
+    for name, (kind, body) in declarations.items():
+        model_or_enum = getattr(backend_models, name)
+        if kind == "enum":
+            assert [member.value for member in model_or_enum] == _java_enum_values_from_body(body)
+            continue
+
+        backend_field_names = _top_level_java_class_fields(body)
+        model_field_names = {
+            field.alias or field_name for field_name, field in model_or_enum.model_fields.items()
+        }
+        assert model_field_names == backend_field_names
+
+
+def test_backend_model_fields_have_specific_types() -> None:
+    for export_name in backend_models.__all__:
+        model = getattr(backend_models, export_name)
+        if not isinstance(model, type) or not issubclass(model, backend_models.KeepaBackendModel):
+            continue
+        for field in model.model_fields.values():
+            assert field.annotation is not Any, f"{model.__name__}.{field.alias} is untyped"
+            assert "typing.Any" not in str(field.annotation), (
+                f"{model.__name__}.{field.alias} contains an untyped value"
+            )
 
 
 def test_product_params_accept_backend_fields_and_reject_unknown_fields() -> None:

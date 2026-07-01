@@ -20,7 +20,7 @@ repos:
   rev: v2.4.2
   hooks:
   - id: codespell
-    args: [-S ./docs/\*]
+    args: [-S ./docs/\*, --ignore-words-list, thirdparty]
 - repo: https://github.com/pycqa/pydocstyle
   rev: 6.3.0
   hooks:

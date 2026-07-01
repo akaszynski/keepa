@@ -7,6 +7,7 @@ keepa Python API Documentation
 
    product_query
    api_methods
+   backend_models
 
 
 .. include:: ../../README.rst

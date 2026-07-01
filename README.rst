@@ -69,6 +69,17 @@ Brief Example
     # Plot result (requires matplotlib)
     keepa.plot_product(products[0])
 
+Typed responses are available with ``typed=True`` for users who prefer
+Pydantic models while keeping the default dictionary output unchanged.
+
+.. code:: python
+
+    products = api.query('B0088PUEPK', typed=True)
+    product = products[0]
+    print(product.asin)
+    print(product.title)
+    product_dict = product.model_dump(exclude_none=True)
+
 .. figure:: https://github.com/akaszynski/keepa/raw/main/docs/source/images/Product_Price_Plot.png
     :width: 500pt
 

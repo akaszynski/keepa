@@ -17,6 +17,7 @@ extensions = [
     "numpydoc",
     "sphinx.ext.intersphinx",
 ]
+numpydoc_show_class_members = False
 
 intersphinx_mapping = {
     "python": (
