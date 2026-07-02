@@ -28,6 +28,7 @@ extensions = [
     "numpydoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
+    "sphinx_copybutton",
     "sphinxcontrib.autodoc_pydantic",
 ]
 numpydoc_show_class_members = False
@@ -45,6 +46,21 @@ intersphinx_mapping = {
         None,
     ),
 }
+
+nitpicky = True
+nitpick_ignore = [
+    ("py:class", "requests.models.Response"),
+    ("py:obj", "keepa.AsyncKeepa.accesskey"),
+    ("py:obj", "keepa.AsyncKeepa.status"),
+    ("py:obj", "keepa.AsyncKeepa.tokens_left"),
+    ("py:obj", "keepa.Keepa.accesskey"),
+    ("py:obj", "keepa.Keepa.status"),
+    ("py:obj", "keepa.Keepa.tokens_left"),
+]
+nitpick_ignore_regex = [
+    ("py:obj", r"keepa\.Domain\..+"),
+    ("py:obj", r"keepa\.models\.product_params\.ProductParams\..+"),
+]
 
 
 def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import html
+import json
 import keyword
 import os
 import re
 import subprocess
+import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -225,16 +228,25 @@ def _local_backend_checkout_matches_commit(source_path: Path) -> bool:
 def _collect_declarations(sources: dict[str, str]) -> list[Declaration]:
     declarations = []
     declaration_pattern = re.compile(r"public\s+(?:static\s+)?(?:final\s+)?(class|enum)\s+(\w+)")
-    for source in map(_strip_comments, sources.values()):
-        for match in declaration_pattern.finditer(source):
-            brace_start = source.find("{", match.end())
+    for source in sources.values():
+        source_without_comments = _strip_comments_preserve_length(source)
+        for match in declaration_pattern.finditer(source_without_comments):
+            brace_start = source_without_comments.find("{", match.end())
             if brace_start < 0:
                 continue
-            brace_end = _matching_brace(source, brace_start)
+            brace_end = _matching_brace(source_without_comments, brace_start)
             declarations.append(
                 Declaration(match.group(1), match.group(2), source[brace_start + 1 : brace_end])
             )
     return declarations
+
+
+def _strip_comments_preserve_length(source: str) -> str:
+    def replacement(match: re.Match[str]) -> str:
+        return "".join("\n" if char == "\n" else " " for char in match.group(0))
+
+    source = re.sub(r"/\*.*?\*/", replacement, source, flags=re.S)
+    return re.sub(r"//.*", replacement, source)
 
 
 def _strip_comments(source: str) -> str:
@@ -324,18 +336,48 @@ def _render_model(
         lines.append("    pass")
         return lines
     seen = set()
-    for java_type, name in fields:
-        if name in seen:
+    for field in fields:
+        if field.name in seen:
             continue
-        seen.add(name)
-        python_name = _python_field_name(name)
-        annotation = _python_type(java_type, class_names, enum_names)
-        if python_name == name:
-            lines.append(f"    {python_name}: {annotation} | None = None")
-        else:
-            lines.append(
-                f'    {python_name}: {annotation} | None = Field(default=None, alias="{name}")'
-            )
+        seen.add(field.name)
+        python_name = _python_field_name(field.name)
+        annotation = _python_type(field.java_type, class_names, enum_names)
+        lines.extend(_render_field(python_name, annotation, field))
+    return lines
+
+
+def _render_field(python_name: str, annotation: str, field: FieldDeclaration) -> list[str]:
+    if python_name == field.name and field.description is None:
+        return [f"    {python_name}: {annotation} | None = None"]
+
+    if field.description is None:
+        return [
+            f'    {python_name}: {annotation} | None = Field(default=None, alias="{field.name}")'
+        ]
+
+    lines = [f"    {python_name}: {annotation} | None = Field("]
+    lines.append("        default=None,")
+    if python_name != field.name:
+        lines.append(f"        alias={json.dumps(field.name)},")
+    lines.append("        description=(")
+    lines.extend(_string_literal_lines(field.description, indent="            "))
+    lines.append("        ),")
+    lines.append("    )")
+    return lines
+
+
+def _string_literal_lines(text: str, indent: str, width: int = 40) -> list[str]:
+    lines = []
+    for line in text.splitlines(keepends=True) or [""]:
+        for chunk in textwrap.wrap(
+            line,
+            width=width,
+            break_long_words=True,
+            break_on_hyphens=False,
+            replace_whitespace=False,
+            drop_whitespace=False,
+        ):
+            lines.append(f"{indent}{json.dumps(chunk, ensure_ascii=True)}")
     return lines
 
 
@@ -345,32 +387,95 @@ def _python_field_name(name: str) -> str:
     return name
 
 
-def _class_fields(class_body: str) -> list[tuple[str, str]]:
+@dataclass(frozen=True)
+class FieldDeclaration:
+    """Java field parsed from a backend struct."""
+
+    java_type: str
+    name: str
+    description: str | None
+
+
+def _class_fields(class_body: str) -> list[FieldDeclaration]:
     class_body = _remove_nested_declarations(class_body)
+    class_body_without_comments = _strip_comments_preserve_length(class_body)
     fields = []
     for match in re.finditer(
         r"public\s+(?!(?:static|final|transient)\b)([\w\[\].<>, ?]+)\s+(\w+)"
         r"(?:\s*=\s*[^;]+)?\s*;",
-        class_body,
+        class_body_without_comments,
     ):
         java_type = " ".join(match.group(1).replace("?", "").split())
-        fields.append((java_type, match.group(2)))
+        fields.append(
+            FieldDeclaration(
+                java_type=java_type,
+                name=match.group(2),
+                description=_field_description(class_body, match.start()),
+            )
+        )
     return fields
 
 
 def _remove_nested_declarations(class_body: str) -> str:
     declaration_pattern = re.compile(r"public\s+(?:static\s+)?(?:final\s+)?(?:class|enum)\s+\w+")
+    class_body_without_comments = _strip_comments_preserve_length(class_body)
     output = []
     cursor = 0
-    for match in declaration_pattern.finditer(class_body):
-        brace_start = class_body.find("{", match.end())
+    for match in declaration_pattern.finditer(class_body_without_comments):
+        brace_start = class_body_without_comments.find("{", match.end())
         if brace_start < 0:
             continue
-        brace_end = _matching_brace(class_body, brace_start)
+        brace_end = _matching_brace(class_body_without_comments, brace_start)
         output.append(class_body[cursor : match.start()])
         cursor = brace_end + 1
     output.append(class_body[cursor:])
     return "".join(output)
+
+
+def _field_description(class_body: str, field_start: int) -> str | None:
+    prefix = class_body[:field_start]
+    comments = list(re.finditer(r"/\*\*((?:(?!\*/).)*)\*/", prefix, re.S))
+    if not comments:
+        return None
+
+    comment = comments[-1]
+    between_comment_and_field = prefix[comment.end() :].strip()
+    if between_comment_and_field:
+        annotation_lines = [
+            line.strip() for line in between_comment_and_field.splitlines() if line.strip()
+        ]
+        if not annotation_lines or any(not line.startswith("@") for line in annotation_lines):
+            return None
+
+    return _clean_javadoc(comment.group(1))
+
+
+def _clean_javadoc(comment: str) -> str | None:
+    lines = []
+    for line in comment.splitlines():
+        lines.append(re.sub(r"^\s*\*\s?", "", line).rstrip())
+    text = "\n".join(lines).strip()
+    if not text:
+        return None
+
+    def replace_link(match: re.Match[str]) -> str:
+        target = match.group(1).replace("#", ".").lstrip(".")
+        label = match.group(2)
+        return label.strip() if label is not None else target
+
+    text = re.sub(r"\{@(?:code|literal)\s+([^}]*)\}", r"\1", text)
+    text = re.sub(r"\{@link\s+([^}\s]+)(?:\s+([^}]+))?\}", replace_link, text)
+    text = re.sub(r"\(([^)\n]+)\)\}", r"(\1)", text)
+    text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", text)
+    text = re.sub(r"(?i)</?\s*p\s*/?\s*>", "\n\n", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"_([^_\n]+)_", r"\1", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = "\n".join(line.strip() for line in text.splitlines()).strip()
+    return text or None
 
 
 def _python_type(java_type: str, class_names: set[str], enum_names: set[str]) -> str:

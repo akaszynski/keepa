@@ -2,11 +2,13 @@
 
 import ast
 import dataclasses
+import importlib.util
 import json
 import math
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +51,18 @@ JAVA_TYPE_TO_PYTHON_TYPE = {
 # Keepa's backend marks RATING as non-price, but this library intentionally
 # scales it like a price-like value so users get star ratings instead of 0-50.
 CSV_PRICE_FLAG_OVERRIDES = {"RATING": True}
+
+
+def _backend_model_generator() -> Any:
+    project_root = Path(keepa.__file__).resolve().parents[2]
+    module_path = project_root / "utilities" / "generate-backend-models.py"
+    spec = importlib.util.spec_from_file_location("keepa_backend_model_generator", module_path)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"Could not load backend model generator from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _backend_source(filename: str) -> str:
@@ -383,6 +397,46 @@ def test_backend_model_fields_have_specific_types() -> None:
             assert "typing.Any" not in str(field.annotation), (
                 f"{model.__name__}.{field.alias} contains an untyped value"
             )
+
+
+def test_backend_model_field_descriptions_match_backend_javadocs() -> None:
+    generator = _backend_model_generator()
+    sources = {
+        file_name: _backend_source(f"structs/{file_name}") for file_name in _backend_struct_files()
+    }
+    documented_fields = 0
+
+    for declaration in generator._collect_declarations(sources):
+        if declaration.kind != "class":
+            continue
+
+        model = getattr(backend_models, declaration.name)
+        for field in generator._class_fields(declaration.body):
+            if field.description is None:
+                continue
+
+            documented_fields += 1
+            model_field = model.model_fields[generator._python_field_name(field.name)]
+            assert model_field.description == field.description, (
+                f"{declaration.name}.{field.name} description does not match backend Javadoc"
+            )
+
+    assert documented_fields >= 400
+
+
+def test_backend_model_field_descriptions_are_cleaned_for_users() -> None:
+    assert backend_models.Product.model_fields["asin"].description == "The ASIN of the product"
+    assert (
+        backend_models.Deal.model_fields["deltaPercent"].description
+        == "Same as delta, but given in percent instead of absolute values.\n\n"
+        "First dimension uses Product.CsvType, second dimension DealInterval"
+    )
+    assert (
+        backend_models.Seller.model_fields["csv"].description
+        == "Two dimensional history array that contains history data for this seller. First "
+        "dimension index:\n\nMerchantCsvType\n\n0 - RATING: The merchant's rating in percent, "
+        "Integer from 0 to 100.\n1 - RATING_COUNT: The merchant's total rating count, Integer."
+    )
 
 
 def test_product_params_accept_backend_fields_and_reject_unknown_fields() -> None:

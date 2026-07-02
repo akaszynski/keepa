@@ -446,7 +446,7 @@ class Keepa:
 
         typed : bool, default: False
             When ``True``, return products as
-            :class:`keepa.backend_models.Product` Pydantic models instead of
+            :class:`keepa.models.backend.Product` Pydantic models instead of
             dictionaries. Extra backend fields are preserved on the model.
             Cannot be combined with ``raw=True``.
 
@@ -470,7 +470,7 @@ class Keepa:
             the notes section.
 
             When ``raw=True``, a list of unparsed responses are
-            returned as :class:`requests.models.Response`.
+            returned as ``requests.Response``.
 
             When ``typed=True``, each product is returned as a permissive
             Pydantic model generated from the pinned Keepa backend schema.
@@ -948,14 +948,14 @@ class Keepa:
             Wait for available tokens before querying the keepa backend.
         typed : bool, default: False
             When ``True``, return the full
-            :class:`keepa.backend_models.BestSellers` Pydantic model instead
+            :class:`keepa.models.backend.BestSellers` Pydantic model instead
             of only its ASIN list.
 
         Returns
         -------
         list[str | None] | BestSellers
             List of best seller ASINs by default and the full
-            :class:`keepa.backend_models.BestSellers` model when
+            :class:`keepa.models.backend.BestSellers` model when
             ``typed=True``.
 
         Examples
@@ -1038,14 +1038,14 @@ class Keepa:
             Wait for available tokens before querying the keepa backend.
         typed : bool, default: False
             When ``True``, return category values as
-            :class:`keepa.backend_models.Category` Pydantic models instead of
+            :class:`keepa.models.backend.Category` Pydantic models instead of
             dictionaries.
 
         Returns
         -------
         dict[str, dict[str, Any]] | dict[str, Category]
             Categories keyed by category ID. Values are dictionaries by
-            default and :class:`keepa.backend_models.Category` models when
+            default and :class:`keepa.models.backend.Category` models when
             ``typed=True``.
 
         Examples
@@ -1111,7 +1111,7 @@ class Keepa:
             Wait for available tokens before querying the keepa backend.
         typed : bool, default: False
             When ``True``, return category values as
-            :class:`keepa.backend_models.Category` Pydantic models instead of
+            :class:`keepa.models.backend.Category` Pydantic models instead of
             dictionaries.
 
         Returns
@@ -1234,7 +1234,7 @@ class Keepa:
             Wait for available tokens before querying the keepa backend.
         typed : bool, default: False
             When ``True``, return sellers as
-            :class:`keepa.backend_models.Seller` Pydantic models instead of
+            :class:`keepa.models.backend.Seller` Pydantic models instead of
             dictionaries. Typed sellers use the raw backend time fields;
             ``to_datetime`` only applies to the default dictionary response.
 
@@ -1242,7 +1242,7 @@ class Keepa:
         -------
         dict[str, dict[str, Any]] | dict[str, Seller]
             One entry per input ``seller_id``. Values are dictionaries by
-            default and :class:`keepa.backend_models.Seller` models when
+            default and :class:`keepa.models.backend.Seller` models when
             ``typed=True``.
 
         Examples
@@ -1304,7 +1304,7 @@ class Keepa:
         ----------
         product_parms : dict, ProductParams, ProductFinderRequest
             Dictionary, :class:`keepa.ProductParams`, or generated
-            :class:`keepa.backend_models.ProductFinderRequest`.
+            :class:`keepa.models.backend.ProductFinderRequest`.
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
@@ -1414,7 +1414,7 @@ class Keepa:
         Parameters
         ----------
         deal_parms : dict, DealRequest
-            Dictionary or generated :class:`keepa.backend_models.DealRequest`
+            Dictionary or generated :class:`keepa.models.backend.DealRequest`
             containing one or more of the following keys:
 
             - ``"page"``: int
@@ -1443,14 +1443,14 @@ class Keepa:
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
         typed : bool, default: False
-            When ``True``, return a :class:`keepa.backend_models.DealResponse`
+            When ``True``, return a :class:`keepa.models.backend.DealResponse`
             Pydantic model instead of a dictionary.
 
         Returns
         -------
         dict[str, Any] | DealResponse
             Dictionary containing the deals, or a
-            :class:`keepa.backend_models.DealResponse` when ``typed=True``.
+            :class:`keepa.models.backend.DealResponse` when ``typed=True``.
             The response includes the following fields:
 
             * ``'dr'`` - Ordered array of all deal objects matching your query.

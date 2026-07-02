@@ -2,10 +2,11 @@
 
 Typed Responses
 ---------------
-By default, ``keepa`` returns dictionaries so existing code keeps working.
+By default, ``keepa`` returns dictionaries for backwards compatibility.
 Set ``typed=True`` on supported methods to get permissive Pydantic models
-generated from Keepa's backend Java schema. The option changes only the
-response representation; request parameters and token costs are unchanged.
+generated from Keepa's backend Java schema. Typed responses are planned to
+become the default in a future release. The option changes only the response
+representation; request parameters and token costs are unchanged.
 
 .. code:: python
 
