@@ -869,7 +869,6 @@ dependencies = [
 ]
 name = "keepa"
 source = {editable = "."}
-version = "1.5.dev0"
 
 [package.metadata]
 provides-extras = ["doc", "test"]

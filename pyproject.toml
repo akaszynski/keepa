@@ -1,6 +1,6 @@
 [build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core >=3,<4"]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools >=64", "setuptools-scm >=8"]
 
 [project]
 authors = [
@@ -26,11 +26,11 @@ dependencies = [
   "pydantic >=2"
 ]
 description = "Interfaces with keepa.com's API."
+dynamic = ["version"]
 keywords = ["keepa"]
 name = "keepa"
 readme = "README.rst"
 requires-python = ">=3.10"
-version = "1.5.dev0"
 
 [project.optional-dependencies]
 doc = [
@@ -70,3 +70,12 @@ line-length = 100
 [tool.ruff.lint]
 ignore = []
 select = ["E", "F", "W", "I001"]  # pyflakes, pycodestyle, isort
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+fallback_version = "1.5.0.dev0"
+git_describe_command = "git describe --dirty --tags --long --match v*"
+tag_regex = "^v(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+(?:[abrc][0-9]+)?(?:\\.post[0-9]+)?(?:\\.dev[0-9]+)?)$"
+version_file = "src/keepa/_version.py"
