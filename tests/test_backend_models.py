@@ -201,6 +201,36 @@ def test_product_finder_accepts_generated_request_model(
     assert asins == ["B000HRMAR2"]
 
 
+def test_product_finder_preserves_backend_filter_shapes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    api = _ready_api()
+
+    def fake_request(request_type: str, payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        assert request_type == "query"
+        selection = json.loads(payload["selection"])
+        assert selection["sort"] == [["current_SALES", "desc"]]
+        assert selection["buyBoxSellerId"] == ["A2L77EE7U53NWQ", "ATVPDKIKX0DER"]
+        assert selection["partNumber"] == ["MX-1000", "MX-1001"]
+        assert selection["categories_include"] == ["2619533011"]
+        assert selection["perPage"] == 75
+        return {"asinList": ["B000HRMAR2"]}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    asins = api.product_finder(
+        {
+            "sort": [["current_SALES", "desc"]],
+            "buyBoxSellerId": ["A2L77EE7U53NWQ", "ATVPDKIKX0DER"],
+            "partNumber": ["MX-1000", "MX-1001"],
+            "categories_include": ["2619533011"],
+            "perPage": 75,
+        }
+    )
+
+    assert asins == ["B000HRMAR2"]
+
+
 def test_best_sellers_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
     api = _ready_api()
 

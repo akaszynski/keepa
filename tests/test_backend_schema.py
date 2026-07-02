@@ -445,14 +445,22 @@ def test_product_params_accept_backend_fields_and_reject_unknown_fields() -> Non
         availabilityAmazonMinDelayInDays_gte=2,
         buyBoxEligibleOfferCountsNewFBA_lte=[[1, 2]],
         buyBoxStatsTopSellerId365="A2L77EE7U53NWQ",
+        buyBoxSellerId=["A2L77EE7U53NWQ", "ATVPDKIKX0DER"],
+        categories_include=["2619533011"],
         hasAPlus=True,
         historicalSellerIds=["A2L77EE7U53NWQ"],
+        partNumber=["MX-1000", "MX-1001"],
+        sort=[["current_SALES", "desc"]],
         websiteDisplayGroup="kitchen_display_on_website",
         srAvg211_lte=1000,
     )
 
     dumped = params.model_dump(exclude_none=True)
     assert dumped["activeIngredients"] == ["ceramide"]
+    assert dumped["buyBoxSellerId"] == ["A2L77EE7U53NWQ", "ATVPDKIKX0DER"]
+    assert dumped["categories_include"] == ["2619533011"]
+    assert dumped["partNumber"] == ["MX-1000", "MX-1001"]
+    assert dumped["sort"] == [["current_SALES", "desc"]]
     assert dumped["srAvg211_lte"] == 1000
 
     with pytest.raises(ValueError):

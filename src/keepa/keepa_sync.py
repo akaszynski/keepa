@@ -1321,8 +1321,8 @@ class Keepa:
         Notes
         -----
         When using the ``'sort'`` key in the ``product_parms`` parameter, use a
-        compatible key along with the type of sort. For example:
-        ``["current_SALES", "asc"]``
+        list of ``[field, direction]`` pairs. For example:
+        ``[["current_SALES", "asc"]]``
 
         Examples
         --------
@@ -1333,7 +1333,7 @@ class Keepa:
         >>> api = keepa.Keepa("<ENTER_ACTUAL_KEY_HERE>")
         >>> product_parms = {
         ...     "author": "jim butcher",
-        ...     "sort": ["current_SALES", "asc"],
+        ...     "sort": [["current_SALES", "asc"]],
         ... }
         >>> asins = api.product_finder(product_parms, n_products=100)
         >>> asins
@@ -1349,7 +1349,7 @@ class Keepa:
 
         >>> product_parms = keepa.ProductParams(
         ...     author="jim butcher",
-        ...     sort=["current_SALES", "asc"],
+        ...     sort=[["current_SALES", "asc"]],
         ... )
         >>> asins = api.product_finder(product_parms, n_products=100)
 
