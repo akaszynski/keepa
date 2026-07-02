@@ -51,11 +51,11 @@ JAVA_TYPE_TO_PYTHON_TYPE = {
 # Keepa's backend marks RATING as non-price, but this library intentionally
 # scales it like a price-like value so users get star ratings instead of 0-50.
 CSV_PRICE_FLAG_OVERRIDES = {"RATING": True}
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _backend_model_generator() -> Any:
-    project_root = Path(keepa.__file__).resolve().parents[2]
-    module_path = project_root / "utilities" / "generate-backend-models.py"
+    module_path = PROJECT_ROOT / "utilities" / "generate-backend-models.py"
     spec = importlib.util.spec_from_file_location("keepa_backend_model_generator", module_path)
     if spec is None or spec.loader is None:
         raise AssertionError(f"Could not load backend model generator from {module_path}")

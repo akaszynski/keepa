@@ -10,6 +10,8 @@ import pytest
 import keepa
 from keepa import backend_models
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 def _ready_api() -> keepa.Keepa:
     api = keepa.Keepa("x" * 64, check_key=False)
@@ -33,8 +35,7 @@ def test_backend_aliases_round_trip() -> None:
 
 
 def test_generated_backend_api_docs_are_complete() -> None:
-    project_root = Path(keepa.__file__).resolve().parents[2]
-    reference = (project_root / "docs/source/backend_model_reference.rst").read_text()
+    reference = (PROJECT_ROOT / "docs/source/backend_model_reference.rst").read_text()
 
     for export_name in backend_models.__all__:
         assert f"keepa.models.backend.{export_name}" in reference
@@ -45,8 +46,7 @@ def test_generated_backend_api_docs_are_complete() -> None:
     [(keepa.Keepa, "sync_client.rst"), (keepa.AsyncKeepa, "async_client.rst")],
 )
 def test_public_client_api_docs_are_complete(client: type, reference_name: str) -> None:
-    project_root = Path(keepa.__file__).resolve().parents[2]
-    reference = (project_root / "docs/source" / reference_name).read_text()
+    reference = (PROJECT_ROOT / "docs/source" / reference_name).read_text()
     public_members = {
         name
         for name, member in inspect.getmembers(client)
