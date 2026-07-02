@@ -37,6 +37,25 @@ offers. Not every historical offer is active, and the field can be absent.
    for offer in active_offers:
        times, prices = keepa.convert_offer_history(offer["offerCSV"])
 
+Offer Stock
+-----------
+Set ``stock=True`` together with ``offers`` when you need current offer stock
+data. Keepa can only collect stock for live offers, and the backend caps
+reported offer stock at 10 units.
+
+.. code-block:: python
+
+   product = api.query("1454857935", offers=20, stock=True)[0]
+
+   for index in product.get("liveOffersOrder", []):
+       offer = product["offers"][index]
+       stock_history = offer.get("stockCSV")
+       latest_stock = offer.get("stock")
+
+Existing ``stockCSV`` history can be present even when ``stock=True`` is not
+set, but ``stock=True`` asks Keepa to refresh stock for the current live
+offers and consumes additional tokens.
+
 .. figure:: images/Offer_History.png
    :alt: Active marketplace offer histories
    :width: 700px

@@ -7,7 +7,9 @@ under ``product["data"]``. Each available value array has a matching
 History Availability
 --------------------
 Products do not necessarily contain every history type. Use ``get`` when
-availability is not guaranteed.
+availability is not guaranteed. A key can be absent when Keepa has no history
+for that product, when the product type does not support that history, or when
+the request disables history parsing with ``history=False``.
 
 .. code-block:: python
 
@@ -36,6 +38,10 @@ Key                         Meaning
 ``RATING``                  Rating history
 ``COUNT_REVIEWS``           Review count history
 ==========================  =================================================
+
+If ``NEW_FBA`` or ``NEW_FBM_SHIPPING`` is absent for a product, query with
+``history=True`` and treat the missing key as unavailable backend data rather
+than a client parsing failure.
 
 Plotting
 --------

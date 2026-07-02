@@ -114,7 +114,7 @@ when you want products that recently changed and match deal filters.
    params = keepa.ProductParams(
        author="jim butcher",
        current_SALES_lte=50_000,
-       sort=["current_SALES", "asc"],
+       sort=[["current_SALES", "asc"]],
        perPage=100,
    )
    asins = api.product_finder(params)

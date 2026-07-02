@@ -5,6 +5,20 @@ Keepa requests require a paid API key from `Keepa Data Access
 by default; use ``wait=False`` only when your application manages token
 availability itself.
 
+Timeouts and Token Use
+======================
+``Keepa(accesskey, timeout=...)`` controls how long the client waits for the
+backend to send a response; it is not a total runtime limit for a large batch.
+The client chunks product queries into backend-sized requests, but token cost
+is calculated by Keepa and can be more than one token per ASIN when options
+such as ``offers``, ``stock``, ``buybox``, ``rating``, ``stats``, or forced
+updates are enabled.
+
+For large batches, keep ``wait=True``, use smaller chunks when debugging, and
+inspect ``api.tokens_left`` or ``api.status`` between calls. If a request is
+timing out, reduce expensive options first and then increase ``timeout`` only
+when the backend legitimately needs longer to produce the requested data.
+
 .. code-block:: python
 
    import keepa
