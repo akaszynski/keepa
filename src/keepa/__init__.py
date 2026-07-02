@@ -2,7 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-# single source versioning from the installed package (stored in pyproject.toml)
+# Single source versioning from installed package metadata.
 try:
     __version__ = version("keepa")
 except PackageNotFoundError:
