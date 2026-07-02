@@ -11,6 +11,15 @@ import requests
 from tqdm import tqdm
 
 from keepa.constants import SCODES
+from keepa.models.backend import (
+    BestSellers,
+    Category,
+    DealRequest,
+    DealResponse,
+    Product,
+    ProductFinderRequest,
+    Seller,
+)
 from keepa.models.domain import Domain
 from keepa.models.product_params import ProductParams
 from keepa.models.status import Status
@@ -27,7 +36,7 @@ class Keepa:
     Synchronous Python interface to keepa data backend.
 
     Initializes API with access key. Access key can be obtained by signing up
-    for a reoccurring or one time plan. To obtain a key, sign up for one at
+    for a recurring or one-time plan. To obtain a key, sign up for one at
     `Keepa Data <https://get.keepa.com/d7vrq>`_.
 
     Parameters
@@ -39,7 +48,7 @@ class Keepa:
         the entire response download; rather, an exception is raised if the
         server has not issued a response for timeout seconds. Setting this to
         0.0 disables the timeout, but will cause any request to hang
-        indefiantly should keepa.com be down
+        indefinitely should keepa.com be down
     logging_level: str, default: "DEBUG"
         Logging level to use. Default is "DEBUG". Other options are "INFO",
         "WARNING", "ERROR", and "CRITICAL".
@@ -226,28 +235,29 @@ class Keepa:
 
         Show Amazon price, new and used graphs, buy box and FBA, for last 365
         days, with custom width/height and custom colors. See
+        `Graph Image API
         <https://keepa.com/#!discuss/t/graph-image-api/7928>`_ for more
         details.
 
-        api.download_graph_image(
-            asin="B09YNQCQKR",
-            filename="product_graph_365.png",
-            domain="US",
-            amazon=1,
-            new=1,
-            used=1,
-            bb=1,
-            fba=1,
-            range=365,
-            width=800,
-            height=400,
-            cBackground="ffffff",
-            cAmazon="FFA500",
-            cNew="8888dd",
-            cUsed="444444",
-            cBB="ff00b4",
-            cFBA="ff5722"
-        )
+        >>> api.download_graph_image(
+        ...     asin="B09YNQCQKR",
+        ...     filename="product_graph_365.png",
+        ...     domain="US",
+        ...     amazon=1,
+        ...     new=1,
+        ...     used=1,
+        ...     bb=1,
+        ...     fba=1,
+        ...     range=365,
+        ...     width=800,
+        ...     height=400,
+        ...     cBackground="ffffff",
+        ...     cAmazon="FFA500",
+        ...     cNew="8888dd",
+        ...     cUsed="444444",
+        ...     cBB="ff00b4",
+        ...     cFBA="ff5722",
+        ... )
 
         """
         payload = {
@@ -292,8 +302,9 @@ class Keepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
-        extra_params: dict[str, Any] | None = {},
-    ) -> list[dict[str, Any]]:
+        typed: bool = False,
+        extra_params: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]] | list[Product] | list[requests.Response]:
         """
         Perform a product query of a list, array, or single ASIN.
 
@@ -433,27 +444,39 @@ class Keepa:
             available. If you need up-to-date data, you have to use the offers
             parameter.
 
+        typed : bool, default: False
+            When ``True``, return products as
+            :class:`keepa.models.backend.Product` Pydantic models instead of
+            dictionaries. Extra backend fields are preserved on the model.
+            Cannot be combined with ``raw=True``.
+
         extra_params : dict[str, Any], optional
             Dictionary of parameters that are not specifically called out in
-            the api. For example, a new parameters might be added to
+            the API. For example, a new parameter might be added to
             `Request.java
-            <https://github.com/keepacom/api_backend/blob/master/src/main/java/com/keepa/api/backend/KeepaAPI.java>`_
+            <https://github.com/keepacom/api_backend/blob/6e524d13bc25bdbe49be24d59a4b28feb9f98e5d/src/main/java/com/keepa/api/backend/structs/Request.java>`_
             and not yet supported in this function. For example,
             `extra_params={'rental': 1}`.
 
         Returns
         -------
         list
-            List of products when ``raw=False``. Each product within the list
-            is a dictionary. The keys of each item may vary, so see the keys
-            within each product for further details.
+            List of products when ``raw=False``. By default, each product is a
+            dictionary. The keys of each item may vary, so see the keys within
+            each product for further details.
 
-            Each product should contain at a minimum a "data" key containing a
-            formatted dictionary. For the available fields see the notes
-            section.
+            With ``history=True``, products include a ``data`` attribute or
+            key containing parsed history arrays. For the available fields see
+            the notes section.
 
             When ``raw=True``, a list of unparsed responses are
-            returned as :class:`requests.models.Response`.
+            returned as ``requests.Response``.
+
+            When ``typed=True``, each product is returned as a permissive
+            Pydantic model generated from the pinned Keepa backend schema.
+            Use attribute access for known fields and
+            ``model_dump(exclude_none=True, by_alias=True)`` to convert a
+            typed response back to backend-compatible field names.
 
             See: https://keepa.com/#!discuss/t/product-object/116
 
@@ -527,11 +550,6 @@ class Keepa:
         COUNT_REVIEWS
             The product's review count history.
 
-        BUY_BOX_SHIPPING
-            The price history of the buy box. If no offer qualified
-            for the buy box the price has the value -1. Including
-            shipping costs.
-
         USED_NEW_SHIPPING
             "Used - Like New" price history including shipping costs.
 
@@ -593,7 +611,7 @@ class Keepa:
         >>> import keepa
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     return await api.query("B0088PUEPK")
         ...
         >>> response = asyncio.run(main())
@@ -646,6 +664,9 @@ class Keepa:
             log.debug("Executing single product query")
         else:
             log.debug("Executing %d item product query", nitems)
+
+        if raw and typed:
+            raise ValueError("typed=True cannot be used with raw=True")
 
         if extra_params is None:
             extra_params = {}
@@ -721,6 +742,8 @@ class Keepa:
             idx += nrequest
             if raw:
                 products.append(response)
+            elif typed:
+                products.extend(Product.model_validate(product) for product in response["products"])
             else:
                 products.extend(response["products"])
 
@@ -857,7 +880,8 @@ class Keepa:
         sublist: bool = False,
         domain: str | Domain = "US",
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> list[str | None] | BestSellers:
         """
         Retrieve an ASIN list of the most popular products.
 
@@ -922,11 +946,17 @@ class Keepa:
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
+        typed : bool, default: False
+            When ``True``, return the full
+            :class:`keepa.models.backend.BestSellers` Pydantic model instead
+            of only its ASIN list.
 
         Returns
         -------
-        list
-            List of best seller ASINs
+        list[str | None] | BestSellers
+            List of best seller ASINs by default and the full
+            :class:`keepa.models.backend.BestSellers` model when
+            ``typed=True``.
 
         Examples
         --------
@@ -954,7 +984,7 @@ class Keepa:
         >>> import keepa
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     categories = await api.search_for_categories("movies")
         ...     category = list(categories.items())[0][0]
         ...     return await api.best_sellers_query(category)
@@ -983,11 +1013,18 @@ class Keepa:
         if "bestSellersList" not in response:
             raise RuntimeError(f"Best sellers search results for {category} not yet available")
 
-        return response["bestSellersList"]["asinList"]
+        best_sellers = response["bestSellersList"]
+        if typed:
+            return BestSellers.model_validate(best_sellers)
+        return best_sellers["asinList"]
 
     def search_for_categories(
-        self, searchterm: str, domain: str | Domain = "US", wait: bool = True
-    ) -> dict[str, Any]:
+        self,
+        searchterm: str,
+        domain: str | Domain = "US",
+        wait: bool = True,
+        typed: bool = False,
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """
         Search for categories from Amazon.
 
@@ -999,12 +1036,17 @@ class Keepa:
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
+        typed : bool, default: False
+            When ``True``, return category values as
+            :class:`keepa.models.backend.Category` Pydantic models instead of
+            dictionaries.
 
         Returns
         -------
-        dict[str, Any]
-            The response contains a categories dictionary with all matching
-            categories.
+        dict[str, dict[str, Any]] | dict[str, Category]
+            Categories keyed by category ID. Values are dictionaries by
+            default and :class:`keepa.models.backend.Category` models when
+            ``typed=True``.
 
         Examples
         --------
@@ -1039,15 +1081,21 @@ class Keepa:
             raise RuntimeError(
                 "Categories search results not yet available or no search terms found."
             )
-        return response["categories"]
+        categories = response["categories"]
+        if typed:
+            return {
+                cat_id: Category.model_validate(category) for cat_id, category in categories.items()
+            }
+        return categories
 
     def category_lookup(
         self,
         category_id: int,
         domain: str | Domain = "US",
-        include_parents=False,
+        include_parents: bool = False,
         wait: bool = True,
-    ) -> dict[str, Any]:
+        typed: bool = False,
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """
         Return root categories given a categoryId.
 
@@ -1061,11 +1109,16 @@ class Keepa:
             Include parents.
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
+        typed : bool, default: False
+            When ``True``, return category values as
+            :class:`keepa.models.backend.Category` Pydantic models instead of
+            dictionaries.
 
         Returns
         -------
-        dict[str, Any]
-            Output format is the same as :meth:`Keepa.`search_for_categories`.
+        dict[str, dict[str, Any]] | dict[str, Category]
+            Output format is the same as
+            :meth:`Keepa.search_for_categories`.
 
         Examples
         --------
@@ -1110,7 +1163,12 @@ class Keepa:
         response = self._request("category", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise Exception("Category lookup results not yet available or no match found.")
-        return response["categories"]
+        categories = response["categories"]
+        if typed:
+            return {
+                cat_id: Category.model_validate(category) for cat_id, category in categories.items()
+            }
+        return categories
 
     def seller_query(
         self,
@@ -1120,7 +1178,8 @@ class Keepa:
         storefront: bool = False,
         update: int | None = None,
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> dict[str, dict[str, Any]] | dict[str, Seller]:
         """
         Receive seller information for a given seller id or ids.
 
@@ -1173,11 +1232,18 @@ class Keepa:
               will be updated.
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
+        typed : bool, default: False
+            When ``True``, return sellers as
+            :class:`keepa.models.backend.Seller` Pydantic models instead of
+            dictionaries. Typed sellers use the raw backend time fields;
+            ``to_datetime`` only applies to the default dictionary response.
 
         Returns
         -------
-        dict
-            Dictionary containing one entry per input ``seller_id``.
+        dict[str, dict[str, Any]] | dict[str, Seller]
+            One entry per input ``seller_id``. Values are dictionaries by
+            default and :class:`keepa.models.backend.Seller` models when
+            ``typed=True``.
 
         Examples
         --------
@@ -1215,11 +1281,16 @@ class Keepa:
             payload["update"] = update
 
         response = self._request("seller", payload, wait=wait)
+        if typed:
+            return {
+                seller_id: Seller.model_validate(seller)
+                for seller_id, seller in response["sellers"].items()
+            }
         return _parse_seller(response["sellers"], to_datetime)
 
     def product_finder(
         self,
-        product_parms: dict[str, Any] | ProductParams,
+        product_parms: dict[str, Any] | ProductFinderRequest | ProductParams,
         domain: str | Domain = "US",
         wait: bool = True,
         n_products: int = 50,
@@ -1231,8 +1302,9 @@ class Keepa:
 
         Parameters
         ----------
-        product_parms : dict, ProductParams
-            Dictionary or :class:`keepa.ProductParams`.
+        product_parms : dict, ProductParams, ProductFinderRequest
+            Dictionary, :class:`keepa.ProductParams`, or generated
+            :class:`keepa.models.backend.ProductFinderRequest`.
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
@@ -1289,7 +1361,7 @@ class Keepa:
         >>> product_parms = {"author": "jim butcher"}
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     return await api.product_finder(product_parms)
         ...
         >>> asins = asyncio.run(main())
@@ -1303,11 +1375,14 @@ class Keepa:
          'B01MXXLJPZ']
 
         """
-        if isinstance(product_parms, dict):
+        if isinstance(product_parms, ProductFinderRequest):
+            product_parms_dict = product_parms.model_dump(exclude_none=True)
+        elif isinstance(product_parms, dict):
             product_parms_valid = ProductParams(**product_parms)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         else:
             product_parms_valid = product_parms
-        product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         product_parms_dict.setdefault("perPage", n_products)
         payload = {
             "key": self.accesskey,
@@ -1319,8 +1394,12 @@ class Keepa:
         return response["asinList"]
 
     def deals(
-        self, deal_parms: dict[str, Any], domain: str | Domain = "US", wait: bool = True
-    ) -> dict[str, Any]:
+        self,
+        deal_parms: dict[str, Any] | DealRequest,
+        domain: str | Domain = "US",
+        wait: bool = True,
+        typed: bool = False,
+    ) -> dict[str, Any] | DealResponse:
         """Query the Keepa API for product deals.
 
         You can find products that recently changed and match your
@@ -1334,8 +1413,9 @@ class Keepa:
 
         Parameters
         ----------
-        deal_parms : dict
-            Dictionary containing one or more of the following keys:
+        deal_parms : dict, DealRequest
+            Dictionary or generated :class:`keepa.models.backend.DealRequest`
+            containing one or more of the following keys:
 
             - ``"page"``: int
             - ``"domainId"``: int
@@ -1362,11 +1442,16 @@ class Keepa:
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
+        typed : bool, default: False
+            When ``True``, return a :class:`keepa.models.backend.DealResponse`
+            Pydantic model instead of a dictionary.
 
         Returns
         -------
-        dict
-            Dictionary containing the deals including the following keys:
+        dict[str, Any] | DealResponse
+            Dictionary containing the deals, or a
+            :class:`keepa.models.backend.DealResponse` when ``typed=True``.
+            The response includes the following fields:
 
             * ``'dr'`` - Ordered array of all deal objects matching your query.
             * ``'categoryIds'`` - Contains all root categoryIds of the matched
@@ -1411,29 +1496,27 @@ class Keepa:
         ... }
         >>> async def main():
         ...     key = "<REAL_KEEPA_KEY>"
-        ...     api = await keepa.AsyncKeepa().create(key)
-        ...     categories = await api.search_for_categories("movies")
+        ...     api = await keepa.AsyncKeepa.create(key)
         ...     return await api.deals(deal_parms)
         ...
-        >>> asins = asyncio.run(main())
-        >>> asins
-        ['B0BF3P5XZS',
-         'B08JQN5VDT',
-         'B09SP8JPPK',
-         '0999296345',
-         'B07HPG684T',
-         '1984825577',
-        ...
+        >>> deals = asyncio.run(main())
+        >>> deals["dr"][0]["asin"]
+        'B0BF3P5XZS'
 
         """
-        # verify valid keys
-        for key in deal_parms:
-            if key not in DEAL_REQUEST_KEYS:
-                raise ValueError(f'Invalid key "{key}"')
+        if isinstance(deal_parms, DealRequest):
+            deal_parms = deal_parms.model_dump(exclude_none=True)
+        else:
+            deal_parms = deal_parms.copy()
 
-            # verify json type
-            key_type = DEAL_REQUEST_KEYS[key]
-            deal_parms[key] = key_type(deal_parms[key])
+            # verify valid keys
+            for key in deal_parms:
+                if key not in DEAL_REQUEST_KEYS:
+                    raise ValueError(f'Invalid key "{key}"')
+
+                # verify json type
+                key_type = DEAL_REQUEST_KEYS[key]
+                deal_parms[key] = key_type(deal_parms[key])
 
         deal_parms.setdefault("priceTypes", 0)
 
@@ -1443,7 +1526,10 @@ class Keepa:
             "selection": json.dumps(deal_parms),
         }
 
-        return self._request("deal", payload, wait=wait)["deals"]
+        deals = self._request("deal", payload, wait=wait)["deals"]
+        if typed:
+            return DealResponse.model_validate(deals)
+        return deals
 
     def _request(
         self,

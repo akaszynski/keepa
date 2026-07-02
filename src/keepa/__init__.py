@@ -11,6 +11,7 @@ except PackageNotFoundError:
 from keepa.constants import DCODES, KEEPA_ST_ORDINAL, SCODES, csv_indices
 from keepa.keepa_async import AsyncKeepa
 from keepa.keepa_sync import Keepa
+from keepa.models import backend as backend_models
 from keepa.models.domain import Domain
 from keepa.models.product_params import ProductParams
 from keepa.plotting import plot_product
@@ -32,6 +33,7 @@ __all__ = [
     "ProductParams",
     "SCODES",
     "__version__",
+    "backend_models",
     "convert_offer_history",
     "csv_indices",
     "format_items",

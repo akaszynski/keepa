@@ -29,6 +29,7 @@ tests/htmlcov/
 .coverage
 .hypothesis
 .venv
+docs/source/api/
 
 # key storage
 tests/key

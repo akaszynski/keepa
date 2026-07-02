@@ -2,10 +2,10 @@
 Test the asynchronous interface to the keepa backend.
 """
 
-from pathlib import Path
 import datetime
 import os
 import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -102,13 +102,6 @@ async def test_update_status(api: keepa.AsyncKeepa) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_status(api: keepa.AsyncKeepa) -> None:
-    assert api.status.tokensLeft is None
-    await api.update_status()
-    assert api.status.tokensLeft
-
-
-@pytest.mark.asyncio
 async def test_wait_for_tokens(api: keepa.AsyncKeepa) -> None:
     assert api.status.tokensLeft is None
     await api.wait_for_tokens()
@@ -161,7 +154,7 @@ async def test_product_finder_query(api: keepa.AsyncKeepa) -> None:
         perPage=50,
         categories_exclude=["1055398"],
     )
-    asins = api.product_finder(product_parms)
+    asins = await api.product_finder(product_parms)
     assert asins
 
 

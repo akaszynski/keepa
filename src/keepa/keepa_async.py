@@ -13,6 +13,15 @@ from tqdm import tqdm
 
 from keepa.constants import SCODES
 from keepa.keepa_sync import Keepa
+from keepa.models.backend import (
+    BestSellers,
+    Category,
+    DealRequest,
+    DealResponse,
+    Product,
+    ProductFinderRequest,
+    Seller,
+)
 from keepa.models.domain import Domain
 from keepa.models.product_params import ProductParams
 from keepa.models.status import Status
@@ -38,7 +47,7 @@ class AsyncKeepa:
     Asynchronous Python interface to keepa backend.
 
     Initializes API with access key. Access key can be obtained by signing up
-    for a reoccurring or one time plan. To obtain a key, sign up for one at
+    for a recurring or one-time plan. To obtain a key, sign up for one at
     `Keepa Data <https://get.keepa.com/d7vrq>`_.
 
     Parameters
@@ -50,7 +59,7 @@ class AsyncKeepa:
         limit on the entire response download; rather, an exception is
         raised if the server has not issued a response for timeout
         seconds.  Setting this to 0.0 disables the timeout, but will
-        cause any request to hang indefiantly should keepa.com be down
+        cause any request to hang indefinitely should keepa.com be down
 
     Examples
     --------
@@ -62,7 +71,7 @@ class AsyncKeepa:
     >>> product_parms = {"author": "jim butcher"}
     >>> async def main():
     ...     key = "<REAL_KEEPA_KEY>"
-    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     api = await keepa.AsyncKeepa.create(key)
     ...     return await api.product_finder(product_parms)
     ...
     >>> asins = asyncio.run(main())
@@ -82,7 +91,7 @@ class AsyncKeepa:
     >>> import keepa
     >>> async def main():
     ...     key = "<REAL_KEEPA_KEY>"
-    ...     api = await keepa.AsyncKeepa().create(key)
+    ...     api = await keepa.AsyncKeepa.create(key)
     ...     return await api.query("B0088PUEPK")
     ...
     >>> response = asyncio.run(main())
@@ -99,7 +108,7 @@ class AsyncKeepa:
 
     @classmethod
     async def create(cls, accesskey: str, timeout: float = 10.0) -> "AsyncKeepa":
-        """Create the async object."""
+        """Create an asynchronous Keepa client without making an API request."""
         self = AsyncKeepa()
         self.accesskey = accesskey
         self.tokens_left = 0
@@ -148,7 +157,7 @@ class AsyncKeepa:
         self,
         items: str | Sequence[str],
         stats: int | None = None,
-        domain: str = "US",
+        domain: str | Domain = "US",
         history: bool = True,
         offers: int | None = None,
         update: int | None = None,
@@ -165,8 +174,9 @@ class AsyncKeepa:
         raw: bool = False,
         videos: bool = False,
         aplus: bool = False,
+        typed: bool = False,
         extra_params: dict[str, Any] | None = None,
-    ):
+    ) -> list[dict[str, Any]] | list[Product]:
         """Documented in Keepa.query."""
         if raw:
             raise ValueError("Raw response is only available in the non-async class")
@@ -250,7 +260,10 @@ class AsyncKeepa:
                 **extra_params,
             )
             idx += nrequest
-            products.extend(response["products"])
+            if typed:
+                products.extend(Product.model_validate(product) for product in response["products"])
+            else:
+                products.extend(response["products"])
 
             if pbar is not None:
                 pbar.update(nrequest)
@@ -340,7 +353,8 @@ class AsyncKeepa:
         sublist: bool = False,
         domain: str | Domain = "US",
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> list[str | None] | BestSellers:
         """Documented by Keepa.best_sellers_query."""
         payload = {
             "key": self.accesskey,
@@ -354,12 +368,19 @@ class AsyncKeepa:
         response = await self._request("bestsellers", payload, wait=wait)
         if "bestSellersList" not in response:
             raise RuntimeError(f"Best sellers search results for {category} not yet available")
-        return response["bestSellersList"]["asinList"]
+        best_sellers = response["bestSellersList"]
+        if typed:
+            return BestSellers.model_validate(best_sellers)
+        return best_sellers["asinList"]
 
     @is_documented_by(Keepa.search_for_categories)
     async def search_for_categories(
-        self, searchterm, domain: str | Domain = "US", wait: bool = True
-    ):
+        self,
+        searchterm: str,
+        domain: str | Domain = "US",
+        wait: bool = True,
+        typed: bool = False,
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """Documented by Keepa.search_for_categories."""
         payload = {
             "key": self.accesskey,
@@ -374,40 +395,54 @@ class AsyncKeepa:
                 "Categories search results not yet available " + "or no search terms found."
             )
         else:
-            return response["categories"]
+            categories = response["categories"]
+            if typed:
+                return {
+                    cat_id: Category.model_validate(category)
+                    for cat_id, category in categories.items()
+                }
+            return categories
 
     @is_documented_by(Keepa.category_lookup)
     async def category_lookup(
         self,
-        category_id,
+        category_id: int,
         domain: str | Domain = "US",
-        include_parents=0,
+        include_parents: bool = False,
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> dict[str, dict[str, Any]] | dict[str, Category]:
         """Documented by Keepa.category_lookup."""
         payload = {
             "key": self.accesskey,
             "domain": _domain_to_dcode(domain),
             "category": category_id,
-            "parents": include_parents,
+            "parents": int(include_parents),
         }
 
         response = await self._request("category", payload, wait=wait)
         if response["categories"] == {}:  # pragma no cover
             raise Exception("Category lookup results not yet available or no" + "match found.")
         else:
-            return response["categories"]
+            categories = response["categories"]
+            if typed:
+                return {
+                    cat_id: Category.model_validate(category)
+                    for cat_id, category in categories.items()
+                }
+            return categories
 
     @is_documented_by(Keepa.seller_query)
     async def seller_query(
         self,
-        seller_id,
+        seller_id: str | list[str],
         domain: str | Domain = "US",
-        to_datetime=True,
-        storefront=False,
-        update=None,
+        to_datetime: bool = True,
+        storefront: bool = False,
+        update: int | None = None,
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> dict[str, dict[str, Any]] | dict[str, Seller]:
         """Documented by Keepa.sellerer_query."""
         if isinstance(seller_id, list):
             if len(seller_id) > 100:
@@ -429,22 +464,30 @@ class AsyncKeepa:
             payload["update"] = update
 
         response = await self._request("seller", payload, wait=wait)
+        if typed:
+            return {
+                seller_id: Seller.model_validate(seller)
+                for seller_id, seller in response["sellers"].items()
+            }
         return _parse_seller(response["sellers"], to_datetime)
 
     @is_documented_by(Keepa.product_finder)
     async def product_finder(
         self,
-        product_parms: dict[str, Any] | ProductParams,
+        product_parms: dict[str, Any] | ProductFinderRequest | ProductParams,
         domain: str | Domain = "US",
         wait: bool = True,
         n_products: int = 50,
     ) -> list[str]:
         """Documented by Keepa.product_finder."""
-        if isinstance(product_parms, dict):
+        if isinstance(product_parms, ProductFinderRequest):
+            product_parms_dict = product_parms.model_dump(exclude_none=True)
+        elif isinstance(product_parms, dict):
             product_parms_valid = ProductParams(**product_parms)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         else:
             product_parms_valid = product_parms
-        product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         product_parms_dict.setdefault("perPage", n_products)
         payload = {
             "key": self.accesskey,
@@ -456,16 +499,27 @@ class AsyncKeepa:
         return response["asinList"]
 
     @is_documented_by(Keepa.deals)
-    async def deals(self, deal_parms, domain: str | Domain = "US", wait: bool = True):
+    async def deals(
+        self,
+        deal_parms: dict[str, Any] | DealRequest,
+        domain: str | Domain = "US",
+        wait: bool = True,
+        typed: bool = False,
+    ) -> dict[str, Any] | DealResponse:
         """Documented in Keepa.deals."""
-        # verify valid keys
-        for key in deal_parms:
-            if key not in DEAL_REQUEST_KEYS:
-                raise ValueError(f'Invalid key "{key}"')
+        if isinstance(deal_parms, DealRequest):
+            deal_parms = deal_parms.model_dump(exclude_none=True)
+        else:
+            deal_parms = deal_parms.copy()
 
-            # verify json type
-            key_type = DEAL_REQUEST_KEYS[key]
-            deal_parms[key] = key_type(deal_parms[key])
+            # verify valid keys
+            for key in deal_parms:
+                if key not in DEAL_REQUEST_KEYS:
+                    raise ValueError(f'Invalid key "{key}"')
+
+                # verify json type
+                key_type = DEAL_REQUEST_KEYS[key]
+                deal_parms[key] = key_type(deal_parms[key])
 
         deal_parms.setdefault("priceTypes", 0)
 
@@ -475,8 +529,10 @@ class AsyncKeepa:
             "selection": json.dumps(deal_parms),
         }
 
-        deals = await self._request("deal", payload, wait=wait)
-        return deals["deals"]
+        deals = (await self._request("deal", payload, wait=wait))["deals"]
+        if typed:
+            return DealResponse.model_validate(deals)
+        return deals
 
     @is_documented_by(Keepa.download_graph_image)
     async def download_graph_image(

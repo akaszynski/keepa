@@ -2,11 +2,11 @@
 Test the synchronous interface to the keepa backend.
 """
 
-from pathlib import Path
 import datetime
-from itertools import chain
 import os
 import warnings
+from itertools import chain
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -14,8 +14,7 @@ import pytest
 import requests
 
 import keepa
-from keepa import keepa_minutes_to_time
-from keepa import Keepa
+from keepa import Keepa, keepa_minutes_to_time
 
 # reduce the request limit for testing
 keepa.keepa_sync.REQLIM = 2
@@ -257,7 +256,7 @@ def test_productquery_offers(api: keepa.Keepa) -> None:
 
 
 def test_productquery_only_live_offers(api: keepa.Keepa) -> None:
-    """Tests that no historical offer data was returned from response if only_live_offers param was specified."""
+    """Test only_live_offers omits historical offer data."""
     max_offers = 20
     request = api.query(PRODUCT_ASIN, offers=max_offers, only_live_offers=True, history=False)
 
