@@ -13,7 +13,15 @@ from tqdm import tqdm
 
 from keepa.constants import SCODES
 from keepa.keepa_sync import Keepa
-from keepa.models.backend import Category, DealResponse, Product, Seller
+from keepa.models.backend import (
+    BestSellers,
+    Category,
+    DealRequest,
+    DealResponse,
+    Product,
+    ProductFinderRequest,
+    Seller,
+)
 from keepa.models.domain import Domain
 from keepa.models.product_params import ProductParams
 from keepa.models.status import Status
@@ -345,7 +353,8 @@ class AsyncKeepa:
         sublist: bool = False,
         domain: str | Domain = "US",
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> list[str | None] | BestSellers:
         """Documented by Keepa.best_sellers_query."""
         payload = {
             "key": self.accesskey,
@@ -359,7 +368,10 @@ class AsyncKeepa:
         response = await self._request("bestsellers", payload, wait=wait)
         if "bestSellersList" not in response:
             raise RuntimeError(f"Best sellers search results for {category} not yet available")
-        return response["bestSellersList"]["asinList"]
+        best_sellers = response["bestSellersList"]
+        if typed:
+            return BestSellers.model_validate(best_sellers)
+        return best_sellers["asinList"]
 
     @is_documented_by(Keepa.search_for_categories)
     async def search_for_categories(
@@ -462,17 +474,20 @@ class AsyncKeepa:
     @is_documented_by(Keepa.product_finder)
     async def product_finder(
         self,
-        product_parms: dict[str, Any] | ProductParams,
+        product_parms: dict[str, Any] | ProductFinderRequest | ProductParams,
         domain: str | Domain = "US",
         wait: bool = True,
         n_products: int = 50,
     ) -> list[str]:
         """Documented by Keepa.product_finder."""
-        if isinstance(product_parms, dict):
+        if isinstance(product_parms, ProductFinderRequest):
+            product_parms_dict = product_parms.model_dump(exclude_none=True)
+        elif isinstance(product_parms, dict):
             product_parms_valid = ProductParams(**product_parms)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         else:
             product_parms_valid = product_parms
-        product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         product_parms_dict.setdefault("perPage", n_products)
         payload = {
             "key": self.accesskey,
@@ -486,20 +501,25 @@ class AsyncKeepa:
     @is_documented_by(Keepa.deals)
     async def deals(
         self,
-        deal_parms: dict[str, Any],
+        deal_parms: dict[str, Any] | DealRequest,
         domain: str | Domain = "US",
         wait: bool = True,
         typed: bool = False,
     ) -> dict[str, Any] | DealResponse:
         """Documented in Keepa.deals."""
-        # verify valid keys
-        for key in deal_parms:
-            if key not in DEAL_REQUEST_KEYS:
-                raise ValueError(f'Invalid key "{key}"')
+        if isinstance(deal_parms, DealRequest):
+            deal_parms = deal_parms.model_dump(exclude_none=True)
+        else:
+            deal_parms = deal_parms.copy()
 
-            # verify json type
-            key_type = DEAL_REQUEST_KEYS[key]
-            deal_parms[key] = key_type(deal_parms[key])
+            # verify valid keys
+            for key in deal_parms:
+                if key not in DEAL_REQUEST_KEYS:
+                    raise ValueError(f'Invalid key "{key}"')
+
+                # verify json type
+                key_type = DEAL_REQUEST_KEYS[key]
+                deal_parms[key] = key_type(deal_parms[key])
 
         deal_parms.setdefault("priceTypes", 0)
 

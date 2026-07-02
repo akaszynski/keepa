@@ -1,0 +1,31 @@
+.plot-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.plot-gallery figure {
+  margin: 0;
+}
+
+.plot-gallery img {
+  width: 100%;
+  height: auto;
+}
+
+html[data-theme="dark"] .navbar-brand img {
+  filter: brightness(0) invert(0.9);
+}
+
+@media (max-width: 767px) {
+  .plot-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .bd-footer .bd-footer__inner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

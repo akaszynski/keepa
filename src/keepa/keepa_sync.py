@@ -11,7 +11,15 @@ import requests
 from tqdm import tqdm
 
 from keepa.constants import SCODES
-from keepa.models.backend import Category, DealResponse, Product, Seller
+from keepa.models.backend import (
+    BestSellers,
+    Category,
+    DealRequest,
+    DealResponse,
+    Product,
+    ProductFinderRequest,
+    Seller,
+)
 from keepa.models.domain import Domain
 from keepa.models.product_params import ProductParams
 from keepa.models.status import Status
@@ -872,7 +880,8 @@ class Keepa:
         sublist: bool = False,
         domain: str | Domain = "US",
         wait: bool = True,
-    ):
+        typed: bool = False,
+    ) -> list[str | None] | BestSellers:
         """
         Retrieve an ASIN list of the most popular products.
 
@@ -937,11 +946,17 @@ class Keepa:
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
             Wait for available tokens before querying the keepa backend.
+        typed : bool, default: False
+            When ``True``, return the full
+            :class:`keepa.backend_models.BestSellers` Pydantic model instead
+            of only its ASIN list.
 
         Returns
         -------
-        list
-            List of best seller ASINs
+        list[str | None] | BestSellers
+            List of best seller ASINs by default and the full
+            :class:`keepa.backend_models.BestSellers` model when
+            ``typed=True``.
 
         Examples
         --------
@@ -998,7 +1013,10 @@ class Keepa:
         if "bestSellersList" not in response:
             raise RuntimeError(f"Best sellers search results for {category} not yet available")
 
-        return response["bestSellersList"]["asinList"]
+        best_sellers = response["bestSellersList"]
+        if typed:
+            return BestSellers.model_validate(best_sellers)
+        return best_sellers["asinList"]
 
     def search_for_categories(
         self,
@@ -1272,7 +1290,7 @@ class Keepa:
 
     def product_finder(
         self,
-        product_parms: dict[str, Any] | ProductParams,
+        product_parms: dict[str, Any] | ProductFinderRequest | ProductParams,
         domain: str | Domain = "US",
         wait: bool = True,
         n_products: int = 50,
@@ -1284,8 +1302,9 @@ class Keepa:
 
         Parameters
         ----------
-        product_parms : dict, ProductParams
-            Dictionary or :class:`keepa.ProductParams`.
+        product_parms : dict, ProductParams, ProductFinderRequest
+            Dictionary, :class:`keepa.ProductParams`, or generated
+            :class:`keepa.backend_models.ProductFinderRequest`.
         domain : str | keepa.Domain, default: 'US'
             A valid Amazon domain. See :class:`keepa.Domain`.
         wait : bool, default: True
@@ -1356,11 +1375,14 @@ class Keepa:
          'B01MXXLJPZ']
 
         """
-        if isinstance(product_parms, dict):
+        if isinstance(product_parms, ProductFinderRequest):
+            product_parms_dict = product_parms.model_dump(exclude_none=True)
+        elif isinstance(product_parms, dict):
             product_parms_valid = ProductParams(**product_parms)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         else:
             product_parms_valid = product_parms
-        product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
+            product_parms_dict = product_parms_valid.model_dump(exclude_none=True)
         product_parms_dict.setdefault("perPage", n_products)
         payload = {
             "key": self.accesskey,
@@ -1373,7 +1395,7 @@ class Keepa:
 
     def deals(
         self,
-        deal_parms: dict[str, Any],
+        deal_parms: dict[str, Any] | DealRequest,
         domain: str | Domain = "US",
         wait: bool = True,
         typed: bool = False,
@@ -1391,8 +1413,9 @@ class Keepa:
 
         Parameters
         ----------
-        deal_parms : dict
-            Dictionary containing one or more of the following keys:
+        deal_parms : dict, DealRequest
+            Dictionary or generated :class:`keepa.backend_models.DealRequest`
+            containing one or more of the following keys:
 
             - ``"page"``: int
             - ``"domainId"``: int
@@ -1481,14 +1504,19 @@ class Keepa:
         'B0BF3P5XZS'
 
         """
-        # verify valid keys
-        for key in deal_parms:
-            if key not in DEAL_REQUEST_KEYS:
-                raise ValueError(f'Invalid key "{key}"')
+        if isinstance(deal_parms, DealRequest):
+            deal_parms = deal_parms.model_dump(exclude_none=True)
+        else:
+            deal_parms = deal_parms.copy()
 
-            # verify json type
-            key_type = DEAL_REQUEST_KEYS[key]
-            deal_parms[key] = key_type(deal_parms[key])
+            # verify valid keys
+            for key in deal_parms:
+                if key not in DEAL_REQUEST_KEYS:
+                    raise ValueError(f'Invalid key "{key}"')
+
+                # verify json type
+                key_type = DEAL_REQUEST_KEYS[key]
+                deal_parms[key] = key_type(deal_parms[key])
 
         deal_parms.setdefault("priceTypes", 0)
 

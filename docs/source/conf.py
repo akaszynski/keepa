@@ -2,6 +2,8 @@
 
 # import pydata_sphinx_theme  # noqa
 from datetime import datetime
+import importlib
+import inspect
 from pathlib import Path
 
 try:
@@ -22,10 +24,20 @@ with (PROJECT_ROOT / "pyproject.toml").open("rb") as project_file:
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "numpydoc",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.linkcode",
+    "sphinxcontrib.autodoc_pydantic",
 ]
 numpydoc_show_class_members = False
+autosummary_generate = True
+
+autodoc_pydantic_model_hide_paramlist = True
+autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_model_show_validator_summary = False
+autodoc_pydantic_model_summary_list_order = "bysource"
 
 intersphinx_mapping = {
     "python": (
@@ -33,6 +45,30 @@ intersphinx_mapping = {
         None,
     ),
 }
+
+
+def linkcode_resolve(domain: str, info: dict[str, str]) -> str | None:
+    """Resolve documented Python objects to their GitHub source lines."""
+    if domain != "py" or not info.get("module") or not info.get("fullname"):
+        return None
+
+    try:
+        obj = importlib.import_module(info["module"])
+        for part in info["fullname"].split("."):
+            obj = getattr(obj, part)
+        obj = inspect.unwrap(obj)
+        source_file = Path(inspect.getsourcefile(obj) or "").resolve()
+        source, start_line = inspect.getsourcelines(obj)
+        relative_file = source_file.relative_to(PROJECT_ROOT)
+    except (AttributeError, ImportError, OSError, TypeError, ValueError):
+        return None
+
+    end_line = start_line + len(source) - 1
+    return (
+        "https://github.com/akaszynski/keepa/blob/main/"
+        f"{relative_file.as_posix()}#L{start_line}-L{end_line}"
+    )
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -48,7 +84,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "keepa"
-copyright = f"2018-{datetime.now().year}, Alex Kaszynski"
+copyright = f"2018 to {datetime.now().year}, Alex Kaszynski"
 author = "Alex Kaszynski"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -119,6 +155,7 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 htmlhelp_basename = "keepadoc"
 

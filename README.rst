@@ -38,8 +38,8 @@ This library is compatible with Python >= 3.10 and requires:
 Product history can be plotted from the raw data when ``matplotlib``
 is installed.
 
-Interfacing with the ``keepa`` requires an access key and a monthly
-subscription from `Keepa API <https://keepa.com/#!api>`_.
+Interfacing with ``keepa`` requires an access key and a monthly subscription
+from `Keepa Pricing <https://get.keepa.com/d7vrq>`_.
 
 Installation
 ------------

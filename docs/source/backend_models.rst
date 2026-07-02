@@ -25,11 +25,12 @@ The sync and async clients expose the same typed response shapes.
 ===================================  ==========================================
 Method                               Return value with ``typed=True``
 ===================================  ==========================================
-``query``                            ``list[Product]``
-``search_for_categories``            ``dict[str, Category]``
-``category_lookup``                  ``dict[str, Category]``
-``seller_query``                     ``dict[str, Seller]``
-``deals``                            ``DealResponse``
+``query``                            ``list[``:class:`keepa.models.backend.Product`\ ``]``
+``search_for_categories``            ``dict[str,`` :class:`keepa.models.backend.Category`\ ``]``
+``category_lookup``                  ``dict[str,`` :class:`keepa.models.backend.Category`\ ``]``
+``best_sellers_query``               :class:`keepa.models.backend.BestSellers`
+``seller_query``                     ``dict[str,`` :class:`keepa.models.backend.Seller`\ ``]``
+``deals``                            :class:`keepa.models.backend.DealResponse`
 ===================================  ==========================================
 
 Fields are optional because Keepa omits fields based on the endpoint,
@@ -109,6 +110,14 @@ backend surface rather than one response type.
 
     available_models = backend_models.__all__
 
+See :doc:`backend_model_reference` for an individual API page for every
+generated model and enum.
+
+.. toctree::
+   :hidden:
+
+   backend_model_reference
+
 Other Endpoints
 ~~~~~~~~~~~~~~~
 
@@ -117,6 +126,9 @@ Other Endpoints
     categories = api.category_lookup(0, typed=True)
     first_category = next(iter(categories.values()))
     print(first_category.name)
+
+    best_sellers = api.best_sellers_query("402283011", typed=True)
+    print(best_sellers.asinList[:10])
 
     sellers = api.seller_query("A2L77EE7U53NWQ", typed=True)
     print(sellers["A2L77EE7U53NWQ"].sellerName)

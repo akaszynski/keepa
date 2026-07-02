@@ -1,6 +1,8 @@
 """Tests for optional Pydantic backend model responses."""
 
 import inspect
+import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -28,6 +30,32 @@ def test_backend_aliases_round_trip() -> None:
     assert image.model_dump(exclude_none=True, by_alias=True) == {
         "l": "https://example.com/image.jpg"
     }
+
+
+def test_generated_backend_api_docs_are_complete() -> None:
+    project_root = Path(keepa.__file__).resolve().parents[2]
+    reference = (project_root / "docs/source/backend_model_reference.rst").read_text()
+
+    for export_name in backend_models.__all__:
+        assert f"keepa.models.backend.{export_name}" in reference
+
+
+@pytest.mark.parametrize(
+    ("client", "reference_name"),
+    [(keepa.Keepa, "sync_client.rst"), (keepa.AsyncKeepa, "async_client.rst")],
+)
+def test_public_client_api_docs_are_complete(client: type, reference_name: str) -> None:
+    project_root = Path(keepa.__file__).resolve().parents[2]
+    reference = (project_root / "docs/source" / reference_name).read_text()
+    public_members = {
+        name
+        for name, member in inspect.getmembers(client)
+        if not name.startswith("_")
+        and (inspect.isfunction(member) or inspect.ismethod(member) or isinstance(member, property))
+    }
+
+    for member_name in public_members:
+        assert f"{client.__name__}.{member_name}" in reference
 
 
 def test_query_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -139,6 +167,75 @@ def test_deals_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
     assert deals.dr[0].asin == "B000000000"
 
 
+def test_deals_accepts_generated_request_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = _ready_api()
+
+    def fake_request(request_type: str, payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        selection = json.loads(payload["selection"])
+        assert selection["page"] == 0
+        assert selection["includeCategories"] == [123]
+        return {"deals": {"dr": [{"asin": "B000000000"}]}}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    deals = api.deals(backend_models.DealRequest(page=0, includeCategories=[123]))
+
+    assert deals["dr"][0]["asin"] == "B000000000"
+
+
+def test_product_finder_accepts_generated_request_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    api = _ready_api()
+
+    def fake_request(request_type: str, payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        selection = json.loads(payload["selection"])
+        assert selection["author"] == ["jim butcher"]
+        assert selection["perPage"] == 50
+        return {"asinList": ["B000HRMAR2"]}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    asins = api.product_finder(backend_models.ProductFinderRequest(author=["jim butcher"]))
+
+    assert asins == ["B000HRMAR2"]
+
+
+def test_best_sellers_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = _ready_api()
+
+    def fake_request(request_type: str, payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        assert request_type == "bestsellers"
+        return {
+            "bestSellersList": {
+                "domainId": 1,
+                "categoryId": 123,
+                "asinList": ["B000000000"],
+            }
+        }
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    best_sellers = api.best_sellers_query("123", typed=True)
+
+    assert isinstance(best_sellers, backend_models.BestSellers)
+    assert best_sellers.categoryId == 123
+    assert best_sellers.asinList == ["B000000000"]
+
+
+def test_best_sellers_default_response_remains_asin_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    api = _ready_api()
+
+    def fake_request(request_type: str, payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        return {"bestSellersList": {"asinList": ["B000000000"]}}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    assert api.best_sellers_query("123") == ["B000000000"]
+
+
 @pytest.mark.asyncio
 async def test_async_query_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
     api = await keepa.AsyncKeepa.create("x" * 64)
@@ -206,3 +303,58 @@ async def test_async_deals_typed_response(monkeypatch: pytest.MonkeyPatch) -> No
 
     assert isinstance(deals, backend_models.DealResponse)
     assert isinstance(deals.dr[0], backend_models.Deal)
+
+
+@pytest.mark.asyncio
+async def test_async_deals_accepts_generated_request_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    api = await keepa.AsyncKeepa.create("x" * 64)
+
+    async def fake_request(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        payload = args[1]
+        selection = json.loads(payload["selection"])
+        assert selection["page"] == 0
+        assert selection["includeCategories"] == [123]
+        return {"deals": {"dr": [{"asin": "B000000000"}]}}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    deals = await api.deals(backend_models.DealRequest(page=0, includeCategories=[123]))
+
+    assert deals["dr"][0]["asin"] == "B000000000"
+
+
+@pytest.mark.asyncio
+async def test_async_product_finder_accepts_generated_request_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    api = await keepa.AsyncKeepa.create("x" * 64)
+
+    async def fake_request(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        payload = args[1]
+        selection = json.loads(payload["selection"])
+        assert selection["author"] == ["jim butcher"]
+        assert selection["perPage"] == 50
+        return {"asinList": ["B000HRMAR2"]}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    asins = await api.product_finder(backend_models.ProductFinderRequest(author=["jim butcher"]))
+
+    assert asins == ["B000HRMAR2"]
+
+
+@pytest.mark.asyncio
+async def test_async_best_sellers_typed_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = await keepa.AsyncKeepa.create("x" * 64)
+
+    async def fake_request(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {"bestSellersList": {"categoryId": 123, "asinList": ["B000000000"]}}
+
+    monkeypatch.setattr(api, "_request", fake_request)
+
+    best_sellers = await api.best_sellers_query("123", typed=True)
+
+    assert isinstance(best_sellers, backend_models.BestSellers)
+    assert best_sellers.asinList == ["B000000000"]
