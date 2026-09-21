@@ -352,7 +352,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "numpy", version = "2.2.6", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.11'"}
+  {name = "numpy", version = "2.2.6", source = {registry = "https://pypi.org/simple"}}
 ]
 name = "contourpy"
 resolution-markers = [
@@ -422,7 +422,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "numpy", version = "2.3.4", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.11'"}
+  {name = "numpy", version = "2.3.4", source = {registry = "https://pypi.org/simple"}}
 ]
 name = "contourpy"
 resolution-markers = [
@@ -630,7 +630,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "typing-extensions", marker = "python_full_version < '3.11'"}
+  {name = "typing-extensions"}
 ]
 name = "exceptiongroup"
 sdist = {url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z"}
@@ -2070,7 +2070,7 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "roman-numerals", marker = "python_full_version == '3.11.*'"}
+  {name = "roman-numerals"}
 ]
 name = "roman-numerals-py"
 sdist = {url = "https://files.pythonhosted.org/packages/cb/b5/de96fca640f4f656eb79bbee0e79aeec52e3e0e359f8a3e6a0d366378b64/roman_numerals_py-4.1.0.tar.gz", hash = "sha256:f5d7b2b4ca52dd855ef7ab8eb3590f428c0b1ea480736ce32b01fef2a5f8daf9", size = 4274, upload-time = "2025-12-17T18:25:41.153Z"}
@@ -2100,32 +2100,32 @@ wheels = [
 
 [[package]]
 name = "soupsieve"
-sdist = {url = "https://files.pythonhosted.org/packages/47/2c/0a5f6f8ee0d5589e48c7640213ed5175d52cf540a06725b628cc1a45d6ce/soupsieve-2.8.4.tar.gz", hash = "sha256:e121fd02e975c695e4e9e8774a5ee35d74714b59307868dcc5319ad2d9e3328e", size = 121110, upload-time = "2026-05-24T13:55:57.154Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/80/f1/93422647dd7e461f23d254e6b2bfa687a85b53aeb4903fcdbb74474d4584/soupsieve-2.9.tar.gz", hash = "sha256:acee8417325c5653e1377dc31eccad59eb82cbc65942afe6174c53b3aaad63fc", size = 122122, upload-time = "2026-07-19T01:35:18.425Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "2.8.4"
+version = "2.9"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/5e/f5/0c41cb68dcae6b7de4fac4188a3a9589e21fb31df21ea3a2e888db95e6c9/soupsieve-2.8.4-py3-none-any.whl", hash = "sha256:e7e6b0769c8f51ed59acab6e994b00621096cfb1c640a7509295987388fbaf65", size = 37304, upload-time = "2026-05-24T13:55:55.406Z"}
+  {url = "https://files.pythonhosted.org/packages/7b/d6/3185ab5ad1280319b31986898f3206dd7227cd75e293d4dba2a5e6bf27a0/soupsieve-2.9-py3-none-any.whl", hash = "sha256:a2b2c76d67df2382d245409fd71e321a571717e58463efa32ace87dcadac2c12", size = 37387, upload-time = "2026-07-19T01:35:17.106Z"}
 ]
 
 [[package]]
 dependencies = [
-  {name = "alabaster", marker = "python_full_version < '3.11'"},
-  {name = "babel", marker = "python_full_version < '3.11'"},
-  {name = "colorama", marker = "python_full_version < '3.11' and sys_platform == 'win32'"},
-  {name = "docutils", marker = "python_full_version < '3.11'"},
-  {name = "imagesize", marker = "python_full_version < '3.11'"},
-  {name = "jinja2", marker = "python_full_version < '3.11'"},
-  {name = "packaging", marker = "python_full_version < '3.11'"},
-  {name = "pygments", marker = "python_full_version < '3.11'"},
-  {name = "requests", marker = "python_full_version < '3.11'"},
-  {name = "snowballstemmer", marker = "python_full_version < '3.11'"},
-  {name = "sphinxcontrib-applehelp", marker = "python_full_version < '3.11'"},
-  {name = "sphinxcontrib-devhelp", marker = "python_full_version < '3.11'"},
-  {name = "sphinxcontrib-htmlhelp", marker = "python_full_version < '3.11'"},
-  {name = "sphinxcontrib-jsmath", marker = "python_full_version < '3.11'"},
-  {name = "sphinxcontrib-qthelp", marker = "python_full_version < '3.11'"},
-  {name = "sphinxcontrib-serializinghtml", marker = "python_full_version < '3.11'"},
-  {name = "tomli", marker = "python_full_version < '3.11'"}
+  {name = "alabaster"},
+  {name = "babel"},
+  {name = "colorama", marker = "sys_platform == 'win32'"},
+  {name = "docutils"},
+  {name = "imagesize"},
+  {name = "jinja2"},
+  {name = "packaging"},
+  {name = "pygments"},
+  {name = "requests"},
+  {name = "snowballstemmer"},
+  {name = "sphinxcontrib-applehelp"},
+  {name = "sphinxcontrib-devhelp"},
+  {name = "sphinxcontrib-htmlhelp"},
+  {name = "sphinxcontrib-jsmath"},
+  {name = "sphinxcontrib-qthelp"},
+  {name = "sphinxcontrib-serializinghtml"},
+  {name = "tomli"}
 ]
 name = "sphinx"
 resolution-markers = [
@@ -2140,23 +2140,23 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "alabaster", marker = "python_full_version == '3.11.*'"},
-  {name = "babel", marker = "python_full_version == '3.11.*'"},
-  {name = "colorama", marker = "python_full_version == '3.11.*' and sys_platform == 'win32'"},
-  {name = "docutils", marker = "python_full_version == '3.11.*'"},
-  {name = "imagesize", marker = "python_full_version == '3.11.*'"},
-  {name = "jinja2", marker = "python_full_version == '3.11.*'"},
-  {name = "packaging", marker = "python_full_version == '3.11.*'"},
-  {name = "pygments", marker = "python_full_version == '3.11.*'"},
-  {name = "requests", marker = "python_full_version == '3.11.*'"},
-  {name = "roman-numerals-py", marker = "python_full_version == '3.11.*'"},
-  {name = "snowballstemmer", marker = "python_full_version == '3.11.*'"},
-  {name = "sphinxcontrib-applehelp", marker = "python_full_version == '3.11.*'"},
-  {name = "sphinxcontrib-devhelp", marker = "python_full_version == '3.11.*'"},
-  {name = "sphinxcontrib-htmlhelp", marker = "python_full_version == '3.11.*'"},
-  {name = "sphinxcontrib-jsmath", marker = "python_full_version == '3.11.*'"},
-  {name = "sphinxcontrib-qthelp", marker = "python_full_version == '3.11.*'"},
-  {name = "sphinxcontrib-serializinghtml", marker = "python_full_version == '3.11.*'"}
+  {name = "alabaster"},
+  {name = "babel"},
+  {name = "colorama", marker = "sys_platform == 'win32'"},
+  {name = "docutils"},
+  {name = "imagesize"},
+  {name = "jinja2"},
+  {name = "packaging"},
+  {name = "pygments"},
+  {name = "requests"},
+  {name = "roman-numerals-py"},
+  {name = "snowballstemmer"},
+  {name = "sphinxcontrib-applehelp"},
+  {name = "sphinxcontrib-devhelp"},
+  {name = "sphinxcontrib-htmlhelp"},
+  {name = "sphinxcontrib-jsmath"},
+  {name = "sphinxcontrib-qthelp"},
+  {name = "sphinxcontrib-serializinghtml"}
 ]
 name = "sphinx"
 resolution-markers = [
@@ -2171,23 +2171,23 @@ wheels = [
 
 [[package]]
 dependencies = [
-  {name = "alabaster", marker = "python_full_version >= '3.12'"},
-  {name = "babel", marker = "python_full_version >= '3.12'"},
-  {name = "colorama", marker = "python_full_version >= '3.12' and sys_platform == 'win32'"},
-  {name = "docutils", marker = "python_full_version >= '3.12'"},
-  {name = "imagesize", marker = "python_full_version >= '3.12'"},
-  {name = "jinja2", marker = "python_full_version >= '3.12'"},
-  {name = "packaging", marker = "python_full_version >= '3.12'"},
-  {name = "pygments", marker = "python_full_version >= '3.12'"},
-  {name = "requests", marker = "python_full_version >= '3.12'"},
-  {name = "roman-numerals", marker = "python_full_version >= '3.12'"},
-  {name = "snowballstemmer", marker = "python_full_version >= '3.12'"},
-  {name = "sphinxcontrib-applehelp", marker = "python_full_version >= '3.12'"},
-  {name = "sphinxcontrib-devhelp", marker = "python_full_version >= '3.12'"},
-  {name = "sphinxcontrib-htmlhelp", marker = "python_full_version >= '3.12'"},
-  {name = "sphinxcontrib-jsmath", marker = "python_full_version >= '3.12'"},
-  {name = "sphinxcontrib-qthelp", marker = "python_full_version >= '3.12'"},
-  {name = "sphinxcontrib-serializinghtml", marker = "python_full_version >= '3.12'"}
+  {name = "alabaster"},
+  {name = "babel"},
+  {name = "colorama", marker = "sys_platform == 'win32'"},
+  {name = "docutils"},
+  {name = "imagesize"},
+  {name = "jinja2"},
+  {name = "packaging"},
+  {name = "pygments"},
+  {name = "requests"},
+  {name = "roman-numerals"},
+  {name = "snowballstemmer"},
+  {name = "sphinxcontrib-applehelp"},
+  {name = "sphinxcontrib-devhelp"},
+  {name = "sphinxcontrib-htmlhelp"},
+  {name = "sphinxcontrib-jsmath"},
+  {name = "sphinxcontrib-qthelp"},
+  {name = "sphinxcontrib-serializinghtml"}
 ]
 name = "sphinx"
 resolution-markers = [
