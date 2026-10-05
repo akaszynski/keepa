@@ -127,6 +127,14 @@ def test_update_status(api: keepa.Keepa) -> None:
     assert api.status.tokensLeft
 
 
+def test_live_zstd_response(api: keepa.Keepa) -> None:
+    """Verify negotiation and decoding against Keepa's free token endpoint."""
+    response = api._request("token", {"key": api.accesskey}, wait=False, raw_response=True)
+    assert "zstd" in response.request.headers["Accept-Encoding"]
+    assert response.headers["Content-Encoding"] == "zstd"
+    assert response.json()["tokensLeft"] == api.tokens_left
+
+
 def test_wait_for_tokens(api: keepa.Keepa) -> None:
     assert api.status.tokensLeft is None
     api.wait_for_tokens()

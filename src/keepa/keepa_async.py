@@ -555,19 +555,22 @@ class AsyncKeepa:
             async with session.get(
                 "https://api.keepa.com/graphimage",
                 params=payload,
+                headers={"Accept-Encoding": "zstd, gzip, deflate"},
                 timeout=self._timeout,
             ) as resp:
-                first_chunk = True
+                # A decompressed HTTP chunk may contain only part of the PNG signature.
+                try:
+                    signature = await resp.content.readexactly(8)
+                except asyncio.IncompleteReadError as exc:
+                    signature = exc.partial
+                if signature != b"\x89PNG\r\n\x1a\n":
+                    raise ValueError(
+                        "Response from api.keepa.com/graphimage is not a valid PNG image"
+                    )
                 filename = Path(filename)
                 with open(filename, "wb") as f:
+                    f.write(signature)
                     async for chunk in resp.content.iter_chunked(8192):
-                        if first_chunk:
-                            if not chunk.startswith(b"\x89PNG\r\n\x1a\n"):
-                                raise ValueError(
-                                    "Response from api.keepa.com/graphimage is not a valid "
-                                    "PNG image"
-                                )
-                            first_chunk = False
                         f.write(chunk)
 
     async def _request(
@@ -584,6 +587,7 @@ class AsyncKeepa:
                 async with session.get(
                     f"https://api.keepa.com/{request_type}/?",
                     params=payload,
+                    headers={"Accept-Encoding": "zstd, gzip, deflate"},
                     timeout=self._timeout,
                 ) as raw:
                     status_code = str(raw.status)

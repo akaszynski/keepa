@@ -1549,6 +1549,7 @@ class Keepa:
             raw = requests.get(
                 f"https://api.keepa.com/{request_type}/?",
                 payload,
+                headers={"Accept-Encoding": "zstd, gzip, deflate"},
                 timeout=self._timeout,
             )
             status_code = str(raw.status_code)
