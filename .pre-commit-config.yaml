@@ -10,14 +10,14 @@ repos:
   - id: blackdoc
     files: \.py$
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.20
+  rev: v0.16.10
   hooks:
   - id: ruff-check
     args: [--fix, --exit-non-zero-on-fix]
     exclude: ^(docs/|tests)
   - id: ruff-format
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.4.2
+  rev: v2.4.3
   hooks:
   - id: codespell
     args: [-S ./docs/\*, --ignore-words-list, thirdparty]
@@ -48,6 +48,6 @@ repos:
   - id: pretty-format-yaml
     args: [--autofix, --indent, '2']
 - repo: https://github.com/abravalheri/validate-pyproject
-  rev: v0.25
+  rev: '0.26'
   hooks:
   - id: validate-pyproject
