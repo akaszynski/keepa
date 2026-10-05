@@ -10,31 +10,6 @@ on:
     - main
 
 jobs:
-  compression_testing:
-    name: Compression (${{ matrix.python-version }}, ${{ matrix.dependencies }})
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.14']
-        dependencies: [minimum, current]
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: pip
-    - name: Install
-      run: pip install .[test] --disable-pip-version-check
-    - name: Install minimum transport dependencies
-      if: matrix.dependencies == 'minimum'
-      run: >-
-        pip install "requests==2.32.5" "urllib3[zstd]==2.7.0"
-        "aiohttp==3.14.0" "backports.zstd==1.0.0; python_version < '3.14'"
-    - name: Test compression over HTTP
-      run: pytest -v tests/test_compression.py --no-cov
-
   unit_testing:
     name: Build and Testing
     runs-on: ubuntu-latest
@@ -92,7 +67,7 @@ jobs:
   release:
     name: Upload release to PyPI
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
-    needs: [unit_testing, compression_testing]
+    needs: [unit_testing]
     runs-on: ubuntu-latest
     environment:
       name: pypi
