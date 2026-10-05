@@ -16,6 +16,11 @@ Install
 
    pip install keepa
 
+Zstandard (``zstd``) response compression is enabled for both clients, including
+graph-image downloads. Codec support is installed automatically on Python
+3.10–3.13 and provided by the standard library on Python 3.14. The clients also
+accept gzip, deflate, and uncompressed responses.
+
 Query Product Data
 ==================
 Start with a product query. Dictionary responses remain the default for

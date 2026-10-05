@@ -109,6 +109,15 @@ async def test_wait_for_tokens(api: keepa.AsyncKeepa) -> None:
 
 
 @pytest.mark.asyncio
+async def test_live_zstd_response(api: keepa.AsyncKeepa) -> None:
+    """Verify negotiation and decoding against Keepa's free token endpoint."""
+    response = await api._request("token", {"key": api.accesskey}, wait=False, raw_response=True)
+    assert "zstd" in response.request_info.headers["Accept-Encoding"]
+    assert response.headers["Content-Encoding"] == "zstd"
+    assert (await response.json())["tokensLeft"] == api.tokens_left
+
+
+@pytest.mark.asyncio
 async def test_deals(api: keepa.AsyncKeepa) -> None:
     deal_parms = {
         "page": 0,

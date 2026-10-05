@@ -29,11 +29,18 @@ Requirements
 This library is compatible with Python >= 3.10 and requires:
 
 - ``numpy``
-- ``aiohttp``
+- ``aiohttp >= 3.14.0``
 - ``pandas``
 - ``pydantic >= 2``
-- ``requests``
+- ``requests >= 2.32.5``
+- ``urllib3[zstd] >= 2.7.0``
 - ``tqdm``
+
+Both clients request and automatically decode Zstandard (``zstd``) responses,
+while continuing to accept gzip, deflate, and uncompressed responses. Zstandard
+support is required and installed automatically: Python 3.10–3.13 use
+``backports.zstd`` through ``urllib3[zstd]``, and Python 3.14 and later use the standard
+library's ``compression.zstd``. No extra installation option is needed.
 
 Product history can be plotted from the raw data when ``matplotlib``
 is installed.
