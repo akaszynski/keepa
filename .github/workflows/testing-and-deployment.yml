@@ -78,6 +78,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v7
       with:
+        name: keepa-wheel
         path: dist/
     - name: Display structure of downloaded files
       run: ls -R
@@ -88,4 +89,5 @@ jobs:
       with:
         generate_release_notes: true
         files: |
-          ./**/*.whl
+          dist/*.whl
+          dist/*.tar.gz
